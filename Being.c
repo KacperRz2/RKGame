@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
 #include <types.h>
+#include <Being.h>
 #include <World.h>
 #include <function.h>
 
@@ -27,8 +28,7 @@ Being* createBeing(World* w, const float x, const float y) {
 inline void removeBeingFromSegment(Being* b) {
     if (b->indx != ((Segment*)(b->segment))->beings.num - 1) {
         *(((Segment*)(b->segment))->beings.array + b->indx) = *(((Segment*)(b->segment))->beings.array + ((Segment*)(b->segment))->beings.num - 1);
-        Being* tmp = *(((Segment*)(b->segment))->beings.array + b->indx);
-        tmp->indx = b->indx;
+        (*(((Segment*)(b->segment))->beings.array + b->indx))->indx = b->indx;
     }
     --((Segment*)(b->segment))->beings.num;
 }

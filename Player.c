@@ -2,6 +2,7 @@
 #include <macros.h>
 #include <types.h>
 #include <Projectile.h>
+#include <Player.h>
 
 Player* createPlayer(const float x, const float y) {
 	Player* p = (Player*)SDL_malloc(sizeof(Player));

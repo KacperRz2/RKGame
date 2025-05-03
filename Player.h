@@ -2,12 +2,12 @@
 #define PLAYER_H_
 
 Player* createPlayer(const float, const float);
-inline void movePlayer(Player*, const float, const float);
-inline void setPlayerInBounds(Player*);
+void movePlayer(Player*, const float, const float);
+void setPlayerInBounds(Player*);
 void updatePlayerMove(Player*);
-inline void updatePlayerDirection(Player*);
-inline void destroyPlayer(Player*);
-inline void updatePlayerPoints(Player*);
-inline void updatePlayer(Player*, Projectiles_array*);
+void updatePlayerDirection(Player*);
+void destroyPlayer(Player*);
+void updatePlayerPoints(Player*);
+void updatePlayer(Player*, Projectiles_array*);
 
 #endif

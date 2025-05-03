@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
 #include <types.h>
+#include <World.h>
 
 World* createWorld(const float x, const float y) {
 	World* w = (World*)SDL_malloc(sizeof(World));

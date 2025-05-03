@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
 #include <types.h>
+#include <event.h>
 
 bool eventsService(SDL_Event* e, Player* p) {
 	while (SDL_PollEvent(e)) {

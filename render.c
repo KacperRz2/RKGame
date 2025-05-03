@@ -1,12 +1,7 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
 #include <types.h>
-
-struct Graphics_initiation_data {
-	SDL_Window** window;
-	SDL_Renderer** renderer;
-	SDL_Texture** textures[TEXTURES_NUM];
-};
+#include <render.h>
 
 int graphicsInitiation(struct Graphics_initiation_data* data) {
 	SDL_Surface* surface = NULL;

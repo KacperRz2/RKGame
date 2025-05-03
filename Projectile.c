@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
 #include <types.h>
+#include <Projectile.h>
 #include <Being.h>
 #include <World.h>
 #include <function.h>

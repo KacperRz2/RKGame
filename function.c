@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
 #include <types.h>
+#include <function.h>
 
 extern inline float radToDeg(const float angle) {
 	return angle * 180.0F / SDL_PI_F;
