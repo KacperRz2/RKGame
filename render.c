@@ -3,7 +3,7 @@
 #include <types.h>
 #include <render.h>
 
-int graphicsInitiation(struct Graphics_initiation_data* data) {
+int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
 	const char* texture_files[TEXTURE_FILES_NUM] = {
@@ -56,7 +56,7 @@ int graphicsInitiation(struct Graphics_initiation_data* data) {
 	return 0;
 }
 
-void renderGunSightCross(SDL_Renderer* rend) {
+void RenderGunSightCross(SDL_Renderer* rend) {
 	const static SDL_FRect rect0 = { 
 		GUN_SIGHT_SIZE * 0.5F - 1.0F,
 		1.0F,
@@ -73,12 +73,12 @@ void renderGunSightCross(SDL_Renderer* rend) {
 	SDL_RenderFillRect(rend, &rect1);
 }
 
-void renderGunSightElements(SDL_Renderer* rend, const float distance, const float range) {
+void RenderGunSightElements(SDL_Renderer* rend, const float distance, const float range) {
 	SDL_SetRenderDrawColor(rend, 64, 64, 64, 0);
 	SDL_RenderClear(rend);
 	if (distance > range) {
 		SDL_SetRenderDrawColor(rend, 255, 0, 0, 64);
-		renderGunSightCross(rend);
+		RenderGunSightCross(rend);
 	}
 	else {
 		SDL_FRect rect;
@@ -87,13 +87,13 @@ void renderGunSightElements(SDL_Renderer* rend, const float distance, const floa
 		rect.x = GUN_SIGHT_SIZE * 0.5F - rect.w * 0.5F;
 		rect.y = rect.x;
 		SDL_SetRenderDrawColor(rend, 0, 255, 0, 64);
-		renderGunSightCross(rend);
+		RenderGunSightCross(rend);
 		SDL_SetRenderDrawColor(rend, 0, 255, 0, 0);
 		SDL_RenderFillRect(rend, &rect);
 	}
 }
 
-void renderPlayer(SDL_Renderer* rend, SDL_Texture* tx) {
+void RenderPlayer(SDL_Renderer* rend, SDL_Texture* tx) {
 	static const SDL_FRect rect = {
 		WINDOW_CENTER_X - PLAYER_SIZE * 0.5F,
 		WINDOW_CENTER_Y - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
@@ -103,7 +103,7 @@ void renderPlayer(SDL_Renderer* rend, SDL_Texture* tx) {
 	SDL_RenderTexture(rend, tx, NULL, &rect);
 }
 
-void renderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture* tx) {
+void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture* tx) {
 	static SDL_FRect rect = {
 		WINDOW_CENTER_X - GUN_SIGHT_SIZE * 0.5F,
 		0.0F,
@@ -114,7 +114,7 @@ void renderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture*
 	SDL_RenderTexture(rend, tx, NULL, &rect);
 }
 
-void drawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
+void DrawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
 	SDL_SetRenderTarget(rend, tx);
 	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 	SDL_RenderClear(rend);
@@ -143,7 +143,7 @@ void drawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
 	SDL_SetRenderTarget(rend, NULL);
 }
 
-void renderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx) {
+void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx) {
 	static SDL_FRect rect = { 
 		0.0F,
 		0.0F,
@@ -158,7 +158,7 @@ void renderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* 
 	}
 }
 
-void renderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, SDL_FRect visible_rect) {
+void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, SDL_FRect visible_rect) {
 	static SDL_FRect rect = {
 		0.0F,
 		0.0F,

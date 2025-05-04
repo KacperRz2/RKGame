@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 	for (int i = 0; i < TEXTURES_NUM; ++i) {
 		*(graphics_initiation_data->textures + i) = textures + i;
 	}
-	if (graphicsInitiation(graphics_initiation_data)) return 1;
+	if (GraphicsInitiation(graphics_initiation_data)) return 1;
 	SDL_free(graphics_initiation_data);
 
 	Uint64 time = SDL_GetTicksNS();
@@ -59,44 +59,44 @@ int main(int argc, char* argv[]) {
 		VIEW_H
 	};
 
-	World* world = createWorld(WORLD_W, WORLD_H);
-	drawStaticWorld(renderer, *textures);
-	Player* player = createPlayer(BOUNDS_L + 1000.0F, BOUNDS_U + 1000.0F);
+	World* world = CreateWorld(WORLD_W, WORLD_H);
+	DrawStaticWorld(renderer, *textures);
+	Player* player = CreatePlayer(BOUNDS_L + 1000.0F, BOUNDS_U + 1000.0F);
 	if (player == NULL || world == NULL) return 1;
-	addBeingToArray(&beings, createBeing(world, 1500.0F, 1500.0F));
+	AddBeingToArray(&beings, CreateBeing(world, 1500.0F, 1500.0F));
 
 	while (beings.num < MAX_BEINGS_NUM) {
 		float x = (float)(SDL_rand((Sint32)WORLD_W) + (int)BOUNDS_L);
 		float y = (float)(SDL_rand((Sint32)WORLD_H) + (int)BOUNDS_U);
-		if (getSegment(world, x, y)->beings.num < MAX_SEGM_BEINGS) {
-			addBeingToArray(&beings, createBeing(world, x, y));
+		if (GetSegment(world, x, y)->beings.num < MAX_SEGM_BEINGS) {
+			AddBeingToArray(&beings, CreateBeing(world, x, y));
 		}
 	}
 
 	while (!quit) {
 		timer = SDL_GetTicksNS();
-		quit = eventsService(&event, player);
+		quit = EventsService(&event, player);
 
 		if (beings.num < MAX_BEINGS_NUM) {
 			float x = (float)(SDL_rand((Sint32)WORLD_W) + (int)BOUNDS_L);
 			float y = (float)(SDL_rand((Sint32)WORLD_H) + (int)BOUNDS_U);
 			if (SDL_fabsf(player->position.x - x) > 2000.0F) {
 				if (SDL_fabsf(player->position.y - y) > 2000.0F) {
-					if (getSegment(world, x, y)->beings.num < MAX_SEGM_BEINGS) {
-						addBeingToArray(&beings, createBeing(world, x, y));
+					if (GetSegment(world, x, y)->beings.num < MAX_SEGM_BEINGS) {
+						AddBeingToArray(&beings, CreateBeing(world, x, y));
 					}
 				}
 			}
 		}
 
 		SDL_GetMouseState(NULL, &cursor_y);
-		updatePlayer(player, &projectiles);
+		UpdatePlayer(player, &projectiles);
 		cursor_distance = WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - cursor_y;
 
-		updateProjectiles(world, &projectiles);
+		UpdateProjectiles(world, &projectiles);
 		if (ticks_to_update_beings == 0U) {
 			if (!(player->control_flags & 1 << 6)) {
-				updateBeings(&beings, world, &player->position);
+				UpdateBeings(&beings, world, &player->position);
 			}
 			ticks_to_update_beings = 1U;
 		}
@@ -111,9 +111,9 @@ int main(int argc, char* argv[]) {
 
 			frame_time += FRAME_TIME;
 
-			setVisibleRect(world, player);
+			SetVisibleRect(world, player);
 
-			rotation = radToDeg(player->direction);
+			rotation = RadToDeg(player->direction);
 
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 			SDL_RenderFillRect(renderer, &clear_rect);
@@ -122,15 +122,15 @@ int main(int argc, char* argv[]) {
 
 			SDL_RenderTexture(renderer, *textures, &world->visible_rect, &world->visible_rect);
 
-			renderProjectiles(renderer, &projectiles, *(textures + 5));
+			RenderProjectiles(renderer, &projectiles, *(textures + 5));
 
 			if (!(player->control_flags & 1 << 6)) {
-				renderBeings(renderer, &beings, *(textures + 6), world->visible_rect);
+				RenderBeings(renderer, &beings, *(textures + 6), world->visible_rect);
 			}
 
 			SDL_SetRenderTarget(renderer, *(textures + 1));
 
-			renderGunSightElements(renderer, cursor_distance, player->range);
+			RenderGunSightElements(renderer, cursor_distance, player->range);
 
 			SDL_SetRenderTarget(renderer, NULL);
 
@@ -153,11 +153,11 @@ int main(int argc, char* argv[]) {
 			SDL_RenderDebugTextFormat(renderer, 10, 170, "projectiles: %d", projectiles.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 180, "beings in seg0x0: %d", (*(*(world->segments + 0) + 0)).beings.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
-			Segment* s = getSegment(world, player->position.x, player->position.y);
+			Segment* s = GetSegment(world, player->position.x, player->position.y);
 			SDL_RenderDebugTextFormat(renderer, 10, 260, "player: %.0f %.0f", s->coordinates.x, s->coordinates.y);
 			//for (unsigned int i = 0U; i < projectiles.num; ++i) {
 			//    Projectile* pr = *(projectiles.array + i);
-			//    s = getSegment(world, pr->position.x, pr->position.y);
+			//    s = GetSegment(world, pr->position.x, pr->position.y);
 			//    SDL_RenderDebugTextFormat(renderer, 10, 270 + i * 10, "%u     : %.0f %.0f", i, s->coordinates.x, s->coordinates.y);
 			//}
 			//for (unsigned int i = 0U; i < beings.num; ++i) {
@@ -170,8 +170,8 @@ int main(int argc, char* argv[]) {
 
 			SDL_RenderTextureRotated(renderer, *(textures + 4), NULL, &destination_rect1, -rotation, NULL, SDL_FLIP_NONE);
 
-			renderPlayer(renderer, *(textures + 3));
-			renderGunSight(renderer, cursor_y, *(textures + 1));
+			RenderPlayer(renderer, *(textures + 3));
+			RenderGunSight(renderer, cursor_y, *(textures + 1));
 
 			SDL_RenderPresent(renderer);
 		}
@@ -193,10 +193,10 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	destroyPlayer(player);
-	destroyProjectiles(&projectiles);
-	destroyBeings(&beings);
-	destroyWorld(world);
+	DestroyPlayer(player);
+	DestroyProjectiles(&projectiles);
+	DestroyBeings(&beings);
+	DestroyWorld(world);
 	SDL_free(beings.array);
 	SDL_free(projectiles.array);
 	for (int i = 0; i < TEXTURES_NUM; ++i) {

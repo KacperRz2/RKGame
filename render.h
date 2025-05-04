@@ -6,13 +6,13 @@ struct Graphics_initiation_data {
 	SDL_Renderer** renderer;
 	SDL_Texture** textures[TEXTURES_NUM];
 };
-int graphicsInitiation(struct Graphics_initiation_data*);
-void renderGunSightCross(SDL_Renderer*);
-void renderGunSightElements(SDL_Renderer*, const float, const float);
-void renderPlayer(SDL_Renderer*, SDL_Texture*);
-void renderGunSight(SDL_Renderer*, const float, SDL_Texture*);
-void drawStaticWorld(SDL_Renderer*, SDL_Texture*);
-void renderProjectiles(SDL_Renderer*, Projectiles_array*, SDL_Texture*);
-void renderBeings(SDL_Renderer*, Beings_array*, SDL_Texture*, SDL_FRect);
+int GraphicsInitiation(struct Graphics_initiation_data*);
+void RenderGunSightCross(SDL_Renderer*);
+void RenderGunSightElements(SDL_Renderer*, const float, const float);
+void RenderPlayer(SDL_Renderer*, SDL_Texture*);
+void RenderGunSight(SDL_Renderer*, const float, SDL_Texture*);
+void DrawStaticWorld(SDL_Renderer*, SDL_Texture*);
+void RenderProjectiles(SDL_Renderer*, Projectiles_array*, SDL_Texture*);
+void RenderBeings(SDL_Renderer*, Beings_array*, SDL_Texture*, SDL_FRect);
 
 #endif

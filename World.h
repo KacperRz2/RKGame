@@ -1,9 +1,9 @@
 #ifndef WORLD_H_
 #define WORLD_H_
 
-World* createWorld(const float, const float);
-void destroyWorld(World*);
-Segment* getSegment(World*, const float, const float);
-void setVisibleRect(World*, Player*);
+World* CreateWorld(const float, const float);
+void DestroyWorld(World*);
+Segment* GetSegment(World*, const float, const float);
+void SetVisibleRect(World*, Player*);
 
 #endif

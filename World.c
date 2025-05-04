@@ -3,7 +3,7 @@
 #include <types.h>
 #include <World.h>
 
-World* createWorld(const float x, const float y) {
+World* CreateWorld(const float x, const float y) {
 	World* w = (World*)SDL_malloc(sizeof(World));
 	if (w == NULL) return NULL;
 	w->width = x;
@@ -24,7 +24,7 @@ World* createWorld(const float x, const float y) {
 	return w;
 }
 
-extern inline void destroyWorld(World* w) {
+extern inline void DestroyWorld(World* w) {
 	for (unsigned int c = 0U; c < SEGMENTS_X; ++c) {
 		for (unsigned int r = 0U; r < SEGMENTS_Y; ++r) {
 			SDL_free((*(*(w->segments + c) + r)).beings.array);
@@ -33,13 +33,13 @@ extern inline void destroyWorld(World* w) {
 	SDL_free(w);
 }
 
-extern inline Segment* getSegment(World* w, const float x, const float y) {
+extern inline Segment* GetSegment(World* w, const float x, const float y) {
 	unsigned int c = (unsigned int)((x - BOUNDS_L) / SEGMENTS_SIZE);
 	unsigned int r = (unsigned int)((y - BOUNDS_U) / SEGMENTS_SIZE);
 	return *(w->segments + c) + r;
 }
 
-void setVisibleRect(World* w, Player* p) {//void setVisibleRect(World* w, Player* p, SDL_Renderer* r) {
+void SetVisibleRect(World* w, Player* p) {//void SetVisibleRect(World* w, Player* p, SDL_Renderer* r) {
 	//SDL_FPoint edge_points[4];
 	//edge_points->x = VIEW_CENTER_X + SDL_sinf(p->direction - SDL_PI_F * 0.25F) * 1000.0F;
 	//edge_points->y = VIEW_CENTER_Y - SDL_cosf(p->direction - SDL_PI_F * 0.25F) * 1000.0F;

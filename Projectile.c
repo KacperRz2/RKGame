@@ -6,7 +6,7 @@
 #include <World.h>
 #include <function.h>
 
-Projectile* createProjectile(const SDL_FPoint* position, const float direction, const float velocity) {
+Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, const float velocity) {
 	Projectile* pr = (Projectile*)SDL_malloc(sizeof(Projectile));
 	if (pr == NULL) return NULL;
 	pr->position = *position;
@@ -17,19 +17,19 @@ Projectile* createProjectile(const SDL_FPoint* position, const float direction, 
 	return pr;
 }
 
-inline void destroyProjectile(Projectile* pr) {
+inline void DestroyProjectile(Projectile* pr) {
 	SDL_free(pr);
 }
 
-void destroyProjectiles(Projectiles_array* prs) {
+void DestroyProjectiles(Projectiles_array* prs) {
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
-		destroyProjectile(pr);
+		DestroyProjectile(pr);
 	}
 	prs->num = 0U;
 }
 
-inline bool projectileHitsBeing(Projectile* pr, Being* b) {
+inline bool ProjectileHitsBeing(Projectile* pr, Being* b) {
 	if (SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F) {
 		if (SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F) {
 			return true;
@@ -38,45 +38,45 @@ inline bool projectileHitsBeing(Projectile* pr, Being* b) {
 	return false;
 }
 
-extern inline void addProjectileToArray(Projectiles_array* prs, Projectile* pr) {
+extern inline void AddProjectileToArray(Projectiles_array* prs, Projectile* pr) {
 	*(prs->array + prs->num) = pr;
 	++prs->num;
 }
 
-inline void destroyProjectileInArray(Projectiles_array* prs, const unsigned int indx) {
-	destroyProjectile(*(prs->array + indx));
+inline void DestroyProjectileInArray(Projectiles_array* prs, const unsigned int indx) {
+	DestroyProjectile(*(prs->array + indx));
 	if (indx != prs->num - 1) {
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}
 	--prs->num;
 }
 
-inline void moveProjectile(Projectile* pr) {
+inline void MoveProjectile(Projectile* pr) {
 	pr->position.x += pr->shift_per_tick.x;
 	pr->position.y += pr->shift_per_tick.y;
 }
 
-void updateProjectiles(World* w, Projectiles_array* prs) {
+void UpdateProjectiles(World* w, Projectiles_array* prs) {
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
 		if (pr->time_left <= 1U) {
-			destroyProjectileInArray(prs, i);
+			DestroyProjectileInArray(prs, i);
 			--i;
 			continue;
 		}
 		else {
 			--pr->time_left;
 		}
-		moveProjectile(pr);
-		if (!inBounds(&pr->position)) {
+		MoveProjectile(pr);
+		if (!InBounds(&pr->position)) {
 			continue;
 		}
-		Segment* s = getSegment(w, pr->position.x, pr->position.y);
+		Segment* s = GetSegment(w, pr->position.x, pr->position.y);
 		for (unsigned int j = 0U; j < s->beings.num; ++j) {
 			Being* b = *(s->beings.array + j);
-			if (projectileHitsBeing(pr, b)) {
-				damageBeing(b, pr->damage);
-				destroyProjectileInArray(prs, i);
+			if (ProjectileHitsBeing(pr, b)) {
+				DamageBeing(b, pr->damage);
+				DestroyProjectileInArray(prs, i);
 				--i;
 				break;
 			}

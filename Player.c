@@ -4,7 +4,7 @@
 #include <Projectile.h>
 #include <Player.h>
 
-Player* createPlayer(const float x, const float y) {
+Player* CreatePlayer(const float x, const float y) {
 	Player* p = (Player*)SDL_malloc(sizeof(Player));
 	if (p == NULL) return NULL;
 	p->position.x = x;
@@ -25,12 +25,12 @@ Player* createPlayer(const float x, const float y) {
 	return p;
 }
 
-inline void movePlayer(Player* p, const float x, const float y) {
+inline void MovePlayer(Player* p, const float x, const float y) {
 	p->position.x += x;
 	p->position.y += y;
 }
 
-inline void setPlayerInBounds(Player* p) {
+inline void SetPlayerInBounds(Player* p) {
 	if (p->position.x >= BOUNDS_R) {
 		p->position.x = BOUNDS_R - 1.0F;
 	}
@@ -45,7 +45,7 @@ inline void setPlayerInBounds(Player* p) {
 	}
 }
 
-void updatePlayerMove(Player* p) {
+void UpdatePlayerMove(Player* p) {
 	static float move_direction = 0.0F;
 	if (p->velocity > p->max_velocity) {
 		p->velocity *= DECELERATION;
@@ -118,12 +118,12 @@ void updatePlayerMove(Player* p) {
 		p->max_velocity = PLAYER_VELOCITY;
 	}
 	if (p->velocity > 0.0F) {
-		movePlayer(p, SDL_sinf(move_direction) * p->velocity, -SDL_cosf(move_direction) * p->velocity);
+		MovePlayer(p, SDL_sinf(move_direction) * p->velocity, -SDL_cosf(move_direction) * p->velocity);
 	}
-	setPlayerInBounds(p);
+	SetPlayerInBounds(p);
 }
 
-inline void updatePlayerDirection(Player* p) {
+inline void UpdatePlayerDirection(Player* p) {
 	if (p->direction > 2.0F * SDL_PI_F) {
 		p->direction -= 2.0F * SDL_PI_F;
 	}
@@ -132,11 +132,11 @@ inline void updatePlayerDirection(Player* p) {
 	}
 }
 
-extern inline void destroyPlayer(Player* p) {
+extern inline void DestroyPlayer(Player* p) {
 	SDL_free(p);
 }
 
-inline void updatePlayerPoints(Player* p) {
+inline void UpdatePlayerPoints(Player* p) {
 	static unsigned int count = 4U;
 	if (count <= 1) {
 		if (p->fatigue_block_time > 0) {
@@ -149,13 +149,13 @@ inline void updatePlayerPoints(Player* p) {
 	--count;
 }
 
-extern inline void updatePlayer(Player* p, Projectiles_array* prs) {
+extern inline void UpdatePlayer(Player* p, Projectiles_array* prs) {
 	if (p->control_flags & 1 << 7) {
 		if (prs->num < MAX_PROJECTILES_NUM) {
-			addProjectileToArray(prs, createProjectile(&p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F));
+			AddProjectileToArray(prs, CreateProjectile(&p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F));
 		}
 	}
-	updatePlayerDirection(p);
-	updatePlayerMove(p);
-	updatePlayerPoints(p);
+	UpdatePlayerDirection(p);
+	UpdatePlayerMove(p);
+	UpdatePlayerPoints(p);
 }
