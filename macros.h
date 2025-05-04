@@ -3,12 +3,15 @@
 
 #define SQRT2				1.4142135623730950488016887242097F
 #define SQRT2DIV2			(SQRT2 * 0.5F)
-#define WINDOW_W			1920//1280
-#define WINDOW_H			1080//1024
+#define WINDOW_W			1600//1920//1280
+#define WINDOW_H			900//1080//1024
 #define WINDOW_CENTER_X		(WINDOW_W / 2)
 #define WINDOW_CENTER_Y		(WINDOW_H / 2)
-#define WORLD_W				13000.0F//13000.0F
+#define WORLD_W				8192.0F//13000.0F
 #define WORLD_H				WORLD_W//4500.0F
+#define SCALE               4.0F
+#define SCALE_REVERSE       (1.0F / SCALE)
+#define WORLD_TEXTURE_SCALE 6.25e-2F//6.25e-2F
 #define VIEW_W				((int)(WINDOW_W * 1.4F))
 #define VIEW_H				((int)(WINDOW_W * 1.4F))
 #define VIEW_CENTER_X		(VIEW_W * 0.5F)
@@ -19,10 +22,10 @@
 #define PLAYER_SIZE			32//48
 #define GUN_SIGHT_SIZE		67
 #define BULLET_SIZE			16
-#define BOUNDS_U			(VIEW_H * 0.5F)			//(PLAYER_SIZE / 2)			    //		(PLAYER_SIZE / 2 + VIEW_H / 2)
-#define BOUNDS_D			(WORLD_H + VIEW_H * 0.5F)  //(WORLD_H - PLAYER_SIZE / 2)	//		(WORLD_H - PLAYER_SIZE / 2 - VIEW_H / 2)
-#define BOUNDS_R			(WORLD_W + VIEW_W * 0.5F)  //(WORLD_W - PLAYER_SIZE / 2)	//		(WORLD_W - PLAYER_SIZE / 2 - VIEW_W / 2)
-#define BOUNDS_L			(VIEW_W * 0.5F)			//(PLAYER_SIZE / 2)			    //		(PLAYER_SIZE / 2 + VIEW_W / 2)
+#define BOUNDS_U			(VIEW_H * 0.5F)
+#define BOUNDS_D			(WORLD_H + VIEW_H * 0.5F)
+#define BOUNDS_R			(WORLD_W + VIEW_W * 0.5F)
+#define BOUNDS_L			(VIEW_W * 0.5F)
 #define DECELERATION		0.93F//0.995F
 #define TICK_TIME			0x200000ULL//0x200000ULL
 #define TICK_TIME_MS		(TICK_TIME / 1000000ULL)

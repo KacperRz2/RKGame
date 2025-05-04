@@ -112,6 +112,12 @@ int main(int argc, char* argv[]) {
 			frame_time += FRAME_TIME;
 
 			SetVisibleRect(world, player);
+			SDL_FRect visible_rect_small = {
+				world->visible_rect.x * WORLD_TEXTURE_SCALE,
+				world->visible_rect.y * WORLD_TEXTURE_SCALE,
+				world->visible_rect.w * WORLD_TEXTURE_SCALE,
+				world->visible_rect.h * WORLD_TEXTURE_SCALE
+			};
 
 			rotation = RadToDeg(player->direction);
 
@@ -120,7 +126,7 @@ int main(int argc, char* argv[]) {
 
 			SDL_SetRenderTarget(renderer, *(textures + 2));
 
-			SDL_RenderTexture(renderer, *textures, &world->visible_rect, &world->visible_rect);
+			SDL_RenderTexture(renderer, *textures, &visible_rect_small, &world->visible_rect);
 
 			RenderProjectiles(renderer, &projectiles, *(textures + 5));
 

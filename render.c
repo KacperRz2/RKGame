@@ -12,7 +12,6 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 		"img2.bmp",
 		"being.bmp"
 	};
-
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -20,7 +19,7 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 		return 3;
 	}
 
-	if (!SDL_CreateWindowAndRenderer("KacWindow", WINDOW_W, WINDOW_H, SDL_WINDOW_FULLSCREEN, data->window, data->renderer)) {
+	if (!SDL_CreateWindowAndRenderer("KacWindow", WINDOW_W, WINDOW_H, SDL_WINDOW_BORDERLESS, data->window, data->renderer)) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
 		return 3;
 	}
@@ -42,7 +41,7 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
 
-	**data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)(WORLD_W + BOUNDS_L * 2), (int)(WORLD_H + BOUNDS_U * 2));
+	**data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)((WORLD_W + BOUNDS_L * 2) * WORLD_TEXTURE_SCALE), (int)((WORLD_H + BOUNDS_U * 2) * WORLD_TEXTURE_SCALE));
 	**(data->textures + 1) = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GUN_SIGHT_SIZE, GUN_SIGHT_SIZE);
 	**(data->textures + 2) = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)(WORLD_W + BOUNDS_L * 2), (int)(WORLD_H + BOUNDS_L * 2));
 
@@ -50,6 +49,16 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError()); return 1;
 	}
+
+	for(unsigned int i = 0U; i < TEXTURES_NUM; ++i){
+		SDL_SetTextureScaleMode(**(data->textures + i), SDL_SCALEMODE_NEAREST);
+	}
+	// for(unsigned int i = 0U; i < TEXTURE_TARGET_NUM; ++i){
+	// 	SDL_SetRenderTarget(*data->renderer, **(data->textures + i));
+	// 	SDL_SetRenderScale(*data->renderer, SCALE, SCALE);
+	// }
+	// SDL_SetRenderTarget(*data->renderer, NULL);
+	// SDL_SetRenderScale(*data->renderer, SCALE, SCALE);
 
 	SDL_SetWindowRelativeMouseMode(*data->window, true);
 	//SDL_HideCursor();
@@ -98,7 +107,7 @@ void RenderPlayer(SDL_Renderer* rend, SDL_Texture* tx) {
 		WINDOW_CENTER_X - PLAYER_SIZE * 0.5F,
 		WINDOW_CENTER_Y - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
 		(float)PLAYER_SIZE,
-		(float)PLAYER_SIZE 
+		(float)PLAYER_SIZE
 	};
 	SDL_RenderTexture(rend, tx, NULL, &rect);
 }
@@ -119,10 +128,10 @@ void DrawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
 	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
 	SDL_RenderClear(rend);
 	const SDL_Rect viewport = {
-		(int)BOUNDS_L,
-		(int)BOUNDS_U,
-		(int)WORLD_W,
-		(int)WORLD_H
+		(int)(BOUNDS_L * WORLD_TEXTURE_SCALE),
+		(int)(BOUNDS_U * WORLD_TEXTURE_SCALE),
+		(int)(WORLD_W * WORLD_TEXTURE_SCALE),
+		(int)(WORLD_H * WORLD_TEXTURE_SCALE)
 	};
 	SDL_SetRenderViewport(rend, &viewport);
 	SDL_SetRenderDrawColor(rend, 64, 64, 64, 255);
@@ -132,11 +141,11 @@ void DrawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
 	p1 = 0.0F;
 	if (SEGMENTS_X == SEGMENTS_Y) {
 		for (int i = 0; i < SEGMENTS_X + 1; ++i) {
-			p0 = (float)i * WORLD_W / SEGMENTS_X;
-			p2 = WORLD_H;
+			p0 = (float)i * WORLD_W / SEGMENTS_X * WORLD_TEXTURE_SCALE;
+			p2 = WORLD_H * WORLD_TEXTURE_SCALE;
 			SDL_RenderLine(rend, p0, p1, p0, p2);
-			p0 = (float)i * WORLD_H / SEGMENTS_X;
-			p2 = WORLD_W;
+			p0 = (float)i * WORLD_H / SEGMENTS_X * WORLD_TEXTURE_SCALE;
+			p2 = WORLD_W * WORLD_TEXTURE_SCALE;
 			SDL_RenderLine(rend, p1, p0, p2, p0);
 		}
 	}

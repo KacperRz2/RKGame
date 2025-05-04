@@ -23,8 +23,6 @@ typedef struct Beings_array {
 //Projectile
 typedef struct Projectile {
 	SDL_FPoint position;
-	//void* segment;
-	//unsigned int indx;
 	SDL_FPoint shift_per_tick;
 	unsigned int time_left;
 	int damage;
@@ -37,7 +35,6 @@ typedef struct Projectiles_array {
 typedef struct Segment {
 	SDL_FPoint coordinates;
 	Beings_array beings;
-	//Projectiles_array projectiles;
 	bool contain_player;
 } Segment;
 typedef struct World {
