@@ -73,6 +73,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	float sight_angle = SDL_asinf(SDL_sqrtf(SIGHT_SQUARED) / (VIEWFINDER_CENTER));
+	float sight_angle_back = SDL_acosf(SDL_sqrtf(SIGHT_BACK_SQUARED) / (VIEWFINDER_CENTER)) + 0.5F * SDL_PI_F;
+
 	while (!quit) {
 		timer = SDL_GetTicksNS();
 		quit = EventsService(&event, player);
@@ -111,7 +114,7 @@ int main(int argc, char* argv[]) {
 
 			frame_time += FRAME_TIME;
 
-			SetVisibleRect(world, player);
+			SetVisibleRect(world, player, sight_angle, sight_angle_back);
 			SDL_FRect visible_rect_small = {
 				world->visible_rect.x * WORLD_TEXTURE_SCALE,
 				world->visible_rect.y * WORLD_TEXTURE_SCALE,
@@ -142,6 +145,8 @@ int main(int argc, char* argv[]) {
 
 			SDL_RenderTextureRotated(renderer, *(textures + 2), &present_world_part, &destination_rect, -rotation, NULL, SDL_FLIP_NONE);
 
+			SDL_RenderTexture(renderer, *(textures + 7), NULL, NULL);
+
 			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 			SDL_RenderDebugTextFormat(renderer, 10, 10, "Fatigue: %d", player->fatigue_points);
 			SDL_RenderDebugTextFormat(renderer, 10, 20, "Position: %.2f %.2f", player->position.x, player->position.y);
@@ -159,6 +164,7 @@ int main(int argc, char* argv[]) {
 			SDL_RenderDebugTextFormat(renderer, 10, 170, "projectiles: %d", projectiles.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 180, "beings in seg0x0: %d", (*(*(world->segments + 0) + 0)).beings.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
+			//SDL_RenderDebugTextFormat(renderer, 10, 250, "sizeof: %d", sizeof(unsigned int));
 			Segment* s = GetSegment(world, player->position.x, player->position.y);
 			SDL_RenderDebugTextFormat(renderer, 10, 260, "player: %.0f %.0f", s->coordinates.x, s->coordinates.y);
 			//for (unsigned int i = 0U; i < projectiles.num; ++i) {

@@ -10,7 +10,8 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 		"img0.bmp",
 		"img1.bmp",
 		"img2.bmp",
-		"being.bmp"
+		"being.bmp",
+		"img3.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -53,6 +54,8 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	for(unsigned int i = 0U; i < TEXTURES_NUM; ++i){
 		SDL_SetTextureScaleMode(**(data->textures + i), SDL_SCALEMODE_NEAREST);
 	}
+	SDL_SetTextureScaleMode(**data->textures, SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(**(data->textures + 2), SDL_SCALEMODE_NEAREST);
 	// for(unsigned int i = 0U; i < TEXTURE_TARGET_NUM; ++i){
 	// 	SDL_SetRenderTarget(*data->renderer, **(data->textures + i));
 	// 	SDL_SetRenderScale(*data->renderer, SCALE, SCALE);
