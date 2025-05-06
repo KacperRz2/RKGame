@@ -51,9 +51,9 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError()); return 1;
 	}
 
-	for(unsigned int i = 0U; i < TEXTURES_NUM; ++i){
-		SDL_SetTextureScaleMode(**(data->textures + i), SDL_SCALEMODE_NEAREST);
-	}
+	// for(unsigned int i = 0U; i < TEXTURES_NUM; ++i){
+	// 	SDL_SetTextureScaleMode(**(data->textures + i), SDL_SCALEMODE_NEAREST);
+	// }
 	SDL_SetTextureScaleMode(**data->textures, SDL_SCALEMODE_NEAREST);
 	SDL_SetTextureScaleMode(**(data->textures + 2), SDL_SCALEMODE_NEAREST);
 	// for(unsigned int i = 0U; i < TEXTURE_TARGET_NUM; ++i){
@@ -107,8 +107,8 @@ void RenderGunSightElements(SDL_Renderer* rend, const float distance, const floa
 
 void RenderPlayer(SDL_Renderer* rend, SDL_Texture* tx) {
 	static const SDL_FRect rect = {
-		WINDOW_CENTER_X - PLAYER_SIZE * 0.5F,
-		WINDOW_CENTER_Y - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
+		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F,
+		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
 		(float)PLAYER_SIZE,
 		(float)PLAYER_SIZE
 	};
@@ -117,7 +117,7 @@ void RenderPlayer(SDL_Renderer* rend, SDL_Texture* tx) {
 
 void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture* tx) {
 	static SDL_FRect rect = {
-		WINDOW_CENTER_X - GUN_SIGHT_SIZE * 0.5F,
+		VIEWFINDER_CENTER - GUN_SIGHT_SIZE * 0.5F,
 		0.0F,
 		(float)GUN_SIGHT_SIZE,
 		(float)GUN_SIGHT_SIZE

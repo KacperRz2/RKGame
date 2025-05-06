@@ -39,7 +39,7 @@ extern inline Segment* GetSegment(World* w, const float x, const float y) {
 	return *(w->segments + c) + r;
 }
 
-void SetVisibleRect(World* w, Player* p, const float sight_angle, const float sight_angle_back) {//void SetVisibleRect(World* w, Player* p, SDL_Renderer* r) {
+void SetVisibleRect(World* w, Player* p, const float sight_angle, const float sight_angle_back, const float sight, const float sight_back) {//void SetVisibleRect(World* w, Player* p, SDL_Renderer* r) {
 
 	//SDL_FPoint edge_points[4];
 	//edge_points->x = VIEW_CENTER_X + SDL_sinf(p->direction - SDL_PI_F * 0.25F) * 1000.0F;
@@ -55,14 +55,14 @@ void SetVisibleRect(World* w, Player* p, const float sight_angle, const float si
 	//SDL_RenderLine(r, edge_points->x, edge_points->y, (edge_points + 3)->x, (edge_points + 3)->y);
 
 	SDL_FPoint edge_points[4];
-	edge_points->x = p->position.x + SDL_sinf(p->direction - sight_angle) * SIGHT_SQUARED;
-	edge_points->y = p->position.y - SDL_cosf(p->direction - sight_angle) * SIGHT_SQUARED;
-	(edge_points + 1)->x = p->position.x + SDL_sinf(p->direction + sight_angle) * SIGHT_SQUARED;
-	(edge_points + 1)->y = p->position.y - SDL_cosf(p->direction + sight_angle) * SIGHT_SQUARED;
-	(edge_points + 2)->x = p->position.x + SDL_sinf(p->direction + sight_angle_back) * SIGHT_BACK_SQUARED;
-	(edge_points + 2)->y = p->position.y - SDL_cosf(p->direction + sight_angle_back) * SIGHT_BACK_SQUARED;
-	(edge_points + 3)->x = p->position.x + SDL_sinf(p->direction - sight_angle_back) * SIGHT_BACK_SQUARED;
-	(edge_points + 4)->y = p->position.y - SDL_cosf(p->direction - sight_angle_back) * SIGHT_BACK_SQUARED;
+	edge_points->x = p->position.x + SDL_sinf(p->direction - sight_angle) * sight;
+	edge_points->y = p->position.y - SDL_cosf(p->direction - sight_angle) * sight;
+	(edge_points + 1)->x = p->position.x + SDL_sinf(p->direction + sight_angle) * sight;
+	(edge_points + 1)->y = p->position.y - SDL_cosf(p->direction + sight_angle) * sight;
+	(edge_points + 2)->x = p->position.x + SDL_sinf(p->direction + sight_angle_back) * sight_back;
+	(edge_points + 2)->y = p->position.y - SDL_cosf(p->direction + sight_angle_back) * sight_back;
+	(edge_points + 3)->x = p->position.x + SDL_sinf(p->direction - sight_angle_back) * sight_back;
+	(edge_points + 3)->y = p->position.y - SDL_cosf(p->direction - sight_angle_back) * sight_back;
 	SDL_GetRectEnclosingPointsFloat(edge_points, 4, NULL, &w->visible_rect);
 
 

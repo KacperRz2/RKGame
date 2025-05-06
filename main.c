@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
 	Uint64 timer;
 
 	const SDL_FRect destination_rect = {
-		-((VIEW_W - WINDOW_W) * 0.5F),
-		-((VIEW_H - WINDOW_H) * 0.5F) + PLAYER_REND_Y_SHIFT,
+		-((VIEW_W - VIEWFINDER) * 0.5F),
+		-((VIEW_H - VIEWFINDER) * 0.5F) + PLAYER_REND_Y_SHIFT,
 		VIEW_W,
 		VIEW_H
 	};
@@ -58,6 +58,18 @@ int main(int argc, char* argv[]) {
 		VIEW_W,
 		VIEW_H
 	};
+	const SDL_Rect viewfinder = {
+		(int)((WINDOW_W - VIEWFINDER) * 0.5F),
+		(int)((WINDOW_H - VIEWFINDER) * 0.5F),
+		(int)(VIEWFINDER),
+		(int)(VIEWFINDER)
+	};
+	const SDL_FRect viewfinder_f = {
+		(WINDOW_W - VIEWFINDER) * 0.5F,
+		(WINDOW_H - VIEWFINDER) * 0.5F,
+		VIEWFINDER,
+		VIEWFINDER
+	};
 
 	World* world = CreateWorld(WORLD_W, WORLD_H);
 	DrawStaticWorld(renderer, *textures);
@@ -73,8 +85,10 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	float sight_angle = SDL_asinf(SDL_sqrtf(SIGHT_SQUARED) / (VIEWFINDER_CENTER));
-	float sight_angle_back = SDL_acosf(SDL_sqrtf(SIGHT_BACK_SQUARED) / (VIEWFINDER_CENTER)) + 0.5F * SDL_PI_F;
+	float sight = SDL_sqrtf(SIGHT_SQUARED);
+	float sight_back = SDL_sqrtf(SIGHT_BACK_SQUARED);
+	float sight_angle = SDL_asinf((VIEWFINDER_CENTER) / sight);
+	float sight_angle_back = SDL_acosf((VIEWFINDER_CENTER) / sight_back) + 0.5F * SDL_PI_F;
 
 	while (!quit) {
 		timer = SDL_GetTicksNS();
@@ -114,7 +128,7 @@ int main(int argc, char* argv[]) {
 
 			frame_time += FRAME_TIME;
 
-			SetVisibleRect(world, player, sight_angle, sight_angle_back);
+			SetVisibleRect(world, player, sight_angle, sight_angle_back, sight, sight_back);
 			SDL_FRect visible_rect_small = {
 				world->visible_rect.x * WORLD_TEXTURE_SCALE,
 				world->visible_rect.y * WORLD_TEXTURE_SCALE,
@@ -142,10 +156,14 @@ int main(int argc, char* argv[]) {
 			RenderGunSightElements(renderer, cursor_distance, player->range);
 
 			SDL_SetRenderTarget(renderer, NULL);
+			SDL_SetRenderViewport(renderer, &viewfinder);
 
 			SDL_RenderTextureRotated(renderer, *(textures + 2), &present_world_part, &destination_rect, -rotation, NULL, SDL_FLIP_NONE);
-
 			SDL_RenderTexture(renderer, *(textures + 7), NULL, NULL);
+			RenderPlayer(renderer, *(textures + 3));
+			RenderGunSight(renderer, cursor_y, *(textures + 1));
+
+			SDL_SetRenderViewport(renderer, NULL);
 
 			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 			SDL_RenderDebugTextFormat(renderer, 10, 10, "Fatigue: %d", player->fatigue_points);
@@ -181,9 +199,6 @@ int main(int argc, char* argv[]) {
 			//SDL_RenderDebugTextFormat(renderer, 10, 200, "min_delay: %llu", MINIMAL_DELAY);
 
 			SDL_RenderTextureRotated(renderer, *(textures + 4), NULL, &destination_rect1, -rotation, NULL, SDL_FLIP_NONE);
-
-			RenderPlayer(renderer, *(textures + 3));
-			RenderGunSight(renderer, cursor_y, *(textures + 1));
 
 			SDL_RenderPresent(renderer);
 		}
