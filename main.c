@@ -85,11 +85,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	float sight = SDL_sqrtf(SIGHT_SQUARED);
-	float sight_back = SDL_sqrtf(SIGHT_BACK_SQUARED);
-	float sight_angle = SDL_asinf((VIEWFINDER_CENTER) / sight);
-	float sight_angle_back = SDL_acosf((VIEWFINDER_CENTER) / sight_back) + 0.5F * SDL_PI_F;
-
 	while (!quit) {
 		timer = SDL_GetTicksNS();
 		quit = EventsService(&event, player);
@@ -128,7 +123,7 @@ int main(int argc, char* argv[]) {
 
 			frame_time += FRAME_TIME;
 
-			SetVisibleRect(world, player, sight_angle, sight_angle_back, sight, sight_back);
+			SetVisibleRect(world, player);
 			SDL_FRect visible_rect_small = {
 				world->visible_rect.x * WORLD_TEXTURE_SCALE,
 				world->visible_rect.y * WORLD_TEXTURE_SCALE,

@@ -55,7 +55,8 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	// 	SDL_SetTextureScaleMode(**(data->textures + i), SDL_SCALEMODE_NEAREST);
 	// }
 	SDL_SetTextureScaleMode(**data->textures, SDL_SCALEMODE_NEAREST);
-	SDL_SetTextureScaleMode(**(data->textures + 2), SDL_SCALEMODE_NEAREST);
+	//SDL_SetTextureScaleMode(**(data->textures + 2), SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(**(data->textures + 7), SDL_SCALEMODE_NEAREST);
 	// for(unsigned int i = 0U; i < TEXTURE_TARGET_NUM; ++i){
 	// 	SDL_SetRenderTarget(*data->renderer, **(data->textures + i));
 	// 	SDL_SetRenderScale(*data->renderer, SCALE, SCALE);

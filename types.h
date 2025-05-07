@@ -42,6 +42,10 @@ typedef struct World {
 	float height;
 	SDL_FRect visible_rect;
 	Segment segments[SEGMENTS_Y][SEGMENTS_X];
+	float sight;
+	float sight_back;
+	float sight_angle;
+	float sight_angle_back;
 } World;
 //Player
 typedef struct Player {
