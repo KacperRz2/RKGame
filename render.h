@@ -11,8 +11,8 @@ void RenderGunSightCross(SDL_Renderer*);
 void RenderGunSightElements(SDL_Renderer*, const float, const float);
 void RenderPlayer(SDL_Renderer*, SDL_Texture*);
 void RenderGunSight(SDL_Renderer*, const float, SDL_Texture*);
-void DrawStaticWorld(SDL_Renderer*, SDL_Texture*);
-void RenderProjectiles(SDL_Renderer*, Projectiles_array*, SDL_Texture*);
-void RenderBeings(SDL_Renderer*, Beings_array*, SDL_Texture*, SDL_FRect);
+// void DrawStaticWorld(SDL_Renderer*, SDL_Texture*);
+void RenderProjectiles(SDL_Renderer*, Projectiles_array*, SDL_Texture*, World*, Player*);
+void RenderBeings(SDL_Renderer*, Beings_array*, SDL_Texture*, World*, Player*);
 
 #endif

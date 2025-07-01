@@ -42,11 +42,11 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
 
-	**data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)((WORLD_W + BOUNDS_L * 2) * WORLD_TEXTURE_SCALE), (int)((WORLD_H + BOUNDS_U * 2) * WORLD_TEXTURE_SCALE));
-	**(data->textures + 1) = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GUN_SIGHT_SIZE, GUN_SIGHT_SIZE);
-	**(data->textures + 2) = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)(WORLD_W + BOUNDS_L * 2), (int)(WORLD_H + BOUNDS_L * 2));
+	// **data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)((WORLD_W + BOUNDS_L * 2) * WORLD_TEXTURE_SCALE), (int)((WORLD_H + BOUNDS_U * 2) * WORLD_TEXTURE_SCALE));
+	**data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GUN_SIGHT_SIZE, GUN_SIGHT_SIZE);
+	// **(data->textures + 2) = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)(WORLD_W + BOUNDS_L * 2), (int)(WORLD_H + BOUNDS_L * 2));
 
-	if (**data->textures == NULL || **(data->textures + 1) == NULL || **(data->textures + 2) == NULL)
+	if (**data->textures == NULL)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError()); return 1;
 	}
@@ -54,9 +54,9 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	// for(unsigned int i = 0U; i < TEXTURES_NUM; ++i){
 	// 	SDL_SetTextureScaleMode(**(data->textures + i), SDL_SCALEMODE_NEAREST);
 	// }
-	SDL_SetTextureScaleMode(**data->textures, SDL_SCALEMODE_NEAREST);
+	// SDL_SetTextureScaleMode(**data->textures, SDL_SCALEMODE_NEAREST);
 	//SDL_SetTextureScaleMode(**(data->textures + 2), SDL_SCALEMODE_NEAREST);
-	SDL_SetTextureScaleMode(**(data->textures + 7), SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(**(data->textures + 5), SDL_SCALEMODE_NEAREST);
 	// for(unsigned int i = 0U; i < TEXTURE_TARGET_NUM; ++i){
 	// 	SDL_SetRenderTarget(*data->renderer, **(data->textures + i));
 	// 	SDL_SetRenderScale(*data->renderer, SCALE, SCALE);
@@ -127,51 +127,60 @@ void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture*
 	SDL_RenderTexture(rend, tx, NULL, &rect);
 }
 
-void DrawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
-	SDL_SetRenderTarget(rend, tx);
-	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-	SDL_RenderClear(rend);
-	const SDL_Rect viewport = {
-		(int)(BOUNDS_L * WORLD_TEXTURE_SCALE),
-		(int)(BOUNDS_U * WORLD_TEXTURE_SCALE),
-		(int)(WORLD_W * WORLD_TEXTURE_SCALE),
-		(int)(WORLD_H * WORLD_TEXTURE_SCALE)
-	};
-	SDL_SetRenderViewport(rend, &viewport);
-	SDL_SetRenderDrawColor(rend, 64, 64, 64, 255);
-	SDL_RenderFillRect(rend, NULL);
-	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-	float p0, p1, p2;
-	p1 = 0.0F;
-	if (SEGMENTS_X == SEGMENTS_Y) {
-		for (int i = 0; i < SEGMENTS_X + 1; ++i) {
-			p0 = (float)i * WORLD_W / SEGMENTS_X * WORLD_TEXTURE_SCALE;
-			p2 = WORLD_H * WORLD_TEXTURE_SCALE;
-			SDL_RenderLine(rend, p0, p1, p0, p2);
-			p0 = (float)i * WORLD_H / SEGMENTS_X * WORLD_TEXTURE_SCALE;
-			p2 = WORLD_W * WORLD_TEXTURE_SCALE;
-			SDL_RenderLine(rend, p1, p0, p2, p0);
-		}
-	}
-	SDL_SetRenderTarget(rend, NULL);
-}
+// void DrawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
+// 	SDL_SetRenderTarget(rend, tx);
+// 	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+// 	SDL_RenderClear(rend);
+// 	const SDL_Rect viewport = {
+// 		(int)(BOUNDS_L * WORLD_TEXTURE_SCALE),
+// 		(int)(BOUNDS_U * WORLD_TEXTURE_SCALE),
+// 		(int)(WORLD_W * WORLD_TEXTURE_SCALE),
+// 		(int)(WORLD_H * WORLD_TEXTURE_SCALE)
+// 	};
+// 	SDL_SetRenderViewport(rend, &viewport);
+// 	SDL_SetRenderDrawColor(rend, 64, 64, 64, 255);
+// 	SDL_RenderFillRect(rend, NULL);
+// 	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
+// 	float p0, p1, p2;
+// 	p1 = 0.0F;
+// 	if (SEGMENTS_X == SEGMENTS_Y) {
+// 		for (int i = 0; i < SEGMENTS_X + 1; ++i) {
+// 			p0 = (float)i * WORLD_W / SEGMENTS_X * WORLD_TEXTURE_SCALE;
+// 			p2 = WORLD_H * WORLD_TEXTURE_SCALE;
+// 			SDL_RenderLine(rend, p0, p1, p0, p2);
+// 			p0 = (float)i * WORLD_H / SEGMENTS_X * WORLD_TEXTURE_SCALE;
+// 			p2 = WORLD_W * WORLD_TEXTURE_SCALE;
+// 			SDL_RenderLine(rend, p1, p0, p2, p0);
+// 		}
+// 	}
+// 	SDL_SetRenderTarget(rend, NULL);
+// }
 
-void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx) {
+void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx, World* w, Player* p) {
 	static SDL_FRect rect = { 
 		0.0F,
 		0.0F,
 		BULLET_SIZE,
 		BULLET_SIZE
 	};
+	float cos_player_dir = SDL_cosf(p->direction);
+	float sin_player_dir = SDL_sinf(p->direction);
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
-		rect.x = pr->position.x - BULLET_SIZE * 0.5F;
-		rect.y = pr->position.y - BULLET_SIZE * 0.5F;
-		SDL_RenderTexture(rend, tx, NULL, &rect);
+		if (SDL_PointInRectFloat(&pr->position, &w->visible_rect)) {
+			
+			float dx = pr->position.x - p->position.x;
+			float dy = pr->position.y - p->position.y;
+
+			rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - BULLET_SIZE * 0.5F;
+			rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - BULLET_SIZE * 0.5F;
+			
+			SDL_RenderTexture(rend, tx, NULL, &rect);
+		}
 	}
 }
 
-void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, SDL_FRect visible_rect) {
+void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, World* w, Player* p) {
 	static SDL_FRect rect = {
 		0.0F,
 		0.0F,
@@ -180,9 +189,13 @@ void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, SDL_FRe
 	};
 	for (unsigned int i = 0; i < bs->num; ++i) {
 		Being* b = *(bs->array + i);
-		if (SDL_PointInRectFloat(&b->position, &visible_rect)) {
-			rect.x = b->position.x - PLAYER_SIZE * 0.5F;
-			rect.y = b->position.y - PLAYER_SIZE * 0.5F;
+		if (SDL_PointInRectFloat(&b->position, &w->visible_rect)) {
+		
+			float dx = b->position.x - p->position.x;
+			float dy = b->position.y - p->position.y;
+
+			rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - PLAYER_SIZE * 0.5F;
+			rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - PLAYER_SIZE * 0.5F;
 			SDL_RenderTexture(rend, tx, NULL, &rect);
 		}
 	}

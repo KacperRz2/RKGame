@@ -22,6 +22,9 @@ World* CreateWorld(const float x, const float y) {
 	w->visible_rect.w = 1.0F;
 	w->visible_rect.h = 1.0F;
 
+	w->sin_player_direction = 0.0F;
+	w->cos_player_direction = 0.0F;
+
 	w->sight = SDL_sqrtf(SIGHT_SQUARED);
 	w->sight_back = SDL_sqrtf(SIGHT_BACK_SQUARED);
 	w->sight_angle = SDL_asinf((VIEWFINDER_CENTER) / w->sight);
@@ -70,7 +73,8 @@ void SetVisibleRect(World* w, Player* p) {//void SetVisibleRect(World* w, Player
 	(edge_points + 3)->y = p->position.y - SDL_cosf(p->direction - w->sight_angle_back) * w->sight_back;
 	SDL_GetRectEnclosingPointsFloat(edge_points, 4, NULL, &w->visible_rect);
 
-
+	w->sin_player_direction = SDL_sinf(p->direction);
+	w->cos_player_direction = SDL_cosf(p->direction);
 
 	//SDL_RenderLines(r, edge_points, 3);
 	//SDL_RenderLine(r, edge_points->x, edge_points->y, (edge_points + 2)->x, (edge_points + 2)->y);
