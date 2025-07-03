@@ -10,8 +10,10 @@ Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, 
 	Projectile* pr = (Projectile*)SDL_malloc(sizeof(Projectile));
 	if (pr == NULL) return NULL;
 	pr->position = *position;
-	pr->shift_per_tick.x = SDL_sinf(direction) * velocity;
-	pr->shift_per_tick.y = -SDL_cosf(direction) * velocity;
+	// pr->shift_per_tick.x = SDL_sinf(direction) * velocity;
+	// pr->shift_per_tick.y = -SDL_cosf(direction) * velocity;
+	pr->shift_per_tick.x = sineSafe(direction) * velocity;
+	pr->shift_per_tick.y = -cosiSafe(direction) * velocity;
 	pr->time_left = 0x00000200U;
 	pr->damage = 100;
 	return pr;

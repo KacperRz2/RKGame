@@ -13,4 +13,7 @@
 #include <render.h>
 #include <event.h>
 
+float si[ANGLE_PARTS];
+float co[ANGLE_PARTS];
+
 #endif

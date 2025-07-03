@@ -3,6 +3,7 @@
 #include <types.h>
 #include <Projectile.h>
 #include <Player.h>
+#include <function.h>
 
 Player* CreatePlayer(const float x, const float y) {
 	Player* p = (Player*)SDL_malloc(sizeof(Player));
@@ -118,7 +119,8 @@ void UpdatePlayerMove(Player* p) {
 		p->max_velocity = PLAYER_VELOCITY;
 	}
 	if (p->velocity > 0.0F) {
-		MovePlayer(p, SDL_sinf(move_direction) * p->velocity, -SDL_cosf(move_direction) * p->velocity);
+		// MovePlayer(p, SDL_sinf(move_direction) * p->velocity, -SDL_cosf(move_direction) * p->velocity);
+		MovePlayer(p, sineSafe(move_direction) * p->velocity, -cosiSafe(move_direction) * p->velocity);
 	}
 	SetPlayerInBounds(p);
 }

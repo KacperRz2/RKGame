@@ -26,11 +26,11 @@ Being* CreateBeing(World* w, const float x, const float y) {
 }
 
 inline void RemoveBeingFromSegment(Being* b) {
-    if (b->indx != ((Segment*)(b->segment))->beings.num - 1) {
-        *(((Segment*)(b->segment))->beings.array + b->indx) = *(((Segment*)(b->segment))->beings.array + ((Segment*)(b->segment))->beings.num - 1);
-        (*(((Segment*)(b->segment))->beings.array + b->indx))->indx = b->indx;
+    if (b->indx != b->segment->beings.num - 1) {
+        *(b->segment->beings.array + b->indx) = *(b->segment->beings.array + b->segment->beings.num - 1);
+        (*(b->segment->beings.array + b->indx))->indx = b->indx;
     }
-    --((Segment*)(b->segment))->beings.num;
+    --b->segment->beings.num;
 }
 
 inline void DestroyBeing(Being* b) {

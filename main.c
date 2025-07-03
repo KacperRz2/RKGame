@@ -17,6 +17,11 @@ int main(int argc, char* argv[]) {
 	unsigned int ticks_to_update_beings = 1U;
 	bool quit = false;
 
+	for(unsigned int i = 0U; i < ANGLE_PARTS; ++i){
+		*(si + i) = SDL_sinf(MIN_ANGLE * i);
+		*(co + i) = SDL_cosf(MIN_ANGLE * i);
+	}
+
 	struct Graphics_initiation_data* graphics_initiation_data = (struct Graphics_initiation_data*)SDL_malloc(sizeof(struct Graphics_initiation_data));
 	graphics_initiation_data->window = &window;
 	graphics_initiation_data->renderer = &renderer;
@@ -33,46 +38,21 @@ int main(int argc, char* argv[]) {
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 timer;
-
-	// const SDL_FRect destination_rect = {
-	// 	-((VIEW_W - VIEWFINDER) * 0.5F),
-	// 	-((VIEW_H - VIEWFINDER) * 0.5F) + PLAYER_REND_Y_SHIFT,
-	// 	VIEW_W,
-	// 	VIEW_H
-	// };
+	
 	const SDL_FRect destination_rect1 = {
 		10.0F,
 		40.0F,
 		50.0F,
 		50.0F
 	};
-	// const SDL_FRect clear_rect = {
-	// 	0.0F,
-	// 	0.0F,
-	// 	270.0F,
-	// 	300.0F
-	// };
-	// SDL_FRect present_world_part = {
-	// 	0.0F,
-	// 	0.0F,
-	// 	VIEW_W,
-	// 	VIEW_H
-	// };
 	const SDL_Rect viewfinder = {
 		(int)((WINDOW_W - VIEWFINDER) * 0.5F),
 		(int)((WINDOW_H - VIEWFINDER) * 0.5F),
 		(int)(VIEWFINDER),
 		(int)(VIEWFINDER)
 	};
-	// const SDL_FRect viewfinder_f = {
-	// 	(WINDOW_W - VIEWFINDER) * 0.5F,
-	// 	(WINDOW_H - VIEWFINDER) * 0.5F,
-	// 	VIEWFINDER,
-	// 	VIEWFINDER
-	// };
 
 	World* world = CreateWorld(WORLD_W, WORLD_H);
-	// DrawStaticWorld(renderer, *textures);
 	Player* player = CreatePlayer(BOUNDS_L + 1000.0F, BOUNDS_U + 1000.0F);
 	if (player == NULL || world == NULL) return 1;
 	AddBeingToArray(&beings, CreateBeing(world, 1500.0F, 1500.0F));
@@ -118,18 +98,9 @@ int main(int argc, char* argv[]) {
 
 		if (SDL_GetTicksNS() > frame_time) {
 
-			// present_world_part.x = player->position.x - PLAYER_RENDER_X;
-			// present_world_part.y = player->position.y - PLAYER_RENDER_Y;
-
 			frame_time += FRAME_TIME;
 
 			SetVisibleRect(world, player);
-			// SDL_FRect visible_rect_small = {
-			// 	world->visible_rect.x * WORLD_TEXTURE_SCALE,
-			// 	world->visible_rect.y * WORLD_TEXTURE_SCALE,
-			// 	world->visible_rect.w * WORLD_TEXTURE_SCALE,
-			// 	world->visible_rect.h * WORLD_TEXTURE_SCALE
-			// };
 
 			rotation = RadToDeg(player->direction);
 
@@ -144,19 +115,12 @@ int main(int argc, char* argv[]) {
 			SDL_SetRenderDrawColor(renderer, 50, 50, 50, 0);
 			SDL_RenderFillRect(renderer, NULL);
 
-			//SDL_RenderFillRect(renderer, &clear_rect);
-
-			//SDL_SetRenderTarget(renderer, *(textures + 2));
-
-			//SDL_RenderTexture(renderer, *textures, &visible_rect_small, &world->visible_rect);
-
 			RenderProjectiles(renderer, &projectiles, *(textures + 3), world, player);
 
 			if (!(player->control_flags & 1 << 6)) {
 				RenderBeings(renderer, &beings, *(textures + 4), world, player);
 			}
-
-			//SDL_RenderTextureRotated(renderer, *(textures + 2), &present_world_part, &destination_rect, -rotation, NULL, SDL_FLIP_NONE);
+			
 			SDL_RenderTexture(renderer, *(textures + 5), NULL, NULL);//viewfinder
 			RenderPlayer(renderer, *(textures + 1));
 			RenderGunSight(renderer, cursor_y, *textures);

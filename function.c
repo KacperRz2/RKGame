@@ -34,6 +34,37 @@ extern inline bool InBounds(SDL_FPoint* point) {
     }
     return false;
 }
+
+extern inline float sine(float a){
+    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
+    int angle_indx = (int)(a * tmp);
+	// if(angle_indx < 0) exit(-1); 
+	// else if(angle_indx >= ANGLE_PARTS) exit(-1);
+    return *(si + angle_indx);
+}
+
+extern inline float cosi(float a){
+    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
+    int angle_indx = (int)(a * tmp);
+	// if(angle_indx < 0) exit(-1); 
+	// else if(angle_indx >= ANGLE_PARTS) exit(-1);
+    return *(co + angle_indx);
+}
+extern inline float sineSafe(float a){
+    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
+    int angle_indx = (int)(a * tmp);
+	if(angle_indx < 0) angle_indx += ANGLE_PARTS; 
+	else if(angle_indx >= ANGLE_PARTS) angle_indx -= ANGLE_PARTS;
+    return *(si + angle_indx);
+}
+
+extern inline float cosiSafe(float a){
+    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
+    int angle_indx = (int)(a * tmp);
+	if(angle_indx < 0) angle_indx += ANGLE_PARTS; 
+	else if(angle_indx >= ANGLE_PARTS) angle_indx -= ANGLE_PARTS;
+    return *(co + angle_indx);
+}
 //inline float distancePowTwo(const float x, const float y) {
 //	return SDL_powf(WINDOW_CENTER_X - x, 2.0F) + SDL_powf(WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - y, 2.0F);
 //}

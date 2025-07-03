@@ -42,27 +42,14 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
 
-	// **data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)((WORLD_W + BOUNDS_L * 2) * WORLD_TEXTURE_SCALE), (int)((WORLD_H + BOUNDS_U * 2) * WORLD_TEXTURE_SCALE));
 	**data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GUN_SIGHT_SIZE, GUN_SIGHT_SIZE);
-	// **(data->textures + 2) = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)(WORLD_W + BOUNDS_L * 2), (int)(WORLD_H + BOUNDS_L * 2));
 
 	if (**data->textures == NULL)
 	{
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError()); return 1;
 	}
-
-	// for(unsigned int i = 0U; i < TEXTURES_NUM; ++i){
-	// 	SDL_SetTextureScaleMode(**(data->textures + i), SDL_SCALEMODE_NEAREST);
-	// }
-	// SDL_SetTextureScaleMode(**data->textures, SDL_SCALEMODE_NEAREST);
-	//SDL_SetTextureScaleMode(**(data->textures + 2), SDL_SCALEMODE_NEAREST);
+	
 	SDL_SetTextureScaleMode(**(data->textures + 5), SDL_SCALEMODE_NEAREST);
-	// for(unsigned int i = 0U; i < TEXTURE_TARGET_NUM; ++i){
-	// 	SDL_SetRenderTarget(*data->renderer, **(data->textures + i));
-	// 	SDL_SetRenderScale(*data->renderer, SCALE, SCALE);
-	// }
-	// SDL_SetRenderTarget(*data->renderer, NULL);
-	// SDL_SetRenderScale(*data->renderer, SCALE, SCALE);
 
 	SDL_SetWindowRelativeMouseMode(*data->window, true);
 	//SDL_HideCursor();
@@ -127,35 +114,6 @@ void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture*
 	SDL_RenderTexture(rend, tx, NULL, &rect);
 }
 
-// void DrawStaticWorld(SDL_Renderer* rend, SDL_Texture* tx) {
-// 	SDL_SetRenderTarget(rend, tx);
-// 	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-// 	SDL_RenderClear(rend);
-// 	const SDL_Rect viewport = {
-// 		(int)(BOUNDS_L * WORLD_TEXTURE_SCALE),
-// 		(int)(BOUNDS_U * WORLD_TEXTURE_SCALE),
-// 		(int)(WORLD_W * WORLD_TEXTURE_SCALE),
-// 		(int)(WORLD_H * WORLD_TEXTURE_SCALE)
-// 	};
-// 	SDL_SetRenderViewport(rend, &viewport);
-// 	SDL_SetRenderDrawColor(rend, 64, 64, 64, 255);
-// 	SDL_RenderFillRect(rend, NULL);
-// 	SDL_SetRenderDrawColor(rend, 0, 0, 0, 255);
-// 	float p0, p1, p2;
-// 	p1 = 0.0F;
-// 	if (SEGMENTS_X == SEGMENTS_Y) {
-// 		for (int i = 0; i < SEGMENTS_X + 1; ++i) {
-// 			p0 = (float)i * WORLD_W / SEGMENTS_X * WORLD_TEXTURE_SCALE;
-// 			p2 = WORLD_H * WORLD_TEXTURE_SCALE;
-// 			SDL_RenderLine(rend, p0, p1, p0, p2);
-// 			p0 = (float)i * WORLD_H / SEGMENTS_X * WORLD_TEXTURE_SCALE;
-// 			p2 = WORLD_W * WORLD_TEXTURE_SCALE;
-// 			SDL_RenderLine(rend, p1, p0, p2, p0);
-// 		}
-// 	}
-// 	SDL_SetRenderTarget(rend, NULL);
-// }
-
 void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx, World* w, Player* p) {
 	static SDL_FRect rect = { 
 		0.0F,
@@ -163,8 +121,6 @@ void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* 
 		BULLET_SIZE,
 		BULLET_SIZE
 	};
-	float cos_player_dir = SDL_cosf(p->direction);
-	float sin_player_dir = SDL_sinf(p->direction);
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
 		if (SDL_PointInRectFloat(&pr->position, &w->visible_rect)) {
