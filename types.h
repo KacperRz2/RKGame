@@ -52,17 +52,17 @@ struct Segment {
 	bool contain_player;
 };
 struct World {
-	SDL_FRect vision_rects[ANGLE_PARTS];
-	SDL_FRect visible_rect;
+	// SDL_FRect vision_rects[ANGLE_PARTS_V_RECS];
+	// SDL_FRect visible_rect;
 	Segment segments[SEGMENTS_Y][SEGMENTS_X];
 	float sin_player_direction;
 	float cos_player_direction;
 	float width;
 	float height;
-	float sight;
-	float sight_back;
-	float sight_angle;
-	float sight_angle_back;
+	// float sight;
+	// float sight_back;
+	// float sight_angle;
+	// float sight_angle_back;
 };
 //Player
 struct Player {

@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 
 			frame_time += FRAME_TIME;
 
-			SetVisibleRect(world, player);
+			SetSineCosine(world, player);
 
 			rotation = RadToDeg(player->direction);
 
@@ -132,10 +132,10 @@ int main(int argc, char* argv[]) {
 			SDL_RenderDebugTextFormat(renderer, 10, 20, "Position: %.2f %.2f", player->position.x, player->position.y);
 			SDL_RenderDebugTextFormat(renderer, 10, 30, "Direction: %.2f", player->direction);
 
-			SDL_RenderDebugTextFormat(renderer, 10, 100, "x: %.2f", world->visible_rect.x);
-			SDL_RenderDebugTextFormat(renderer, 10, 110, "y: %.2f", world->visible_rect.y);
-			SDL_RenderDebugTextFormat(renderer, 10, 120, "w: %.2f", world->visible_rect.w);
-			SDL_RenderDebugTextFormat(renderer, 10, 130, "h: %.2f", world->visible_rect.h);
+			// SDL_RenderDebugTextFormat(renderer, 10, 100, "x: %.2f", world->visible_rect.x);
+			// SDL_RenderDebugTextFormat(renderer, 10, 110, "y: %.2f", world->visible_rect.y);
+			// SDL_RenderDebugTextFormat(renderer, 10, 120, "w: %.2f", world->visible_rect.w);
+			// SDL_RenderDebugTextFormat(renderer, 10, 130, "h: %.2f", world->visible_rect.h);
 
 			SDL_RenderDebugTextFormat(renderer, 10, 140, "Ticks per sec.: %d", tps);
 			SDL_RenderDebugTextFormat(renderer, 10, 150, "max FPS: ~%d", (int)(1000000000ULL / FRAME_TIME));

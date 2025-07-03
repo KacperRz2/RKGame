@@ -18,31 +18,36 @@ World* CreateWorld(const float x, const float y) {
 			(*(*(w->segments + c) + r)).beings.array = (Being**)SDL_malloc(sizeof(Being*) * MAX_SEGM_BEINGS);
 		}
 	}
-	w->visible_rect.x = 0.0F;
-	w->visible_rect.y = 0.0F;
-	w->visible_rect.w = 1.0F;
-	w->visible_rect.h = 1.0F;
+	// w->visible_rect.x = 0.0F;
+	// w->visible_rect.y = 0.0F;
+	// w->visible_rect.w = 1.0F;
+	// w->visible_rect.h = 1.0F;
+
+	// w->visible_rect.x = 0.0F;
+	// w->visible_rect.y = 0.0F;
+	// w->visible_rect.w = (float)(VIEWFINDER);
+	// w->visible_rect.h = (float)(VIEWFINDER);
 
 	w->sin_player_direction = 0.0F;
 	w->cos_player_direction = 0.0F;
 
-	w->sight = SDL_sqrtf(SIGHT_SQUARED);
-	w->sight_back = SDL_sqrtf(SIGHT_BACK_SQUARED);
-	w->sight_angle = SDL_asinf((VIEWFINDER_CENTER) / w->sight);
-	w->sight_angle_back = SDL_acosf((VIEWFINDER_CENTER) / w->sight_back) + 0.5F * SDL_PI_F;
+	// w->sight = SDL_sqrtf(SIGHT_SQUARED);
+	// w->sight_back = SDL_sqrtf(SIGHT_BACK_SQUARED);
+	// w->sight_angle = SDL_asinf((VIEWFINDER_CENTER) / w->sight);
+	// w->sight_angle_back = SDL_acosf((VIEWFINDER_CENTER) / w->sight_back) + 0.5F * SDL_PI_F;
 
-	SDL_FPoint edge_points[4];
-	for(unsigned int i = 0U; i < ANGLE_PARTS; ++i){
-		edge_points->x = SDL_sinf(MIN_ANGLE * i - w->sight_angle) * w->sight;
-		edge_points->y = -SDL_cosf(MIN_ANGLE * i - w->sight_angle) * w->sight;
-		(edge_points + 1)->x = SDL_sinf(MIN_ANGLE * i + w->sight_angle) * w->sight;
-		(edge_points + 1)->y = -SDL_cosf(MIN_ANGLE * i + w->sight_angle) * w->sight;
-		(edge_points + 2)->x = SDL_sinf(MIN_ANGLE * i + w->sight_angle_back) * w->sight_back;
-		(edge_points + 2)->y = -SDL_cosf(MIN_ANGLE * i + w->sight_angle_back) * w->sight_back;
-		(edge_points + 3)->x = SDL_sinf(MIN_ANGLE * i - w->sight_angle_back) * w->sight_back;
-		(edge_points + 3)->y = -SDL_cosf(MIN_ANGLE * i - w->sight_angle_back) * w->sight_back;
-		SDL_GetRectEnclosingPointsFloat(edge_points, 4, NULL, w->vision_rects + i);
-	}
+	// SDL_FPoint edge_points[4];
+	// for(unsigned int i = 0U; i < ANGLE_PARTS_V_RECS; ++i){
+	// 	edge_points->x = SDL_sinf(MIN_ANGLE_V_RECS * i - w->sight_angle) * w->sight;
+	// 	edge_points->y = -SDL_cosf(MIN_ANGLE_V_RECS * i - w->sight_angle) * w->sight;
+	// 	(edge_points + 1)->x = SDL_sinf(MIN_ANGLE_V_RECS * i + w->sight_angle) * w->sight;
+	// 	(edge_points + 1)->y = -SDL_cosf(MIN_ANGLE_V_RECS * i + w->sight_angle) * w->sight;
+	// 	(edge_points + 2)->x = SDL_sinf(MIN_ANGLE_V_RECS * i + w->sight_angle_back) * w->sight_back;
+	// 	(edge_points + 2)->y = -SDL_cosf(MIN_ANGLE_V_RECS * i + w->sight_angle_back) * w->sight_back;
+	// 	(edge_points + 3)->x = SDL_sinf(MIN_ANGLE_V_RECS * i - w->sight_angle_back) * w->sight_back;
+	// 	(edge_points + 3)->y = -SDL_cosf(MIN_ANGLE_V_RECS * i - w->sight_angle_back) * w->sight_back;
+	// 	SDL_GetRectEnclosingPointsFloat(edge_points, 4, NULL, w->vision_rects + i);
+	// }
 
 	return w;
 }
@@ -62,7 +67,7 @@ extern inline Segment* GetSegment(World* w, const float x, const float y) {
 	return *(w->segments + c) + r;
 }
 
-void SetVisibleRect(World* w, Player* p) {//void SetVisibleRect(World* w, Player* p, SDL_Renderer* r) {
+void SetSineCosine(World* w, Player* p) {//void SetVisibleRect(World* w, Player* p, SDL_Renderer* r) {
 
 	//SDL_FPoint edge_points[4];
 	//edge_points->x = VIEW_CENTER_X + SDL_sinf(p->direction - SDL_PI_F * 0.25F) * 1000.0F;
@@ -101,11 +106,11 @@ void SetVisibleRect(World* w, Player* p) {//void SetVisibleRect(World* w, Player
 	// (edge_points + 3)->y = p->position.y - cosi(p->direction - w->sight_angle_back) * w->sight_back;
 	// SDL_GetRectEnclosingPointsFloat(edge_points, 4, NULL, &w->visible_rect);
 
-    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
-    int indx = (int)(p->direction * tmp);
-	w->visible_rect = *(w->vision_rects + indx);
-	w->visible_rect.x += p->position.x;
-	w->visible_rect.y += p->position.y;
+    // static const float tmp = (float)ANGLE_PARTS_V_RECS * 0.5F / SDL_PI_F;
+    // int indx = (int)SDL_roundf(p->direction * tmp) % ANGLE_PARTS_V_RECS;
+	// w->visible_rect = *(w->vision_rects + indx);
+	// w->visible_rect.x += p->position.x;
+	// w->visible_rect.y += p->position.y;
 
 	w->sin_player_direction = sine(p->direction);
 	w->cos_player_direction = cosi(p->direction);

@@ -115,6 +115,12 @@ void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture*
 }
 
 void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx, World* w, Player* p) {
+	static const SDL_FRect visible_rect = {
+		0.0F,
+		0.0F,
+		VIEWFINDER,
+		VIEWFINDER
+	};
 	static SDL_FRect rect = { 
 		0.0F,
 		0.0F,
@@ -123,20 +129,31 @@ void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* 
 	};
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
-		if (SDL_PointInRectFloat(&pr->position, &w->visible_rect)) {
+		// if (SDL_PointInRectFloat(&pr->position, &w->visible_rect)) {
 			
-			float dx = pr->position.x - p->position.x;
+		float dx = pr->position.x - p->position.x;
+		if(SDL_fabsf(dx) < VIEWFINDER){
 			float dy = pr->position.y - p->position.y;
+			if(SDL_fabsf(dy) < VIEWFINDER){
 
-			rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - BULLET_SIZE * 0.5F;
-			rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - BULLET_SIZE * 0.5F;
-			
-			SDL_RenderTexture(rend, tx, NULL, &rect);
+				rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - BULLET_SIZE * 0.5F;
+				rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - BULLET_SIZE * 0.5F;
+				
+				if (SDL_HasRectIntersectionFloat(&rect, &visible_rect)) {
+					SDL_RenderTexture(rend, tx, NULL, &rect);
+				}
+			}
 		}
 	}
 }
 
 void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, World* w, Player* p) {
+	static const SDL_FRect visible_rect = {
+		0.0F,
+		0.0F,
+		VIEWFINDER,
+		VIEWFINDER
+	};
 	static SDL_FRect rect = {
 		0.0F,
 		0.0F,
@@ -145,14 +162,20 @@ void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, World* 
 	};
 	for (unsigned int i = 0; i < bs->num; ++i) {
 		Being* b = *(bs->array + i);
-		if (SDL_PointInRectFloat(&b->position, &w->visible_rect)) {
+		// if (SDL_PointInRectFloat(&b->position, &w->visible_rect)) {
 		
-			float dx = b->position.x - p->position.x;
+		float dx = b->position.x - p->position.x;
+		if(SDL_fabsf(dx) < VIEWFINDER){
 			float dy = b->position.y - p->position.y;
+			if(SDL_fabsf(dy) < VIEWFINDER){
 
-			rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - PLAYER_SIZE * 0.5F;
-			rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - PLAYER_SIZE * 0.5F;
-			SDL_RenderTexture(rend, tx, NULL, &rect);
+				rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - PLAYER_SIZE * 0.5F;
+				rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - PLAYER_SIZE * 0.5F;
+				
+				if (SDL_HasRectIntersectionFloat(&rect, &visible_rect)) {
+					SDL_RenderTexture(rend, tx, NULL, &rect);
+				}
+			}
 		}
 	}
 }
