@@ -35,6 +35,8 @@
 #define MAX_BEINGS_NUM		(SEGMENTS_X * SEGMENTS_Y * MAX_SEGM_BEINGS / 4)
 #define ANGLE_PARTS		    512
 #define MIN_ANGLE           (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
+#define BLADE_DAMAGE        50
+#define BLADE_PENETRATION   7U
 
 // #define BOUNDS_U			0.0F//(VIEW_H * 0.5F)
 // #define BOUNDS_D			WORLD_H//(WORLD_H + VIEW_H * 0.5F)

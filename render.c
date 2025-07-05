@@ -2,6 +2,7 @@
 #include <macros.h>
 #include <types.h>
 #include <render.h>
+#include <function.h>
 
 int GraphicsInitiation(struct Graphics_initiation_data* data) {
 	SDL_Surface* surface = NULL;
@@ -94,7 +95,7 @@ void RenderGunSightElements(SDL_Renderer* rend, const float distance, const floa
 	}
 }
 
-void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx) {
+void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx, Blade* blade) {
 	static const SDL_FRect rect = {
 		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F,
 		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
@@ -102,8 +103,8 @@ void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx) {
 		(float)PLAYER_SIZE
 	};
 	static SDL_FRect rect_blade = {
-		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F,
-		VIEWFINDER_CENTER - PLAYER_SIZE * 1.5F + PLAYER_REND_Y_SHIFT,
+		VIEWFINDER_CENTER - (PLAYER_SIZE * 0.25F),
+		VIEWFINDER_CENTER - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
 		(float)PLAYER_SIZE * 1.5F,
 		(float)PLAYER_SIZE * 1.5F
 	};
@@ -111,12 +112,10 @@ void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx) {
 		(float)PLAYER_SIZE * 0.75F,
 		(float)PLAYER_SIZE * 1.5F * 0.85F
 	};
-	static double blade_angle = 45.0;
-	static double blade_angle_plus = 0.1;
-	blade_angle += blade_angle_plus;
-	if (blade_angle > 60.0 || blade_angle < 30.0) blade_angle_plus = -blade_angle_plus;
+	rect_blade.x = VIEWFINDER_CENTER + blade->position.x;
+	rect_blade.y = VIEWFINDER_CENTER + blade->position.y + PLAYER_REND_Y_SHIFT;
 	SDL_RenderTexture(rend, *(tx + 1), NULL, &rect);
-	SDL_RenderTextureRotated(rend, *(tx + 6), NULL, &rect_blade, blade_angle, &blade_rotation_point, SDL_FLIP_NONE);
+	SDL_RenderTextureRotated(rend, *(tx + 6), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
 }
 
 void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture* tx) {

@@ -6,7 +6,7 @@
 #include <World.h>
 #include <function.h>
 
-Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, const float velocity) {
+Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
 	Projectile* pr = (Projectile*)SDL_malloc(sizeof(Projectile));
 	if (pr == NULL) return NULL;
 	pr->position = *position;
@@ -15,11 +15,18 @@ Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, 
 	pr->shift_per_tick.x = SineSafe(direction) * velocity;
 	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
 	// pr->time_left = 0x00000200U;
-	pr->damage = 10;
+	pr->damage = damage;
+	pr->penetration = penetration;
+	pr->hit_targets = (void**)SDL_malloc(sizeof(void*) * penetration);
+	for(unsigned int i = 0U; i < penetration; ++i){
+		*(pr->hit_targets + i) = NULL;
+	}
+	pr->hits = 0;
 	return pr;
 }
 
 inline void DestroyProjectile(Projectile* pr) {
+	SDL_free(pr->hit_targets);
 	SDL_free(pr);
 }
 
@@ -33,7 +40,12 @@ void DestroyProjectiles(Projectiles_array* prs) {
 
 inline bool ProjectileHitsBeing(Projectile* pr, Being* b) {
 	if (SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F) {
-		if (SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F) {
+		if (SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F) {// int tmp = 0;
+			for(unsigned int i = pr->hits; i > 0U; --i){
+				if (*(pr->hit_targets + (i - 1U)) == b) {// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "same! %d!", tmp);
+					return false;
+				}// ++tmp;
+			}
 			return true;
 		}
 	}
@@ -88,9 +100,13 @@ void UpdateProjectiles(Projectiles_array* prs) {
 					Being* b = *(neighbour->beings.array + j);
 					if (ProjectileHitsBeing(pr, b)) {
 						DamageBeing(b, pr->damage);
-						DestroyProjectileInArray(prs, i);
-						--i;
-						goto outside;
+						if(pr->hits < pr->penetration){
+							*(pr->hit_targets + pr->hits++) = b;
+						}else{
+							DestroyProjectileInArray(prs, i);
+							--i;
+							goto outside;
+						}
 					}
 				}
 			}

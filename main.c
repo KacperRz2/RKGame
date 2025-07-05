@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 		timer = SDL_GetTicksNS();
 		quit = EventsService(&event, player);
 
-		if (beings.num < MAX_BEINGS_NUM / 20) {
+		if (beings.num < MAX_BEINGS_NUM / 2048) {
 			float x = (float)(SDL_rand((Sint32)WORLD_W));
 			float y = (float)(SDL_rand((Sint32)WORLD_H));
 			if (SDL_fabsf(player->position.x - x) > 2000.0F) {
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
 			
 			SDL_RenderTexture(renderer, *(textures + 5), NULL, NULL);//viewfinder
 			// RenderPlayer(renderer, *(textures + 1));
-			RenderPlayer(renderer, textures);
+			RenderPlayer(renderer, textures, &player->blade);
 			RenderGunSight(renderer, cursor_y, *textures);
 
 			SDL_SetRenderViewport(renderer, NULL);
