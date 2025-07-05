@@ -3,6 +3,7 @@
 
 //other
 typedef struct Walk Walk;
+typedef struct Blade Blade;
 //Being
 typedef struct Being Being;
 typedef struct Beings_array Beings_array;
@@ -19,6 +20,11 @@ typedef struct Player Player;
 struct Walk {
 	int time_left;
 	SDL_FPoint shift;
+};
+struct Blade {
+	SDL_FPoint position;
+	float direction;
+	
 };
 //Being
 struct Being {
@@ -38,7 +44,7 @@ struct Beings_array {
 struct Projectile {
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
-	unsigned int time_left;
+	// unsigned int time_left;
 	int damage;
 };
 struct Projectiles_array {
@@ -47,27 +53,21 @@ struct Projectiles_array {
 };
 //World
 struct Segment {
-	SDL_FPoint coordinates;
 	Beings_array beings;
-	bool contain_player;
+	bool available;
+	SDL_Point indx;
 };
 struct World {
-	// SDL_FRect vision_rects[ANGLE_PARTS_V_RECS];
-	// SDL_FRect visible_rect;
 	Segment segments[SEGMENTS_Y][SEGMENTS_X];
 	float sin_player_direction;
 	float cos_player_direction;
 	float width;
 	float height;
-	// float sight;
-	// float sight_back;
-	// float sight_angle;
-	// float sight_angle_back;
 };
 //Player
 struct Player {
 	SDL_FPoint position;
-	Segment* segment;
+	// Segment* segment;
 	Uint32 control_flags;
 	float direction;
 	float velocity;

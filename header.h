@@ -2,6 +2,7 @@
 #define HEADER_H_
 
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <macros.h>
 
 #include <types.h>
@@ -15,5 +16,6 @@
 
 float si[ANGLE_PARTS];
 float co[ANGLE_PARTS];
+World* world;
 
 #endif

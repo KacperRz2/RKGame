@@ -2,7 +2,7 @@
 #define BEIGN_H_
 
 void AddBeingToSegment(Segment*, Being*);
-Being* CreateBeing(World*, const float, const float);
+Being* CreateBeing(const float, const float);
 void RemoveBeingFromSegment(Being*);
 void DestroyBeing(Being*);
 void DestroyBeings(Beings_array*);
@@ -18,8 +18,8 @@ void StartBeingWalkWithRandTurn(Being*, const int, const float, const float);
 void StartBeingWalkWithRandTurn45Deg(Being*, const int, const float, const float);
 bool ResolveBeingCollisionInNewSegment(Being*, Segment*, float*, float*, const float, const float);
 void TurnBeingWalk(Being*);
-void UpdateBeingWalk(Being*, World*);
-void UpdateBeings(Beings_array*, World*, SDL_FPoint*);
+void UpdateBeingWalk(Being*);
+void UpdateBeings(Beings_array*, SDL_FPoint*);
 void DamageBeing(Being*, int);
 
 #endif

@@ -12,10 +12,10 @@ Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, 
 	pr->position = *position;
 	// pr->shift_per_tick.x = SDL_sinf(direction) * velocity;
 	// pr->shift_per_tick.y = -SDL_cosf(direction) * velocity;
-	pr->shift_per_tick.x = sineSafe(direction) * velocity;
-	pr->shift_per_tick.y = -cosiSafe(direction) * velocity;
-	pr->time_left = 0x00000200U;
-	pr->damage = 100;
+	pr->shift_per_tick.x = SineSafe(direction) * velocity;
+	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
+	// pr->time_left = 0x00000200U;
+	pr->damage = 10;
 	return pr;
 }
 
@@ -58,30 +58,43 @@ inline void MoveProjectile(Projectile* pr) {
 	pr->position.y += pr->shift_per_tick.y;
 }
 
-void UpdateProjectiles(World* w, Projectiles_array* prs) {
+void UpdateProjectiles(Projectiles_array* prs) {
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
-		if (pr->time_left <= 1U) {
+		// if (pr->time_left <= 1U) {
+		// 	DestroyProjectileInArray(prs, i);
+		// 	--i;
+		// 	continue;
+		// }
+		// else {
+		// 	--pr->time_left;
+		// }
+		MoveProjectile(pr);
+		// if (!InBounds(&pr->position)) {
+		// 	DestroyProjectileInArray(prs, i);
+		// 	--i;
+		// 	continue;
+		// }
+		Segment* s = GetSegment(pr->position.x, pr->position.y);
+		if(!s->available){
 			DestroyProjectileInArray(prs, i);
 			--i;
 			continue;
 		}
-		else {
-			--pr->time_left;
-		}
-		MoveProjectile(pr);
-		if (!InBounds(&pr->position)) {
-			continue;
-		}
-		Segment* s = GetSegment(w, pr->position.x, pr->position.y);
-		for (unsigned int j = 0U; j < s->beings.num; ++j) {
-			Being* b = *(s->beings.array + j);
-			if (ProjectileHitsBeing(pr, b)) {
-				DamageBeing(b, pr->damage);
-				DestroyProjectileInArray(prs, i);
-				--i;
-				break;
+		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
+			for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
+				Segment* neighbour = GetSegmentByIndx(c, r);
+				for (unsigned int j = 0U; j < neighbour->beings.num; ++j) {
+					Being* b = *(neighbour->beings.array + j);
+					if (ProjectileHitsBeing(pr, b)) {
+						DamageBeing(b, pr->damage);
+						DestroyProjectileInArray(prs, i);
+						--i;
+						goto outside;
+					}
+				}
 			}
 		}
+		outside:;
 	}
 }

@@ -24,6 +24,10 @@ bool EventsService(SDL_Event* e, Player* p) {
 				p->control_flags |= 1 << 5; break;
 			case SDL_SCANCODE_H:
 				p->control_flags ^= 1 << 6; break;
+			// case SDL_SCANCODE_1:
+			// 	p->control_flags &= ~(1 << 9); break;
+			// case SDL_SCANCODE_2:
+			// 	p->control_flags |= 1 << 9; break;
 			case SDL_SCANCODE_ESCAPE:
 				return true;
 			default: break;
@@ -52,6 +56,8 @@ bool EventsService(SDL_Event* e, Player* p) {
 			switch (e->button.button) {
 				case SDL_BUTTON_LEFT:
 					p->control_flags ^= 1 << 7; break;
+				case SDL_BUTTON_RIGHT:
+					p->control_flags ^= 1 << 8; break;
 				default: break;
 			}
 		}
@@ -59,6 +65,8 @@ bool EventsService(SDL_Event* e, Player* p) {
 			switch (e->button.button) {
 				case SDL_BUTTON_LEFT:
 					p->control_flags &= ~(1 << 7); break;
+				case SDL_BUTTON_RIGHT:
+					p->control_flags &= ~(1 << 8); break;
 				default: break;
 			}
 		}

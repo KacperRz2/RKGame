@@ -52,16 +52,17 @@ int main(int argc, char* argv[]) {
 		(int)(VIEWFINDER)
 	};
 
-	World* world = CreateWorld(WORLD_W, WORLD_H);
-	Player* player = CreatePlayer(BOUNDS_L + 1000.0F, BOUNDS_U + 1000.0F);
+	CreateWorld(WORLD_W, WORLD_H);
+	Player* player = CreatePlayer(1000.0F, 1000.0F);
 	if (player == NULL || world == NULL) return 1;
-	AddBeingToArray(&beings, CreateBeing(world, 1500.0F, 1500.0F));
+	AddBeingToArray(&beings, CreateBeing(1500.0F, 1500.0F));
 
 	while (beings.num < MAX_BEINGS_NUM) {
-		float x = (float)(SDL_rand((Sint32)WORLD_W) + (int)BOUNDS_L);
-		float y = (float)(SDL_rand((Sint32)WORLD_H) + (int)BOUNDS_U);
-		if (GetSegment(world, x, y)->beings.num < MAX_SEGM_BEINGS) {
-			AddBeingToArray(&beings, CreateBeing(world, x, y));
+		float x = (float)(SDL_rand((Sint32)WORLD_W));
+		float y = (float)(SDL_rand((Sint32)WORLD_H));
+		Segment* s = GetSegment(x, y);
+		if (s->beings.num < MAX_SEGM_BEINGS && s->available) {
+			AddBeingToArray(&beings, CreateBeing(x, y));
 		}
 	}
 
@@ -69,13 +70,14 @@ int main(int argc, char* argv[]) {
 		timer = SDL_GetTicksNS();
 		quit = EventsService(&event, player);
 
-		if (beings.num < MAX_BEINGS_NUM) {
-			float x = (float)(SDL_rand((Sint32)WORLD_W) + (int)BOUNDS_L);
-			float y = (float)(SDL_rand((Sint32)WORLD_H) + (int)BOUNDS_U);
+		if (beings.num < MAX_BEINGS_NUM / 20) {
+			float x = (float)(SDL_rand((Sint32)WORLD_W));
+			float y = (float)(SDL_rand((Sint32)WORLD_H));
 			if (SDL_fabsf(player->position.x - x) > 2000.0F) {
 				if (SDL_fabsf(player->position.y - y) > 2000.0F) {
-					if (GetSegment(world, x, y)->beings.num < MAX_SEGM_BEINGS) {
-						AddBeingToArray(&beings, CreateBeing(world, x, y));
+					Segment* s = GetSegment(x, y);
+					if (s->beings.num < MAX_SEGM_BEINGS && s->available) {
+						AddBeingToArray(&beings, CreateBeing(x, y));
 					}
 				}
 			}
@@ -85,10 +87,10 @@ int main(int argc, char* argv[]) {
 		UpdatePlayer(player, &projectiles);
 		cursor_distance = WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - cursor_y;
 
-		UpdateProjectiles(world, &projectiles);
+		UpdateProjectiles(&projectiles);
 		if (ticks_to_update_beings == 0U) {
 			if (!(player->control_flags & 1 << 6)) {
-				UpdateBeings(&beings, world, &player->position);
+				UpdateBeings(&beings, &player->position);
 			}
 			ticks_to_update_beings = 1U;
 		}
@@ -100,7 +102,7 @@ int main(int argc, char* argv[]) {
 
 			frame_time += FRAME_TIME;
 
-			SetSineCosine(world, player);
+			SetSineCosine(player);
 
 			rotation = RadToDeg(player->direction);
 
@@ -115,14 +117,15 @@ int main(int argc, char* argv[]) {
 			SDL_SetRenderDrawColor(renderer, 50, 50, 50, 0);
 			SDL_RenderFillRect(renderer, NULL);
 
-			RenderProjectiles(renderer, &projectiles, *(textures + 3), world, player);
+			RenderProjectiles(renderer, &projectiles, *(textures + 3), player);
 
 			if (!(player->control_flags & 1 << 6)) {
-				RenderBeings(renderer, &beings, *(textures + 4), world, player);
+				RenderBeings(renderer, &beings, *(textures + 4), player);
 			}
 			
 			SDL_RenderTexture(renderer, *(textures + 5), NULL, NULL);//viewfinder
-			RenderPlayer(renderer, *(textures + 1));
+			// RenderPlayer(renderer, *(textures + 1));
+			RenderPlayer(renderer, textures);
 			RenderGunSight(renderer, cursor_y, *textures);
 
 			SDL_SetRenderViewport(renderer, NULL);
@@ -132,21 +135,16 @@ int main(int argc, char* argv[]) {
 			SDL_RenderDebugTextFormat(renderer, 10, 20, "Position: %.2f %.2f", player->position.x, player->position.y);
 			SDL_RenderDebugTextFormat(renderer, 10, 30, "Direction: %.2f", player->direction);
 
-			// SDL_RenderDebugTextFormat(renderer, 10, 100, "x: %.2f", world->visible_rect.x);
-			// SDL_RenderDebugTextFormat(renderer, 10, 110, "y: %.2f", world->visible_rect.y);
-			// SDL_RenderDebugTextFormat(renderer, 10, 120, "w: %.2f", world->visible_rect.w);
-			// SDL_RenderDebugTextFormat(renderer, 10, 130, "h: %.2f", world->visible_rect.h);
-
 			SDL_RenderDebugTextFormat(renderer, 10, 140, "Ticks per sec.: %d", tps);
 			SDL_RenderDebugTextFormat(renderer, 10, 150, "max FPS: ~%d", (int)(1000000000ULL / FRAME_TIME));
 
 			SDL_RenderDebugTextFormat(renderer, 10, 160, "beings: %d", beings.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 170, "projectiles: %d", projectiles.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 180, "beings in seg0x0: %d", (*(*(world->segments + 0) + 0)).beings.num);
-			SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
+			// SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
 			//SDL_RenderDebugTextFormat(renderer, 10, 250, "sizeof: %d", sizeof(unsigned int));
-			Segment* s = GetSegment(world, player->position.x, player->position.y);
-			SDL_RenderDebugTextFormat(renderer, 10, 260, "player: %.0f %.0f", s->coordinates.x, s->coordinates.y);
+			// Segment* s = GetSegment(world, player->position.x, player->position.y);
+			// SDL_RenderDebugTextFormat(renderer, 10, 260, "player: %.0f %.0f", s->coordinates.x, s->coordinates.y);
 			//for (unsigned int i = 0U; i < projectiles.num; ++i) {
 			//    Projectile* pr = *(projectiles.array + i);
 			//    s = GetSegment(world, pr->position.x, pr->position.y);
@@ -185,7 +183,7 @@ int main(int argc, char* argv[]) {
 	DestroyPlayer(player);
 	DestroyProjectiles(&projectiles);
 	DestroyBeings(&beings);
-	DestroyWorld(world);
+	DestroyWorld();
 	SDL_free(beings.array);
 	SDL_free(projectiles.array);
 	for (int i = 0; i < TEXTURES_NUM; ++i) {

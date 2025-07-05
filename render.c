@@ -11,7 +11,8 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 		"img1.bmp",
 		"img2.bmp",
 		"being.bmp",
-		"img3.bmp"
+		"img3.bmp",
+		"img4.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -93,14 +94,29 @@ void RenderGunSightElements(SDL_Renderer* rend, const float distance, const floa
 	}
 }
 
-void RenderPlayer(SDL_Renderer* rend, SDL_Texture* tx) {
+void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx) {
 	static const SDL_FRect rect = {
 		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F,
 		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
 		(float)PLAYER_SIZE,
 		(float)PLAYER_SIZE
 	};
-	SDL_RenderTexture(rend, tx, NULL, &rect);
+	static SDL_FRect rect_blade = {
+		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F,
+		VIEWFINDER_CENTER - PLAYER_SIZE * 1.5F + PLAYER_REND_Y_SHIFT,
+		(float)PLAYER_SIZE * 1.5F,
+		(float)PLAYER_SIZE * 1.5F
+	};
+	static const SDL_FPoint blade_rotation_point = {
+		(float)PLAYER_SIZE * 0.75F,
+		(float)PLAYER_SIZE * 1.5F * 0.85F
+	};
+	static double blade_angle = 45.0;
+	static double blade_angle_plus = 0.1;
+	blade_angle += blade_angle_plus;
+	if (blade_angle > 60.0 || blade_angle < 30.0) blade_angle_plus = -blade_angle_plus;
+	SDL_RenderTexture(rend, *(tx + 1), NULL, &rect);
+	SDL_RenderTextureRotated(rend, *(tx + 6), NULL, &rect_blade, blade_angle, &blade_rotation_point, SDL_FLIP_NONE);
 }
 
 void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture* tx) {
@@ -114,7 +130,7 @@ void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture*
 	SDL_RenderTexture(rend, tx, NULL, &rect);
 }
 
-void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx, World* w, Player* p) {
+void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* tx, Player* p) {
 	static const SDL_FRect visible_rect = {
 		0.0F,
 		0.0F,
@@ -129,15 +145,14 @@ void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* 
 	};
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
-		// if (SDL_PointInRectFloat(&pr->position, &w->visible_rect)) {
-			
+
 		float dx = pr->position.x - p->position.x;
 		if(SDL_fabsf(dx) < VIEWFINDER){
 			float dy = pr->position.y - p->position.y;
 			if(SDL_fabsf(dy) < VIEWFINDER){
 
-				rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - BULLET_SIZE * 0.5F;
-				rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - BULLET_SIZE * 0.5F;
+				rect.x = VIEWFINDER_CENTER + (dx * world->cos_player_direction + dy * world->sin_player_direction) - BULLET_SIZE * 0.5F;
+				rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * world->sin_player_direction - dy * world->cos_player_direction) - BULLET_SIZE * 0.5F;
 				
 				if (SDL_HasRectIntersectionFloat(&rect, &visible_rect)) {
 					SDL_RenderTexture(rend, tx, NULL, &rect);
@@ -147,7 +162,7 @@ void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* 
 	}
 }
 
-void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, World* w, Player* p) {
+void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, Player* p) {
 	static const SDL_FRect visible_rect = {
 		0.0F,
 		0.0F,
@@ -161,16 +176,15 @@ void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, World* 
 		PLAYER_SIZE
 	};
 	for (unsigned int i = 0; i < bs->num; ++i) {
-		Being* b = *(bs->array + i);
-		// if (SDL_PointInRectFloat(&b->position, &w->visible_rect)) {
+		Being* b = *(bs->array + i);		
 		
 		float dx = b->position.x - p->position.x;
 		if(SDL_fabsf(dx) < VIEWFINDER){
 			float dy = b->position.y - p->position.y;
 			if(SDL_fabsf(dy) < VIEWFINDER){
 
-				rect.x = VIEWFINDER_CENTER + (dx * w->cos_player_direction + dy * w->sin_player_direction) - PLAYER_SIZE * 0.5F;
-				rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * w->sin_player_direction - dy * w->cos_player_direction) - PLAYER_SIZE * 0.5F;
+				rect.x = VIEWFINDER_CENTER + (dx * world->cos_player_direction + dy * world->sin_player_direction) - PLAYER_SIZE * 0.5F;
+				rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * world->sin_player_direction - dy * world->cos_player_direction) - PLAYER_SIZE * 0.5F;
 				
 				if (SDL_HasRectIntersectionFloat(&rect, &visible_rect)) {
 					SDL_RenderTexture(rend, tx, NULL, &rect);

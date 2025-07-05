@@ -12,13 +12,13 @@ inline void AddBeingToSegment(Segment* s, Being* b) {
     ++s->beings.num;
 }
 
-Being* CreateBeing(World* w, const float x, const float y) {
+Being* CreateBeing(const float x, const float y) {
     Being* b = (Being*)SDL_malloc(sizeof(Being));
     if (b == NULL) return NULL;
     b->velocity = PLAYER_VELOCITY * 1.875F;
     b->position.x = x;
     b->position.y = y;
-    AddBeingToSegment(GetSegment(w, x, y), b);
+    AddBeingToSegment(GetSegment(x, y), b);
     b->hit_points = 100;
     //b->flank = (bool)SDL_rand(2);
     b->walk.time_left = 0;
@@ -152,7 +152,7 @@ inline void TurnBeingWalk(Being* b) {
     }
 }
 
-void UpdateBeingWalk(Being* b, World* w) {
+void UpdateBeingWalk(Being* b) {
 
     if (b->walk.time_left < 0) {
         ++b->walk.time_left;
@@ -160,11 +160,11 @@ void UpdateBeingWalk(Being* b, World* w) {
     }
     float new_x = b->position.x + b->walk.shift.x;
     float new_y = b->position.y + b->walk.shift.y;
-    SetInBounds(&new_x, &new_y);
-    Segment* new_segment = GetSegment(w, new_x, new_y);
+    // SetInBounds(&new_x, &new_y);
+    Segment* new_segment = GetSegment(new_x, new_y);
 
     if (new_segment != b->segment) {
-        if (new_segment->beings.num >= MAX_SEGM_BEINGS) {
+        if (!new_segment->available || new_segment->beings.num >= MAX_SEGM_BEINGS) {
             TurnBeingWalk(b);
             return;
         }
@@ -174,7 +174,7 @@ void UpdateBeingWalk(Being* b, World* w) {
     --b->walk.time_left;
 }
 
-void UpdateBeings(Beings_array* bs, World* w, SDL_FPoint* player_position) {
+void UpdateBeings(Beings_array* bs, SDL_FPoint* player_position) {
 
     for (unsigned int i = 0; i < bs->num; ++i) {
 
@@ -195,7 +195,7 @@ void UpdateBeings(Beings_array* bs, World* w, SDL_FPoint* player_position) {
         }
         if (b->walk.time_left) {
 
-            UpdateBeingWalk(b, w);
+            UpdateBeingWalk(b);
             continue;
         }
         float velocity_xy = distance / b->velocity;
@@ -203,21 +203,22 @@ void UpdateBeings(Beings_array* bs, World* w, SDL_FPoint* player_position) {
         float y_shift = distance_y / velocity_xy;
         float new_x = b->position.x + x_shift;
         float new_y = b->position.y + y_shift;
-        Segment* new_segment = GetSegment(w, new_x, new_y);
+        Segment* new_segment = GetSegment(new_x, new_y);
         bool collision = false;
 
         if (distance < 768.0F) {
 
             collision = ResolveBeingCollisionInNewSegment(b, new_segment, &new_x, &new_y, x_shift, y_shift);
         }
-        if (SetInBounds(&new_x, &new_y) || collision) {
+        // if (SetInBounds(&new_x, &new_y) || collision) {
+        if (collision) {
 
-            new_segment = GetSegment(w, new_x, new_y);
+            new_segment = GetSegment(new_x, new_y);
         }
 
         if (new_segment != b->segment) {
 
-            if (new_segment->beings.num >= MAX_SEGM_BEINGS) {
+            if (new_segment->beings.num >= MAX_SEGM_BEINGS || !new_segment->available) {
 
                 if ((bool)SDL_rand(2)) {
 
