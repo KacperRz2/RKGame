@@ -37,6 +37,7 @@
 #define MIN_ANGLE           (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BLADE_DAMAGE        50
 #define BLADE_PENETRATION   7U
+#define BLADE_SIZE          64.0F
 
 // #define BOUNDS_U			0.0F//(VIEW_H * 0.5F)
 // #define BOUNDS_D			WORLD_H//(WORLD_H + VIEW_H * 0.5F)

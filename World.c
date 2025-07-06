@@ -11,17 +11,17 @@ void CreateWorld(const float x, const float y) {
 	world->height = y;
 	for (unsigned int c = 0U; c < SEGMENTS_X; ++c) {
 		for (unsigned int r = 0U; r < SEGMENTS_Y; ++r) {
-			(*(*(world->segments + c) + r)).indx.x = c;
-			(*(*(world->segments + c) + r)).indx.y = r;
+			(*(world->segments + c) + r)->indx.x = c;
+			(*(world->segments + c) + r)->indx.y = r;
 			if(c == 0U || r == 0U || c == SEGMENTS_X - 1U || r == SEGMENTS_Y - 1U){
-				(*(*(world->segments + c) + r)).available = false;
-				(*(*(world->segments + c) + r)).beings.array = NULL;
+				(*(world->segments + c) + r)->available = false;
+				(*(world->segments + c) + r)->beings.array = NULL;
 			}
 			else{
-				(*(*(world->segments + c) + r)).available = true;
-				(*(*(world->segments + c) + r)).beings.array = (Being**)SDL_malloc(sizeof(Being*) * MAX_SEGM_BEINGS);
+				(*(world->segments + c) + r)->available = true;
+				(*(world->segments + c) + r)->beings.array = (Being**)SDL_malloc(sizeof(Being*) * MAX_SEGM_BEINGS);
 			}
-			(*(*(world->segments + c) + r)).beings.num = 0U;
+			(*(world->segments + c) + r)->beings.num = 0U;
 		}
 	}
 
@@ -32,7 +32,7 @@ void CreateWorld(const float x, const float y) {
 extern inline void DestroyWorld() {
 	for (unsigned int c = 0U; c < SEGMENTS_X; ++c) {
 		for (unsigned int r = 0U; r < SEGMENTS_Y; ++r) {
-			SDL_free((*(*(world->segments + c) + r)).beings.array);
+			SDL_free((*(world->segments + c) + r)->beings.array);
 		}
 	}
 	SDL_free(world);

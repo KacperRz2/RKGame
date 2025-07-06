@@ -57,14 +57,14 @@ int main(int argc, char* argv[]) {
 	if (player == NULL || world == NULL) return 1;
 	AddBeingToArray(&beings, CreateBeing(1500.0F, 1500.0F));
 
-	while (beings.num < MAX_BEINGS_NUM) {
-		float x = (float)(SDL_rand((Sint32)WORLD_W));
-		float y = (float)(SDL_rand((Sint32)WORLD_H));
-		Segment* s = GetSegment(x, y);
-		if (s->beings.num < MAX_SEGM_BEINGS && s->available) {
-			AddBeingToArray(&beings, CreateBeing(x, y));
-		}
-	}
+	// while (beings.num < MAX_BEINGS_NUM) {
+	// 	float x = (float)(SDL_rand((Sint32)WORLD_W));
+	// 	float y = (float)(SDL_rand((Sint32)WORLD_H));
+	// 	Segment* s = GetSegment(x, y);
+	// 	if (s->beings.num < MAX_SEGM_BEINGS && s->available) {
+	// 		AddBeingToArray(&beings, CreateBeing(x, y));
+	// 	}
+	// }
 
 	while (!quit) {
 		timer = SDL_GetTicksNS();
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 
 			SDL_RenderDebugTextFormat(renderer, 10, 160, "beings: %d", beings.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 170, "projectiles: %d", projectiles.num);
-			SDL_RenderDebugTextFormat(renderer, 10, 180, "beings in seg0x0: %d", (*(*(world->segments + 0) + 0)).beings.num);
+			// SDL_RenderDebugTextFormat(renderer, 10, 180, "beings in seg0x0: %d", (*(*(world->segments + 0) + 0)).beings.num);
 			// SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
 			//SDL_RenderDebugTextFormat(renderer, 10, 250, "sizeof: %d", sizeof(unsigned int));
 			// Segment* s = GetSegment(world, player->position.x, player->position.y);

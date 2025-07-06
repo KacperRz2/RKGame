@@ -103,17 +103,17 @@ void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx, Blade* blade) {
 		(float)PLAYER_SIZE
 	};
 	static SDL_FRect rect_blade = {
-		VIEWFINDER_CENTER - (PLAYER_SIZE * 0.25F),
-		VIEWFINDER_CENTER - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
-		(float)PLAYER_SIZE * 1.5F,
-		(float)PLAYER_SIZE * 1.5F
+		VIEWFINDER_CENTER - BLADE_SIZE * 0.5F - (PLAYER_SIZE * 0.25F),
+		VIEWFINDER_CENTER - BLADE_SIZE * 0.5F - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
+		BLADE_SIZE,
+		BLADE_SIZE
 	};
 	static const SDL_FPoint blade_rotation_point = {
-		(float)PLAYER_SIZE * 0.75F,
-		(float)PLAYER_SIZE * 1.5F * 0.85F
+		BLADE_SIZE * 0.5F,
+		BLADE_SIZE * 0.85F
 	};
-	rect_blade.x = VIEWFINDER_CENTER + blade->position.x;
-	rect_blade.y = VIEWFINDER_CENTER + blade->position.y + PLAYER_REND_Y_SHIFT;
+	rect_blade.x = (VIEWFINDER_CENTER - BLADE_SIZE * 0.5F) + blade->position.x;
+	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * 0.85F + PLAYER_REND_Y_SHIFT) + blade->position.y;
 	SDL_RenderTexture(rend, *(tx + 1), NULL, &rect);
 	SDL_RenderTextureRotated(rend, *(tx + 6), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
 }

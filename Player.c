@@ -5,12 +5,13 @@
 #include <Player.h>
 #include <function.h>
 #include <World.h>
+#include <Being.h>
 
 Player* CreatePlayer(const float x, const float y) {
 	Player* p = (Player*)SDL_malloc(sizeof(Player));
 	if (p == NULL) return NULL;
-	p->blade.position.x = -(PLAYER_SIZE * 0.25F);
- 	p->blade.position.y = -(PLAYER_SIZE * 1.0F);
+	p->blade.position.x = 16.0F;
+ 	p->blade.position.y = 8.0F;
 	p->blade.direction = SDL_PI_F * 0.45F;
 	p->blade.damage = BLADE_DAMAGE;
 	p->blade.penetration = BLADE_PENETRATION;
@@ -72,7 +73,7 @@ inline void MovePlayer(Player* p, const float x, const float y) {
 // 	}
 // }
 
-void UpdatePlayerMove(Player* p) {
+inline void UpdatePlayerMove(Player* p) {
 	static float move_direction = 0.0F;
 	if (p->velocity > p->max_velocity) {
 		p->velocity *= DECELERATION;
@@ -180,50 +181,189 @@ inline void UpdatePlayerPoints(Player* p) {
 extern inline void UpdatePlayer(Player* p, Projectiles_array* prs) {
 	if (p->control_flags & 1 << 8) {
 		if (prs->num < MAX_PROJECTILES_NUM) {
-			AddProjectileToArray(prs, CreateProjectile(&p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F, 10, 20U));
+			AddProjectileToArray(prs, CreateProjectile(&p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F, 10, 3U));
 		}
 	}
-	
-	static const Status_frame blade_key_frames[] = {
-		{{-8.0F, -32.0F}, SDL_PI_F * 0.45F},
-		{{-8.0F, -32.0F}, 150.0F * (SDL_PI_F / 180.0F)},
-		{{-18.0F, -48.0F}, 45.0F * (SDL_PI_F / 180.0F)},
-		{{-28.0F, -50.0F}, 0.0F},
-		{{-28.0F, -50.0F}, -75.0F * (SDL_PI_F / 180.0F)},
-		{{-38.0F, -40.0F}, -150.F * (SDL_PI_F / 180.0F)},
-		{{-28.0F, -50.0F}, -70.0F * (SDL_PI_F / 180.0F)},
-		{{-18.0F, -48.0F}, -25.0F * (SDL_PI_F / 180.0F)},
-		{{-8.0F, -32.0F}, SDL_PI_F * 0.45F},
-		{{-8.0F, -32.0F}, 150.0F * (SDL_PI_F / 180.0F)},
-		{{-8.0F, -32.0F}, SDL_PI_F * 0.45F},
-		{{-8.0F, -40.0F}, 0.0F},
-		{{-25.0F, -64.0F}, 0.0F},
-		{{-18.0F, -50.0F}, 0.0F},
-		{{-8.0F, -32.0F}, SDL_PI_F * 0.45F}
-		// {{0.0F, 0.0F}, 0.0F}
-	};
-	static Status_frame step_shift = {{0.0F, 0.0F}, 0.0};
-	static int indx = 0;
-	static int indx_plus = 1;
-	static const int steps = 64;
-	static int step = steps;
-	if(step == steps){
-		p->blade.position.x = (blade_key_frames + indx)->position.x;
-		p->blade.position.y = (blade_key_frames + indx)->position.y;
-		p->blade.direction = (blade_key_frames + indx)->direction;
-		step_shift.position.x = ((blade_key_frames + indx + 1)->position.x - (blade_key_frames + indx)->position.x) / steps;
-		step_shift.position.y = ((blade_key_frames + indx + 1)->position.y - (blade_key_frames + indx)->position.y) / steps;
-		step_shift.direction = ((blade_key_frames + indx + 1)->direction - (blade_key_frames + indx)->direction) / steps;
-		indx = (indx + 1) % (sizeof(blade_key_frames) / sizeof(Status_frame) - 1);
-		step = 0;
-	}else{
-		p->blade.position.x += step_shift.position.x;
-		p->blade.position.y += step_shift.position.y;
-		p->blade.direction += step_shift.direction;
-	}
-	++step;
-
+	UpdatePlayerBlade(p);
 	UpdatePlayerDirection(p);
 	UpdatePlayerMove(p);
 	UpdatePlayerPoints(p);
+}
+
+inline void ShiftBlade(Blade* bl, Status_frame* shift){
+		bl->position.x += shift->position.x;
+		bl->position.y += shift->position.y;
+		bl->direction += shift->direction;
+}
+
+inline void SetBladePosition(Blade* bl, const Status_frame* position){
+		bl->position.x = position->position.x;
+		bl->position.y = position->position.y;
+		bl->direction = position->direction;
+}
+
+inline void SetShift(Status_frame* step_shift, const Status_frame* frame, const unsigned int steps){
+	step_shift->position.x = ((frame + 1)->position.x - frame->position.x) / steps;
+	step_shift->position.y = ((frame + 1)->position.y - frame->position.y) / steps;
+	step_shift->direction = ((frame + 1)->direction - frame->direction) / steps;
+}
+
+inline void SetShiftToBase(Status_frame* step_shift, const Status_frame* frame, const unsigned int steps){
+	step_shift->position.x = (16.0F - frame->position.x) / steps;
+	step_shift->position.y = (8.0F - frame->position.y) / steps;
+	step_shift->direction = (SDL_PI_F * 0.45F - frame->direction) / steps;
+}
+
+inline void SetShiftToPosition(Blade* bl, Status_frame* step_shift, const Status_frame* frame, const unsigned int steps){
+	step_shift->position.x = (frame->position.x - bl->position.x) / steps;
+	step_shift->position.y = (frame->position.y - bl->position.y) / steps;
+	step_shift->direction = (frame->direction - bl->direction) / steps;
+}
+
+inline Status_frame GetBladeLocation(Player* p){
+	Status_frame ret = {{p->position.x + p->blade.position.x, p->position.y + p->blade.position.y}, p->direction + p->blade.direction};
+	return ret;
+}
+
+inline bool BladeHitsBeing(Blade* bl, Status_frame* location, Being* b) {
+	static const float length_part = BLADE_SIZE * 0.85F / 3.0F;
+	float shift_x = SineSafe(location->direction) * length_part;
+	float shift_y = -CosiSafe(location->direction) * length_part;
+	for (unsigned int i = 0U; i < 3U; ++i) {
+		SDL_FPoint dangerous_point = {location->position.x + i * shift_x, location->position.y + i * shift_y};
+		if (SDL_fabsf(dangerous_point.x - b->position.x) < PLAYER_SIZE * 0.5F) {
+			if (SDL_fabsf(dangerous_point.y - b->position.y) < PLAYER_SIZE * 0.5F) {// int tmp = 0;
+				for(unsigned int j = bl->hits; j > 0U; --j){
+					if (*(bl->hit_targets + (j - 1U)) == b) {// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "same! %d!", tmp);
+						return false;
+					}// ++tmp;
+				}
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+inline bool UnleashDestruction(Player* p){
+	Status_frame blade_true_location = GetBladeLocation(p);
+	Segment* s = GetSegment(blade_true_location.position.x, blade_true_location.position.y);
+		if(!s->available){
+			return true;
+		}
+		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
+			for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
+				Segment* neighbour = GetSegmentByIndx(c, r);
+				for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
+					Being* b = *(neighbour->beings.array + i);
+					if (BladeHitsBeing(&p->blade, &blade_true_location, b)) {
+						DamageBeing(b, p->blade.damage);
+						if(p->blade.hits < p->blade.penetration){
+							*(p->blade.hit_targets + p->blade.hits++) = b;
+						}else{
+							return true;
+							// goto outside;
+						}
+					}
+				}
+			}
+		}
+		return false;
+		// outside:;
+}
+
+// inline void ClearBlade(Blade* bl){
+// 	bl->
+// }
+
+inline void UpdatePlayerBlade(Player* p){
+	static const Status_frame blade_key_frames_0[] = {
+		{{16.0F, 8.0F}, SDL_PI_F * 0.45F},
+		{{16.0F, 8.0F}, SDL_PI_F * 0.83F},
+		{{6.0F, -8.0F}, SDL_PI_F * 0.25F},
+		{{-4.0F, -10.0F}, 0.0F},
+		{{-4.0F, -10.0F}, SDL_PI_F * -0.416F},
+		{{-14.0F, 0.0F}, SDL_PI_F * -0.83F},
+	};
+	static const Status_frame blade_key_frames_1[] = {
+		{{-14.0F, 0.0F}, SDL_PI_F * -0.83F},
+		{{-4.0F, -10.0F}, SDL_PI_F * -0.38F},
+		{{6.0F, -8.0F}, SDL_PI_F * -0.138F},
+		{{16.0F, 8.0F}, SDL_PI_F * 0.45F},
+		{{16.0F, 8.0F}, SDL_PI_F * 0.83F},
+		{{16.0F, 8.0F}, SDL_PI_F * 0.45F},
+	};
+	static const Status_frame blade_key_frames_2[] = {
+		{{16.0F, 8.0F}, SDL_PI_F * 0.45F},
+		{{16.0F, 0.0}, 0.0F},
+		{{-1.0F, -24.0F}, 0.0F},
+		{{6.0F, -10.0F}, 0.0F},
+		{{16.0F, 8.0F}, SDL_PI_F * 0.45F}
+	};
+	static const Status_frame* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
+	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
+	static Status_frame step_shift = {{0.0F, 0.0F}, 0.0};
+	static int key = 0;
+	static int steps = 64;
+	static int step = 0;
+	static unsigned int chain = 0U;
+	static unsigned int chain_next = 0U;
+	static unsigned int press_count = 0U;
+	static bool start = false;
+	static bool abide = false;
+	static bool freehand = false;
+	static unsigned int idle_ticks = 0U;
+	// static bool blocked = false;
+
+	if(p->control_flags & 1 << 7) {
+		start = true;
+	}
+	if(!abide){
+		if(start){
+			if(!(p->control_flags & 1 << 7)) {
+				chain = chain_next;
+				key = 0;
+				step = 0;
+				abide = true;
+				idle_ticks = 0U;
+				start = false;
+				p->blade.hits = 0U;
+				// SetBladePosition(&p->blade, *(blade_moves + chain) + key);
+				SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain) + ++key, steps = 64);
+				// SetShift(&step_shift, *(blade_moves + chain) + key++, steps = 64);
+				chain_next = (chain_next + 1) % SDL_arraysize(sizes);
+				freehand = false;
+				return;
+			}
+		}
+		else if(++idle_ticks > 192U){
+			chain_next = 0U;
+		}
+		if(!freehand) return;
+	}
+	if(step == steps){
+		if(freehand){
+			freehand = false;
+		}else if(key > *(sizes + chain) - 2){
+			abide = false;
+			freehand = true;
+			SetShiftToBase(&step_shift, *(blade_moves + chain) + key, steps = 384);
+		}else{
+			SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain) + ++key, steps = 64);
+			// SetBladePosition(&p->blade, *(blade_moves + chain) + key);
+			// SetShift(&step_shift, *(blade_moves + chain) + key++, steps);
+		}
+		step = 0;
+	}else{
+		ShiftBlade(&p->blade, &step_shift);
+		if(!freehand) {
+			if(freehand = UnleashDestruction(p)){
+				abide = false;
+				p->blade.hits = 0U;
+				SetShiftToBase(&step_shift, *(blade_moves + chain) + key, steps = 384);
+				step = 0;
+			}
+		}
+	}
+	++step;
 }
