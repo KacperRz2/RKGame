@@ -176,7 +176,7 @@ void UpdateBeingWalk(Being* b) {
 
 void UpdateBeings(Beings_array* bs, SDL_FPoint* player_position) {
 
-    for (unsigned int i = 0; i < bs->num; ++i) {
+    for (unsigned int i = 0U; i < bs->num; ++i) {
 
         Being* b = *(bs->array + i);
 

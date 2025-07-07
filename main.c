@@ -71,6 +71,7 @@ int main(int argc, char* argv[]) {
 		quit = EventsService(&event, player);
 
 		if (beings.num < MAX_BEINGS_NUM / 2048) {
+		// if (beings.num < MAX_BEINGS_NUM) {
 			float x = (float)(SDL_rand((Sint32)WORLD_W));
 			float y = (float)(SDL_rand((Sint32)WORLD_H));
 			if (SDL_fabsf(player->position.x - x) > 2000.0F) {

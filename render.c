@@ -113,9 +113,11 @@ void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx, Blade* blade) {
 		BLADE_SIZE * 0.85F
 	};
 	rect_blade.x = (VIEWFINDER_CENTER - BLADE_SIZE * 0.5F) + blade->position.x;
-	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * 0.85F + PLAYER_REND_Y_SHIFT) + blade->position.y;
+	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * 0.85F + PLAYER_REND_Y_SHIFT) - blade->position.y;
 	SDL_RenderTexture(rend, *(tx + 1), NULL, &rect);
 	SDL_RenderTextureRotated(rend, *(tx + 6), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
+
+	// SDL_FPoint corners[] = {{(VIEWFINDER_CENTER + p->position.x, }, {, }, {, }, {, }}
 }
 
 void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture* tx) {
