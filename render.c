@@ -116,8 +116,6 @@ void RenderPlayer(SDL_Renderer* rend, SDL_Texture** tx, Blade* blade) {
 	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * 0.85F + PLAYER_REND_Y_SHIFT) - blade->position.y;
 	SDL_RenderTexture(rend, *(tx + 1), NULL, &rect);
 	SDL_RenderTextureRotated(rend, *(tx + 6), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
-
-	// SDL_FPoint corners[] = {{(VIEWFINDER_CENTER + p->position.x, }, {, }, {, }, {, }}
 }
 
 void RenderGunSight(SDL_Renderer* rend, const float cursor_point_y, SDL_Texture* tx) {
@@ -193,4 +191,30 @@ void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, Player*
 			}
 		}
 	}
+
+	// SDL_FPoint corners[] = {
+	// 	{VIEWFINDER_CENTER + ((WORLD_W / SEGMENTS_X - p->position.x) * world->cos_player_direction + (WORLD_H / SEGMENTS_Y - p->position.y) * world->sin_player_direction), VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - ((WORLD_W / SEGMENTS_X - p->position.x) * world->sin_player_direction - (WORLD_H / SEGMENTS_Y - p->position.y) * world->cos_player_direction)},
+	// 	{VIEWFINDER_CENTER + ((WORLD_W - WORLD_W / SEGMENTS_X - p->position.x) * world->cos_player_direction + (WORLD_H / SEGMENTS_Y - p->position.y) * world->sin_player_direction), VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - ((WORLD_W - WORLD_W / SEGMENTS_X - p->position.x) * world->sin_player_direction - (WORLD_H / SEGMENTS_Y - p->position.y) * world->cos_player_direction)},
+	// 	{VIEWFINDER_CENTER + ((WORLD_W - WORLD_W / SEGMENTS_X - p->position.x) * world->cos_player_direction + (WORLD_H - WORLD_H / SEGMENTS_Y - p->position.y) * world->sin_player_direction), VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - ((WORLD_W - WORLD_W / SEGMENTS_X - p->position.x) * world->sin_player_direction - (WORLD_H - WORLD_H / SEGMENTS_Y - p->position.y) * world->cos_player_direction)},
+	// 	{VIEWFINDER_CENTER + ((WORLD_W / SEGMENTS_X - p->position.x) * world->cos_player_direction + (WORLD_H - WORLD_H / SEGMENTS_Y - p->position.y) * world->sin_player_direction), VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - ((WORLD_W / SEGMENTS_X - p->position.x) * world->sin_player_direction - (WORLD_H - WORLD_H / SEGMENTS_Y - p->position.y) * world->cos_player_direction)},
+	// 	{VIEWFINDER_CENTER + ((WORLD_W / SEGMENTS_X - p->position.x) * world->cos_player_direction + (WORLD_H / SEGMENTS_Y - p->position.y) * world->sin_player_direction), VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - ((WORLD_W / SEGMENTS_X - p->position.x) * world->sin_player_direction - (WORLD_H / SEGMENTS_Y - p->position.y) * world->cos_player_direction)}
+	// };
+	// SDL_SetRenderDrawColor(rend, 255, 255, 255, 0);
+	// SDL_RenderLines(rend, corners, 5);
+}
+
+void RenderMap(SDL_Renderer* rend, Player* p) {
+	static const int map_size = 300;
+	static const SDL_Rect rect = {
+		(int)(((WINDOW_W - VIEWFINDER) * 0.5F) + VIEWFINDER) + 10,
+		50,
+		map_size,
+		map_size
+	};
+	SDL_SetRenderDrawColor(rend, 255, 255, 255, 0);
+	SDL_SetRenderViewport(rend, &rect);
+	SDL_RenderRect(rend, NULL);
+	SDL_SetRenderDrawColor(rend, 255, 127, 127, 0);
+	SDL_RenderPoint(rend, p->position.x * (map_size / WORLD_W), p->position.y * (map_size / WORLD_H));
+	SDL_SetRenderViewport(rend, NULL);
 }

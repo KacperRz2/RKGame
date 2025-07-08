@@ -4,6 +4,7 @@
 #include <Being.h>
 #include <World.h>
 #include <function.h>
+#include <Player.h>
 
 inline void AddBeingToSegment(Segment* s, Being* b) {
     b->segment = s;
@@ -15,7 +16,8 @@ inline void AddBeingToSegment(Segment* s, Being* b) {
 Being* CreateBeing(const float x, const float y) {
     Being* b = (Being*)SDL_malloc(sizeof(Being));
     if (b == NULL) return NULL;
-    b->velocity = PLAYER_VELOCITY * 1.875F;
+    // b->velocity = PLAYER_VELOCITY * 1.875F;
+    b->velocity = PLAYER_VELOCITY * 2.125F;
     b->position.x = x;
     b->position.y = y;
     AddBeingToSegment(GetSegment(x, y), b);
@@ -33,15 +35,15 @@ inline void RemoveBeingFromSegment(Being* b) {
     --b->segment->beings.num;
 }
 
-inline void DestroyBeing(Being* b) {
-    RemoveBeingFromSegment(b);
-	SDL_free(b);
-}
+// inline void DestroyBeing(Being* b) {
+//     RemoveBeingFromSegment(b);
+// 	SDL_free(b);
+// }
 
 void DestroyBeings(Beings_array* bs) {
     for (unsigned int i = 0U; i < bs->num; ++i) {
         Being* b = *(bs->array + i);
-        DestroyBeing(b);
+        SDL_free(b);
     }
     bs->num = 0U;
 }
@@ -52,7 +54,7 @@ extern inline void AddBeingToArray(Beings_array* bs, Being* b) {
 }
 
 inline void DestroyBeingInArray(Beings_array* bs, const unsigned int indx) {
-    DestroyBeing(*(bs->array + indx));
+    SDL_free(*(bs->array + indx));
     if (indx != bs->num - 1) {
         *(bs->array + indx) = *(bs->array + bs->num - 1);
     }
@@ -112,6 +114,18 @@ inline void StartBeingWalkWithRandTurn45Deg(Being* b, const int time, const floa
     }
 }
 
+extern inline bool CollideWithBeing(Being* b, const float x, const float y){
+    // if (SDL_fabsf(x - b->position.x) < (float)PLAYER_SIZE) {
+    //     if (SDL_fabsf(y - b->position.y) < (float)PLAYER_SIZE) {
+    //         return true;
+    //     }
+    // }
+    if(SDL_sqrtf((x - b->position.x) * (x - b->position.x) + (y - b->position.y) * (y - b->position.y)) < (float)PLAYER_SIZE){
+        return true;
+    }
+    return false;
+}
+
 bool ResolveBeingCollisionInNewSegment(Being* b, Segment* s, float* new_x, float* new_y, const float x_shift, const float y_shift) {
 
     for (unsigned int i = 0U; i < s->beings.num; ++i) {
@@ -120,20 +134,27 @@ bool ResolveBeingCollisionInNewSegment(Being* b, Segment* s, float* new_x, float
 
         if (b2 == b) continue;
 
-        float dist_x = *new_x - b2->position.x;
-
-        if (SDL_fabsf(dist_x) < (float)PLAYER_SIZE) {
-
-            float dist_y = *new_y - b2->position.y;
-
-            if (SDL_fabsf(dist_y) < (float)PLAYER_SIZE) {
-
-                StartBeingWalkWithRandTurn45Deg(b, 128, x_shift, y_shift);
-                *new_x = b->position.x + b->walk.shift.x;
-                *new_y = b->position.y + b->walk.shift.y;
-                return true;
-            }
+        if(CollideWithBeing(b2, *new_x, *new_y)){
+            StartBeingWalkWithRandTurn45Deg(b, 128, x_shift, y_shift);
+            *new_x = b->position.x + b->walk.shift.x;
+            *new_y = b->position.y + b->walk.shift.y;
+            return true;
         }
+
+        // float dist_x = *new_x - b2->position.x;
+
+        // if (SDL_fabsf(dist_x) < (float)PLAYER_SIZE) {
+
+        //     float dist_y = *new_y - b2->position.y;
+
+        //     if (SDL_fabsf(dist_y) < (float)PLAYER_SIZE) {
+
+        //         StartBeingWalkWithRandTurn45Deg(b, 128, x_shift, y_shift);
+        //         *new_x = b->position.x + b->walk.shift.x;
+        //         *new_y = b->position.y + b->walk.shift.y;
+        //         return true;
+        //     }
+        // }
     }
     return false;
 }
@@ -174,7 +195,9 @@ void UpdateBeingWalk(Being* b) {
     --b->walk.time_left;
 }
 
-void UpdateBeings(Beings_array* bs, SDL_FPoint* player_position) {
+void UpdateBeings(Beings_array* bs, Player* p, Segment* player_seg) {
+
+    // Segment* player_seg = GetSegment(player_position->x, player_position->y);
 
     for (unsigned int i = 0U; i < bs->num; ++i) {
 
@@ -185,12 +208,25 @@ void UpdateBeings(Beings_array* bs, SDL_FPoint* player_position) {
             --i;
             continue;
         }
-        float distance_x = player_position->x - b->position.x;
-        float distance_y = player_position->y - b->position.y;
+
+        if (SDL_abs(player_seg->indx.x - b->segment->indx.x) > RANGE_SEGMENTS) {
+            continue;
+        }
+        if (SDL_abs(player_seg->indx.y - b->segment->indx.y) > RANGE_SEGMENTS) {
+            continue;
+        }
+        float distance_x = p->position.x - b->position.x;
+        float distance_y = p->position.y - b->position.y;
         float distance = SDL_sqrtf(distance_x * distance_x + distance_y * distance_y);
-
+        float velocity_xy;
+        
         if (distance < 75.0F) {
-
+            if(distance < PLAYER_SIZE){
+                velocity_xy = distance / (PLAYER_VELOCITY * 1.5F);
+                // player_position->x = player_position->x + distance_x / velocity_xy;
+                // player_position->y = player_position->y + distance_y / velocity_xy;
+                MovePlayer(p, distance_x / velocity_xy, distance_y / velocity_xy);
+            }
             continue;
         }
         if (b->walk.time_left) {
@@ -198,7 +234,7 @@ void UpdateBeings(Beings_array* bs, SDL_FPoint* player_position) {
             UpdateBeingWalk(b);
             continue;
         }
-        float velocity_xy = distance / b->velocity;
+        velocity_xy = distance / b->velocity;
         float x_shift = distance_x / velocity_xy;
         float y_shift = distance_y / velocity_xy;
         float new_x = b->position.x + x_shift;
@@ -238,4 +274,7 @@ void UpdateBeings(Beings_array* bs, SDL_FPoint* player_position) {
 
 extern inline void DamageBeing(Being* b, int damage) {
     b->hit_points -= damage;
+    if(b->hit_points < 1){
+        RemoveBeingFromSegment(b);
+    }
 }

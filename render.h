@@ -15,5 +15,6 @@ void RenderPlayer(SDL_Renderer*, SDL_Texture**, Blade*);
 void RenderGunSight(SDL_Renderer*, const float, SDL_Texture*);
 void RenderProjectiles(SDL_Renderer*, Projectiles_array*, SDL_Texture*, Player*);
 void RenderBeings(SDL_Renderer*, Beings_array*, SDL_Texture*, Player*);
+void RenderMap(SDL_Renderer*, Player*);
 
 #endif

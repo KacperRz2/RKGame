@@ -16,10 +16,11 @@ void MoveBeingToSegment(Being*, Segment*);
 void StartBeingWalk(Being*, const int, const float, const float);
 void StartBeingWalkWithRandTurn(Being*, const int, const float, const float);
 void StartBeingWalkWithRandTurn45Deg(Being*, const int, const float, const float);
+bool CollideWithBeing(Being* b, const float, const float);
 bool ResolveBeingCollisionInNewSegment(Being*, Segment*, float*, float*, const float, const float);
 void TurnBeingWalk(Being*);
 void UpdateBeingWalk(Being*);
-void UpdateBeings(Beings_array*, SDL_FPoint*);
+void UpdateBeings(Beings_array*, Player*, Segment*);
 void DamageBeing(Being*, int);
 
 #endif

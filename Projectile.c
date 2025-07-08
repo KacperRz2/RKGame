@@ -70,7 +70,7 @@ inline void MoveProjectile(Projectile* pr) {
 	pr->position.y += pr->shift_per_tick.y;
 }
 
-void UpdateProjectiles(Projectiles_array* prs) {
+void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = *(prs->array + i);
 		// if (pr->time_left <= 1U) {
@@ -93,6 +93,16 @@ void UpdateProjectiles(Projectiles_array* prs) {
 			--i;
 			continue;
 		}
+        if (SDL_abs(player_seg->indx.x - s->indx.x) > RANGE_SEGMENTS) {
+			DestroyProjectileInArray(prs, i);
+			--i;
+            continue;
+        }
+        if (SDL_abs(player_seg->indx.y - s->indx.y) > RANGE_SEGMENTS) {
+			DestroyProjectileInArray(prs, i);
+			--i;
+            continue;
+        }
 		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
 			for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 				Segment* neighbour = GetSegmentByIndx(c, r);

@@ -8,6 +8,6 @@ bool ProjectileHitsBeing(Projectile*, Being*);
 void AddProjectileToArray(Projectiles_array*, Projectile*);
 void DestroyProjectileInArray(Projectiles_array*, const unsigned int);
 void MoveProjectile(Projectile*);
-void UpdateProjectiles(Projectiles_array*);
+void UpdateProjectiles(Projectiles_array*, Segment*);
 
 #endif

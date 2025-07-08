@@ -53,13 +53,13 @@ int main(int argc, char* argv[]) {
 	};
 
 	CreateWorld(WORLD_W, WORLD_H);
-	Player* player = CreatePlayer(1000.0F, 1000.0F);
+	Player* player = CreatePlayer(WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
 	if (player == NULL || world == NULL) return 1;
-	AddBeingToArray(&beings, CreateBeing(1500.0F, 1500.0F));
+	AddBeingToArray(&beings, CreateBeing(WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F));
 
 	// while (beings.num < MAX_BEINGS_NUM) {
-	// 	float x = (float)(SDL_rand((Sint32)WORLD_W));
-	// 	float y = (float)(SDL_rand((Sint32)WORLD_H));
+	// 	float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
+	// 	float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
 	// 	Segment* s = GetSegment(x, y);
 	// 	if (s->beings.num < MAX_SEGM_BEINGS && s->available) {
 	// 		AddBeingToArray(&beings, CreateBeing(x, y));
@@ -70,10 +70,10 @@ int main(int argc, char* argv[]) {
 		timer = SDL_GetTicksNS();
 		quit = EventsService(&event, player);
 
-		if (beings.num < MAX_BEINGS_NUM / 2048) {
-		// if (beings.num < MAX_BEINGS_NUM) {
-			float x = (float)(SDL_rand((Sint32)WORLD_W));
-			float y = (float)(SDL_rand((Sint32)WORLD_H));
+		// if (beings.num < MAX_BEINGS_NUM / 2048) {
+		if (beings.num < MAX_BEINGS_NUM) {
+			float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
+			float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
 			if (SDL_fabsf(player->position.x - x) > 2000.0F) {
 				if (SDL_fabsf(player->position.y - y) > 2000.0F) {
 					Segment* s = GetSegment(x, y);
@@ -88,10 +88,11 @@ int main(int argc, char* argv[]) {
 		UpdatePlayer(player, &projectiles);
 		cursor_distance = WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - cursor_y;
 
-		UpdateProjectiles(&projectiles);
+		Segment* s = GetSegment(player->position.x, player->position.y);
+		UpdateProjectiles(&projectiles, s);
 		if (ticks_to_update_beings == 0U) {
 			if (!(player->control_flags & 1 << 6)) {
-				UpdateBeings(&beings, &player->position);
+				UpdateBeings(&beings, player, s);
 			}
 			ticks_to_update_beings = 1U;
 		}
@@ -143,9 +144,8 @@ int main(int argc, char* argv[]) {
 			SDL_RenderDebugTextFormat(renderer, 10, 170, "projectiles: %d", projectiles.num);
 			// SDL_RenderDebugTextFormat(renderer, 10, 180, "beings in seg0x0: %d", (*(*(world->segments + 0) + 0)).beings.num);
 			// SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
-			//SDL_RenderDebugTextFormat(renderer, 10, 250, "sizeof: %d", sizeof(unsigned int));
-			// Segment* s = GetSegment(world, player->position.x, player->position.y);
-			// SDL_RenderDebugTextFormat(renderer, 10, 260, "player: %.0f %.0f", s->coordinates.x, s->coordinates.y);
+			SDL_RenderDebugTextFormat(renderer, 10, 250, "sizeof: %d MB", sizeof(world->segments) / 100000);
+			SDL_RenderDebugTextFormat(renderer, 10, 260, "player: x: %d y: %d", s->indx.x, s->indx.y);
 			//for (unsigned int i = 0U; i < projectiles.num; ++i) {
 			//    Projectile* pr = *(projectiles.array + i);
 			//    s = GetSegment(world, pr->position.x, pr->position.y);
@@ -160,6 +160,8 @@ int main(int argc, char* argv[]) {
 			//SDL_RenderDebugTextFormat(renderer, 10, 200, "min_delay: %llu", MINIMAL_DELAY);
 
 			SDL_RenderTextureRotated(renderer, *(textures + 2), NULL, &destination_rect1, -rotation, NULL, SDL_FLIP_NONE);//compass
+
+			RenderMap(renderer, player);
 
 			SDL_RenderPresent(renderer);
 		}

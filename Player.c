@@ -45,19 +45,109 @@ inline void SetPlayerPosition(Player* p, const float x, const float y) {
 	p->position.y = y;
 }
 
-inline void MovePlayer(Player* p, const float x, const float y) {
+extern inline void MovePlayer(Player* p, const float x, const float y) {
 	float new_x = p->position.x + x;
 	float new_y = p->position.y + y;
-	if (GetSegment(new_x, new_y)->available) {
+
+	if(GetSegment(new_x, new_y)->available){
 		SetPlayerPosition(p, new_x, new_y);
-	} else if (GetSegment(p->position.x, new_y)->available) {
+	}else if(GetSegment(p->position.x, new_y)->available){
 		p->position.y = new_y;
-	} else if (GetSegment(new_x, p->position.y)->available) {
+	}else if(GetSegment(new_x, p->position.y)->available){
 		p->position.x = new_x;
 	}
+	// Segment* s = GetSegment(new_x, new_y);
+	// if(!s->available) {
+	// 	s = GetSegment(p->position.x, new_y);
+	// 	if(!s->available){
+	// 		s = GetSegment(new_x, p->position.y);
+	// 		if(!s->available){
+	// 			return;
+	// 		}else{
+	// 			new_y = p->position.y;
+	// 		}
+	// 	}else{
+	// 		new_x = p->position.x;
+	// 	}
+	// }
+	// for (unsigned int i = 0U; i < s->beings.num; ++i) {
+    //     Being* b = *(s->beings.array + i);
+	// 	if(CollideWithBeing(b, new_x, new_y)){
+	// 		return;
+	// 	}
+	// }
+	// SetPlayerPosition(p, new_x, new_y);
 
-	// p->position.x += x;
-	// p->position.y += y;
+	// float new_x = p->position.x + x;
+	// float new_y = p->position.y + y;
+	// int old = 0b00;
+	// Segment* s = GetSegment(new_x, new_y);
+	// if(!s->available) {
+	// 	s = GetSegment(p->position.x, new_y);
+	// 	if(!s->available){
+	// 		s = GetSegment(new_x, p->position.y);
+	// 		if(!s->available){
+	// 			return;
+	// 		}else{
+	// 			new_y = p->position.y;
+	// 			old = 0b10;
+	// 		}
+	// 	}else{
+	// 		new_x = p->position.x;
+	// 		old = 0b01;
+	// 	}
+	// }
+	// for (unsigned int c = s->indx.x - 1U; c < s->indx.x + 2U; ++c) {
+	// 	for (unsigned int r = s->indx.y - 1U; r < s->indx.y + 2U; ++r) {
+	// 		Segment* neighbour = GetSegmentByIndx(c, r);
+	// 		for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
+	// 			Being* b = *(neighbour->beings.array + i);
+	// 			if(CollideWithBeing(b, new_x, new_y)){
+	// 				if(old == 0b00){
+	// 					if(CollideWithBeing(b, p->position.x, new_y)){
+	// 						if(CollideWithBeing(b, new_x, p->position.y)){
+	// 							// new_y = p->position.y - 0.1F * (new_y - p->position.y);
+	// 							// new_x = p->position.x - 0.1F * (new_x - p->position.x);
+	// 							old = 0b11;
+	// 							// SetPlayerPosition(p, new_x, new_y);
+	// 							return;
+	// 						}else{
+	// 							// new_y = p->position.y - 0.1F * (new_y - p->position.y);
+	// 							old |= 0b10;
+	// 						}
+	// 					}else{
+	// 						// new_x = p->position.x - 0.1F * (new_x - p->position.x);
+	// 						old |= 0b01;
+	// 					}
+	// 				}
+	// 				if(old == 0b11){
+	// 					// float distance_x = p->position.x - b->position.x;
+	// 					// float distance_y = p->position.y - b->position.y;
+	// 					// float distance = SDL_sqrtf(distance_x * distance_x + distance_y * distance_y);
+	// 					// float velocity_xy = distance / PLAYER_VELOCITY;
+	// 					// // float x_shift = distance_x / velocity_xy;
+	// 					// // float y_shift = distance_y / velocity_xy;
+	// 					// float new_x = p->position.x + distance_x / velocity_xy;
+	// 					// float new_y = p->position.y + distance_y / velocity_xy;
+	// 					// SetPlayerPosition(p, new_x, new_y);
+	// 					return;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	// for (unsigned int i = 0U; i < s->beings.num; ++i) {
+    //     Being* b = *(s->beings.array + i);
+		
+	// }
+	// if(old == 0b00){
+	// 	SetPlayerPosition(p, new_x, new_y);
+	// }else if(old == 0b01){
+	// 	p->position.y = new_y;
+	// }else{
+	// 	p->position.x = new_x;
+	// }
 }
 
 // inline void SetPlayerInBounds(Player* p) {
@@ -228,22 +318,24 @@ inline void SetShiftToPosition(Blade* bl, Status_frame* step_shift, const Status
 	step_shift->direction = (frame->direction - bl->direction) / steps;
 }
 
-inline Status_frame GetBladeLocation(Player* p){
+inline Status_frame GetBladeLocation(Player* p, float* sine, float* cosine){
 	float direct = p->direction + p->blade.direction;
-	Status_frame ret = {{p->position.x + SineSafe(direct) * p->blade.position.x, p->position.y - CosiSafe(direct) * p->blade.position.y}, direct};
+	*sine = SineSafe(direct);
+	*cosine = CosiSafe(direct);
+	Status_frame ret = {{p->position.x + *sine * p->blade.position.x, p->position.y - *cosine * p->blade.position.y}, direct};
 	return ret;
 }
 
-inline bool BladeHitsBeing(Blade* bl, Status_frame* location, Being* b) {
-	static const float length_part = BLADE_SIZE * 0.85F * 0.5F;
-	float shift_x = SineSafe(location->direction) * length_part;
-	float shift_y = -CosiSafe(location->direction) * length_part;
+inline bool BladeHitsBeing(Blade* bl, Status_frame* location, Being* b, SDL_FPoint* dangerous_points) {
+	// static const float length_part = BLADE_SIZE * 0.85F * 0.5F;
+	// float shift_x = SineSafe(location->direction) * length_part;
+	// float shift_y = -CosiSafe(location->direction) * length_part;
 	// float shift_x = SDL_sinf(location->direction) * length_part;
 	// float shift_y = -SDL_cosf(location->direction) * length_part;
-	for (unsigned int i = 1U; i < 3U; ++i) {
-		SDL_FPoint dangerous_point = {location->position.x + i * shift_x, location->position.y + i * shift_y};// if(tmp) SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "%f, %f", dangerous_point.x, dangerous_point.y);
-		if (SDL_fabsf(dangerous_point.x - b->position.x) < PLAYER_SIZE * 0.5F) {
-			if (SDL_fabsf(dangerous_point.y - b->position.y) < PLAYER_SIZE * 0.5F) {// int tmp = 0;
+	for (unsigned int i = 0U; i < 2U; ++i) {
+		// SDL_FPoint dangerous_point = {location->position.x + i * shift_x, location->position.y + i * shift_y};// if(tmp) SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "%f, %f", dangerous_point.x, dangerous_point.y);
+		if (SDL_fabsf((dangerous_points + i)->x - b->position.x) < PLAYER_SIZE * 0.5F) {
+			if (SDL_fabsf((dangerous_points + i)->y - b->position.y) < PLAYER_SIZE * 0.5F) {// int tmp = 0;
 				for(unsigned int j = bl->hits; j > 0U; --j){
 					if (*(bl->hit_targets + (j - 1U)) == b) {// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "same! %d!", tmp);
 						return false;
@@ -257,17 +349,26 @@ inline bool BladeHitsBeing(Blade* bl, Status_frame* location, Being* b) {
 }
 
 inline bool UnleashDestruction(Player* p){
-	Status_frame blade_true_location = GetBladeLocation(p); //if(tmp) SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "%f, %f, %f", blade_true_location.position.x, blade_true_location.position.y, blade_true_location.direction);
+	static const float length_part = BLADE_SIZE * 0.85F * 0.5F;
+	float sine_blade_direction;
+	float cosine_blade_direction;
+	Status_frame blade_true_location = GetBladeLocation(p, &sine_blade_direction, &cosine_blade_direction); //if(tmp) SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "%f, %f, %f", blade_true_location.position.x, blade_true_location.position.y, blade_true_location.direction);
 	Segment* s = GetSegment(blade_true_location.position.x, blade_true_location.position.y);
 	if(!s->available){
 		return true;
 	} //if(tmp) {SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "####################");}
+	float shift_x = sine_blade_direction * length_part;
+	float shift_y = -cosine_blade_direction * length_part;
+	SDL_FPoint dangerous_points[] = {
+		{blade_true_location.position.x + 2.0F * shift_x, blade_true_location.position.y + 2.0F * shift_y},
+		{blade_true_location.position.x + shift_x, blade_true_location.position.y + shift_y}
+	};
 	for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
 		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 			Segment* neighbour = GetSegmentByIndx(c, r);// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "/bla: %d, %d", neighbour->indx.x, neighbour->indx.y);
 			for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
 				Being* b = *(neighbour->beings.array + i); //if(tmp) SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "@bei: %f, %f", b->position.x, b->position.y);
-				if (BladeHitsBeing(&p->blade, &blade_true_location, b)) {
+				if (BladeHitsBeing(&p->blade, &blade_true_location, b, dangerous_points)) {
 					DamageBeing(b, p->blade.damage);
 					if(p->blade.hits < p->blade.penetration){
 						*(p->blade.hit_targets + p->blade.hits++) = b;
@@ -287,36 +388,30 @@ inline bool UnleashDestruction(Player* p){
 
 inline void UpdatePlayerBlade(Player* p){
 	static const Status_frame blade_key_frames_0[] = {
-		// {{16.0F, -8.0F}, SDL_PI_F * 0.45F},
 		{{16.0F, -8.0F}, SDL_PI_F * 0.55F},
 		{{6.0F, 8.0F}, SDL_PI_F * 0.25F},
 		{{-4.0F, 10.0F}, 0.0F},
 		{{-4.0F, 10.0F}, SDL_PI_F * -0.416F},
-		// {{-14.0F, 0.0F}, SDL_PI_F * -0.83F},
 		{{-14.0F, 0.0F}, SDL_PI_F * -0.55F}
 	};
 	static const Status_frame blade_key_frames_1[] = {
 		{{-14.0F, 0.0F}, SDL_PI_F * -0.65F},
-		// {{-14.0F, 0.0F}, SDL_PI_F},
 		{{-4.0F, 10.0F}, SDL_PI_F * -0.38F},
 		{{6.0F, 8.0F}, SDL_PI_F * -0.138F},
 		{{16.0F, -8.0F}, SDL_PI_F * 0.45F},
-		// {{16.0F, -8.0F}, SDL_PI_F * 0.83F}
 		{{16.0F, -8.0F}, SDL_PI_F * 0.55F}
-		// {{16.0F, -8.0F}, SDL_PI_F * 0.45F}
 	};
 	static const Status_frame blade_key_frames_2[] = {
 		{{16.0F, -8.0F}, SDL_PI_F * 0.45F},
 		{{16.0F, 0.0}, 0.0F},
 		{{-1.0F, 24.0F}, 0.0F},
-		// {{6.0F, 10.0F}, 0.0F}
-		{{12.0F, 2.0F}, SDL_PI_F * 0.15F}
+		{{0.0F, 25.0F}, 0.0F}
 	};
 	static const Status_frame* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
 	static Status_frame step_shift = {{0.0F, 0.0F}, 0.0};
 	static int key = 0;
-	static int steps = 64;
+	static int steps = 128;
 	static int step = 0;
 	static unsigned int chain = 0U;
 	static unsigned int chain_next = 0U;
@@ -341,7 +436,7 @@ inline void UpdatePlayerBlade(Player* p){
 				start = false;
 				p->blade.hits = 0U;
 				// SetBladePosition(&p->blade, *(blade_moves + chain) + key);
-				SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain), steps = 64);
+				SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain), steps = 128);
 				// SetShift(&step_shift, *(blade_moves + chain) + key++, steps = 64);
 				chain_next = (chain_next + 1) % SDL_arraysize(sizes);
 				freehand = false;
@@ -365,7 +460,7 @@ inline void UpdatePlayerBlade(Player* p){
 			// SetShiftToBase(&p->blade, &step_shift, steps = 384);
 			SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain_next), steps = 192);
 		}else{
-			SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain) + ++key, steps = 64);
+			SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain) + ++key, steps = 32);
 			// SetBladePosition(&p->blade, *(blade_moves + chain) + key);
 			// SetShift(&step_shift, *(blade_moves + chain) + key++, steps);
 		}
@@ -377,6 +472,7 @@ inline void UpdatePlayerBlade(Player* p){
 				if(freehand = UnleashDestruction(p)){
 					abide = false;
 					p->blade.hits = 0U;
+					p->blade.direction = chain == 1 ? p->blade.direction - 0.375F : p->blade.direction + 0.375F;
 					// SetShiftToBase(&p->blade, &step_shift, steps = 512);
 					SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain_next), steps = 512);
 					step = 0;
