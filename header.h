@@ -16,6 +16,7 @@
 
 float si[ANGLE_PARTS];
 float co[ANGLE_PARTS];
-World* world;
+World w;
+World* const world = &w;
 
 #endif

@@ -8,6 +8,7 @@ typedef struct Status_frame Status_frame;
 //Being
 typedef struct Being Being;
 typedef struct Beings_array Beings_array;
+typedef struct Segment_beings Segment_beings;
 //Projectile
 typedef struct Projectile Projectile;
 typedef struct Projectiles_array Projectiles_array;
@@ -27,7 +28,7 @@ struct Blade {
 	float direction;
 	int damage;
 	unsigned int penetration;
-	void** hit_targets;
+	void* hit_targets[MAX_HITS];
 	unsigned int hits;
 };
 struct Status_frame {
@@ -45,7 +46,11 @@ struct Being {
     Walk walk;
 };
 struct Beings_array {
-	Being** array;
+	Being* array;
+    unsigned int num;
+};
+struct Segment_beings {
+	Being* array[MAX_SEGM_BEINGS];
     unsigned int num;
 };
 //Projectile
@@ -55,21 +60,21 @@ struct Projectile {
 	// unsigned int time_left;
 	int damage;
 	unsigned int penetration;
-	void** hit_targets;
+	void* hit_targets[MAX_HITS];
 	unsigned int hits;
 };
 struct Projectiles_array {
-	Projectile** array;
+	Projectile* array;
 	unsigned int num;
 };
 //World
 struct Segment {
-	Beings_array beings;
-	bool available;
+	Segment_beings beings;
+	// bool available;
 	SDL_Point indx;
 };
 struct World {
-	Segment segments[SEGMENTS_Y][SEGMENTS_X];
+	Segment*** segments;//[SEGMENTS_Y][SEGMENTS_X];
 	float sin_player_direction;
 	float cos_player_direction;
 	float width;

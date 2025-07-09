@@ -13,19 +13,19 @@ inline void AddBeingToSegment(Segment* s, Being* b) {
     ++s->beings.num;
 }
 
-Being* CreateBeing(const float x, const float y) {
-    Being* b = (Being*)SDL_malloc(sizeof(Being));
-    if (b == NULL) return NULL;
-    // b->velocity = PLAYER_VELOCITY * 1.875F;
-    b->velocity = PLAYER_VELOCITY * 2.125F;
-    b->position.x = x;
-    b->position.y = y;
-    AddBeingToSegment(GetSegment(x, y), b);
-    b->hit_points = 100;
-    //b->flank = (bool)SDL_rand(2);
-    b->walk.time_left = 0;
-    return b;
-}
+// Being* CreateBeing(const float x, const float y) {
+//     Being* b = (Being*)SDL_malloc(sizeof(Being));
+//     if (b == NULL) return NULL;
+//     // b->velocity = PLAYER_VELOCITY * 1.875F;
+//     b->velocity = PLAYER_VELOCITY * 2.125F;
+//     b->position.x = x;
+//     b->position.y = y;
+//     AddBeingToSegment(GetSegment(x, y), b);
+//     b->hit_points = 100;
+//     //b->flank = (bool)SDL_rand(2);
+//     b->walk.time_left = 0;
+//     return b;
+// }
 
 inline void RemoveBeingFromSegment(Being* b) {
     if (b->indx != b->segment->beings.num - 1) {
@@ -41,20 +41,30 @@ inline void RemoveBeingFromSegment(Being* b) {
 // }
 
 void DestroyBeings(Beings_array* bs) {
-    for (unsigned int i = 0U; i < bs->num; ++i) {
-        Being* b = *(bs->array + i);
-        SDL_free(b);
-    }
+    // for (unsigned int i = 0U; i < bs->num; ++i) {
+    //     Being* b = (bs->array + i);
+    //     SDL_free(b);
+    // }
+    SDL_free(bs->array);
     bs->num = 0U;
 }
 
-extern inline void AddBeingToArray(Beings_array* bs, Being* b) {
-    *(bs->array + bs->num) = b;
+// extern inline void AddBeingToArray(Beings_array* bs, Being* b) {
+extern inline void AddBeingToArray(Beings_array* bs, const float x, const float y) {
+    Being* b = (bs->array + bs->num);
+    b->position.x = x;
+    b->position.y = y;
+    b->velocity = PLAYER_VELOCITY * 2.125F;
+    b->position.x = x;
+    b->position.y = y;
+    AddBeingToSegment(GetSegment(x, y), b);
+    b->hit_points = 100;
+    b->walk.time_left = 0;
     ++bs->num;
 }
 
 inline void DestroyBeingInArray(Beings_array* bs, const unsigned int indx) {
-    SDL_free(*(bs->array + indx));
+    // SDL_free(*(bs->array + indx));
     if (indx != bs->num - 1) {
         *(bs->array + indx) = *(bs->array + bs->num - 1);
     }
@@ -201,7 +211,7 @@ void UpdateBeings(Beings_array* bs, Player* p, Segment* player_seg) {
 
     for (unsigned int i = 0U; i < bs->num; ++i) {
 
-        Being* b = *(bs->array + i);
+        Being* b = (bs->array + i);
 
         if (b->hit_points <= 0) {
             DestroyBeingInArray(bs, i);
@@ -253,15 +263,21 @@ void UpdateBeings(Beings_array* bs, Player* p, Segment* player_seg) {
         }
 
         if (new_segment != b->segment) {
-
-            if (new_segment->beings.num >= MAX_SEGM_BEINGS || !new_segment->available) {
-
+            if (new_segment->available){
+                if (new_segment->beings.num >= MAX_SEGM_BEINGS) {
+                    if ((bool)SDL_rand(2)) {
+                        StartBeingWalkWithRandTurn(b, 128, x_shift * 0.5F, y_shift * 0.5F);
+                    }
+                    else {
+                        StartBeingWalkWithRandTurn(b, -128, 0.0F, 0.0F);
+                    }
+                    continue;
+                }
+            }else{
                 if ((bool)SDL_rand(2)) {
-
                     StartBeingWalkWithRandTurn(b, 128, x_shift * 0.5F, y_shift * 0.5F);
                 }
                 else {
-
                     StartBeingWalkWithRandTurn(b, -128, 0.0F, 0.0F);
                 }
                 continue;

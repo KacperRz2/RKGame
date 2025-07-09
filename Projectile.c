@@ -6,24 +6,24 @@
 #include <World.h>
 #include <function.h>
 
-Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
-	Projectile* pr = (Projectile*)SDL_malloc(sizeof(Projectile));
-	if (pr == NULL) return NULL;
-	pr->position = *position;
-	// pr->shift_per_tick.x = SDL_sinf(direction) * velocity;
-	// pr->shift_per_tick.y = -SDL_cosf(direction) * velocity;
-	pr->shift_per_tick.x = SineSafe(direction) * velocity;
-	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
-	// pr->time_left = 0x00000200U;
-	pr->damage = damage;
-	pr->penetration = penetration;
-	pr->hit_targets = (void**)SDL_malloc(sizeof(void*) * penetration);
-	for(unsigned int i = 0U; i < penetration; ++i){
-		*(pr->hit_targets + i) = NULL;
-	}
-	pr->hits = 0;
-	return pr;
-}
+// Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
+// 	Projectile* pr = (Projectile*)SDL_malloc(sizeof(Projectile));
+// 	if (pr == NULL) return NULL;
+// 	pr->position = *position;
+// 	// pr->shift_per_tick.x = SDL_sinf(direction) * velocity;
+// 	// pr->shift_per_tick.y = -SDL_cosf(direction) * velocity;
+// 	pr->shift_per_tick.x = SineSafe(direction) * velocity;
+// 	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
+// 	// pr->time_left = 0x00000200U;
+// 	pr->damage = damage;
+// 	pr->penetration = penetration;
+// 	// pr->hit_targets = (void**)SDL_malloc(sizeof(void*) * penetration);
+// 	for(unsigned int i = 0U; i < penetration; ++i){
+// 		*(pr->hit_targets + i) = NULL;
+// 	}
+// 	pr->hits = 0;
+// 	return pr;
+// }
 
 inline void DestroyProjectile(Projectile* pr) {
 	SDL_free(pr->hit_targets);
@@ -31,10 +31,11 @@ inline void DestroyProjectile(Projectile* pr) {
 }
 
 void DestroyProjectiles(Projectiles_array* prs) {
-	for (unsigned int i = 0U; i < prs->num; ++i) {
-		Projectile* pr = *(prs->array + i);
-		DestroyProjectile(pr);
-	}
+	// for (unsigned int i = 0U; i < prs->num; ++i) {
+	// 	Projectile* pr = (prs->array + i);
+	// 	DestroyProjectile(pr);
+	// }
+    SDL_free(prs->array);
 	prs->num = 0U;
 }
 
@@ -52,13 +53,23 @@ inline bool ProjectileHitsBeing(Projectile* pr, Being* b) {
 	return false;
 }
 
-extern inline void AddProjectileToArray(Projectiles_array* prs, Projectile* pr) {
-	*(prs->array + prs->num) = pr;
+extern inline void AddProjectileToArray(Projectiles_array* prs, const SDL_FPoint* position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
+	// *(prs->array + prs->num) = pr;
+	Projectile* pr = (prs->array + prs->num);
+	pr->position = *position;
+	pr->shift_per_tick.x = SineSafe(direction) * velocity;
+	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
+	pr->damage = damage;
+	pr->penetration = penetration;
+	// for(unsigned int i = 0U; i < penetration; ++i){
+	// 	*(pr->hit_targets + i) = NULL;
+	// }
+	pr->hits = 0;
 	++prs->num;
 }
 
 inline void DestroyProjectileInArray(Projectiles_array* prs, const unsigned int indx) {
-	DestroyProjectile(*(prs->array + indx));
+	// DestroyProjectile(*(prs->array + indx));
 	if (indx != prs->num - 1) {
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}
@@ -72,7 +83,7 @@ inline void MoveProjectile(Projectile* pr) {
 
 void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
 	for (unsigned int i = 0U; i < prs->num; ++i) {
-		Projectile* pr = *(prs->array + i);
+		Projectile* pr = (prs->array + i);
 		// if (pr->time_left <= 1U) {
 		// 	DestroyProjectileInArray(prs, i);
 		// 	--i;
@@ -106,8 +117,9 @@ void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
 		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
 			for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 				Segment* neighbour = GetSegmentByIndx(c, r);
-				for (unsigned int j = 0U; j < neighbour->beings.num; ++j) {
-					Being* b = *(neighbour->beings.array + j);
+				if(!neighbour->available) continue;
+				for (unsigned int j = 0U; j < neighbour->beings->num; ++j) {
+					Being* b = *(neighbour->beings->array + j);
 					if (ProjectileHitsBeing(pr, b)) {
 						DamageBeing(b, pr->damage);
 						if(pr->hits < pr->penetration){

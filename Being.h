@@ -2,11 +2,11 @@
 #define BEIGN_H_
 
 void AddBeingToSegment(Segment*, Being*);
-Being* CreateBeing(const float, const float);
+// Being* CreateBeing(const float, const float);
 void RemoveBeingFromSegment(Being*);
 void DestroyBeing(Being*);
 void DestroyBeings(Beings_array*);
-void AddBeingToArray(Beings_array*, Being*);
+void AddBeingToArray(Beings_array*, const float, const float);
 void DestroyBeingInArray(Beings_array*, const unsigned int);
 void MoveBeing(Being*, const float, const float);
 void SetBeingPosition(Being*, const float, const float);

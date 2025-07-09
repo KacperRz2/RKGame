@@ -9,18 +9,18 @@
 
 // bool tmp = false;
 
-Player* CreatePlayer(const float x, const float y) {
-	Player* p = (Player*)SDL_malloc(sizeof(Player));
-	if (p == NULL) return NULL;
+void CreatePlayer(Player* p, const float x, const float y) {
+	// Player p = (Player*)SDL_malloc(sizeof(Player));
+	// if (p == NULL) return NULL;
 	p->blade.position.x = 16.0F;
  	p->blade.position.y = -8.0F;
 	p->blade.direction = SDL_PI_F * 0.45F;
 	p->blade.damage = BLADE_DAMAGE;
 	p->blade.penetration = BLADE_PENETRATION;
-	p->blade.hit_targets = (void**)SDL_malloc(sizeof(void*) * BLADE_PENETRATION);
-	for(unsigned int i = 0U; i < BLADE_PENETRATION; ++i){
-		*(p->blade.hit_targets + i) = NULL;
-	}
+	// p->blade.hit_targets = (void**)SDL_malloc(sizeof(void*) * BLADE_PENETRATION);
+	// for(unsigned int i = 0U; i < BLADE_PENETRATION; ++i){
+	// 	*(p->blade.hit_targets + i) = NULL;
+	// }
 	p->blade.hits = 0;
 	p->position.x = x;
 	p->position.y = y;
@@ -37,7 +37,7 @@ Player* CreatePlayer(const float x, const float y) {
 	p->max_magic = 100;
 	p->fatigue_block_time = 0;
 	p->armour = 0.875F;
-	return p;
+	// return p;
 }
 
 inline void SetPlayerPosition(Player* p, const float x, const float y) {
@@ -273,7 +273,7 @@ inline void UpdatePlayerPoints(Player* p) {
 extern inline void UpdatePlayer(Player* p, Projectiles_array* prs) {
 	if (p->control_flags & 1 << 8) {
 		if (prs->num < MAX_PROJECTILES_NUM) {
-			AddProjectileToArray(prs, CreateProjectile(&p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F, 10, 3U));
+			AddProjectileToArray(prs, &p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F, 10, 3U);
 		}
 	}
 	UpdatePlayerBlade(p);
@@ -366,8 +366,9 @@ inline bool UnleashDestruction(Player* p){
 	for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
 		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 			Segment* neighbour = GetSegmentByIndx(c, r);// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "/bla: %d, %d", neighbour->indx.x, neighbour->indx.y);
-			for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
-				Being* b = *(neighbour->beings.array + i); //if(tmp) SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "@bei: %f, %f", b->position.x, b->position.y);
+			if(!neighbour->available) continue;
+			for (unsigned int i = 0U; i < neighbour->beings->num; ++i) {
+				Being* b = *(neighbour->beings->array + i); //if(tmp) SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "@bei: %f, %f", b->position.x, b->position.y);
 				if (BladeHitsBeing(&p->blade, &blade_true_location, b, dangerous_points)) {
 					DamageBeing(b, p->blade.damage);
 					if(p->blade.hits < p->blade.penetration){

@@ -1,7 +1,7 @@
 #ifndef RENDER_H_
 #define RENDER_H_
 
-extern World* world;
+extern World* const world;
 
 struct Graphics_initiation_data {
 	SDL_Window** window;

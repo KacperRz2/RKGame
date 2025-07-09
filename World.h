@@ -1,7 +1,7 @@
 #ifndef WORLD_H_
 #define WORLD_H_
 
-extern World* world;
+extern World* const world;
 
 void CreateWorld(const float, const float);
 void DestroyWorld();
