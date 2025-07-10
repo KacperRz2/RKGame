@@ -59,13 +59,13 @@ int GraphicsInitiation(struct Graphics_initiation_data* data) {
 }
 
 void RenderGunSightCross(SDL_Renderer* rend) {
-	const static SDL_FRect rect0 = { 
+	static const SDL_FRect rect0 = { 
 		GUN_SIGHT_SIZE * 0.5F - 1.0F,
 		1.0F,
 		3.0F,
 		(float)GUN_SIGHT_SIZE - 2.0F
 	};
-	const static SDL_FRect rect1 = {
+	static const SDL_FRect rect1 = {
 		1.0F,
 		GUN_SIGHT_SIZE * 0.5F - 1.0F,
 		(float)GUN_SIGHT_SIZE - 2.0F,

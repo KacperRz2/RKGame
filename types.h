@@ -42,7 +42,6 @@ struct Being {
 	unsigned int indx;
     float velocity;
     int hit_points;
-	//bool flank;
     Walk walk;
 };
 struct Beings_array {
@@ -57,7 +56,6 @@ struct Segment_beings {
 struct Projectile {
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
-	// unsigned int time_left;
 	int damage;
 	unsigned int penetration;
 	void* hit_targets[MAX_HITS];
@@ -70,11 +68,10 @@ struct Projectiles_array {
 //World
 struct Segment {
 	Segment_beings beings;
-	// bool available;
 	SDL_Point indx;
 };
 struct World {
-	Segment*** segments;//[SEGMENTS_Y][SEGMENTS_X];
+	Segment*** segments;
 	float sin_player_direction;
 	float cos_player_direction;
 	float width;
@@ -82,7 +79,6 @@ struct World {
 };
 //Player
 struct Player {
-	// Segment* segment;
 	Uint32 control_flags;
 	SDL_FPoint position;
 	Blade blade;

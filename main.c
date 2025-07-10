@@ -9,32 +9,15 @@ int main(int argc, char* argv[]) {
 	float cursor_y;
 	float* const cursor_y_ptr = &cursor_y;
 	const SDL_FPoint zero_point = {0.0F, 0.0F};
-	// Projectile* projectiles_ptr_array[MAX_PROJECTILES_NUM];
-	// for (unsigned int i = 0U; i < MAX_PROJECTILES_NUM; ++i) {
-	// 	*(projectiles_ptr_array + i) = (projectiles_array + i);
-	// }
-	// Projectile projectiles_array[MAX_PROJECTILES_NUM];
-	// Being beings_array[MAX_BEINGS_NUM];
 	Projectiles_array projectiles;
 	Projectiles_array* const projectiles_ptr = &projectiles;
-	projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);//projectiles_array;
+	projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	projectiles.num = 0U;
 	// sizeof(beings_array) / 1000;
 	Beings_array beings;
 	Beings_array* const beings_ptr = &beings;
-	beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);//beings_array;
+	beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
 	beings.num = 0U;
-	// projectiles.array = (Projectile**)SDL_malloc(sizeof(Projectile*) * MAX_PROJECTILES_NUM);
-	// for (unsigned int i = 0U; i < MAX_PROJECTILES_NUM; ++i) {
-	// 	*(projectiles.array + i) = CreateProjectile(&zero_point, 0.0F, 3.0F, 10, 3U);
-	// }
-	// projectiles.num = 0U;
-	// Beings_array beings;
-	// beings.array = (Being**)SDL_malloc(sizeof(Being*) * MAX_BEINGS_NUM);
-	// for (unsigned int i = 0U; i < MAX_BEINGS_NUM; ++i) {
-	// 	*(beings.array + i) = CreateBeing(zero_point.x, zero_point.y);
-	// }
-	// beings.num = 0U;
 	float rotation = 0.0F;
 	float cursor_distance = 0.0F;
 	unsigned int ticks_to_update_beings = 1U;
@@ -78,23 +61,16 @@ int main(int argc, char* argv[]) {
 
 	CreateWorld(WORLD_W, WORLD_H);
 	Player p;
-	// void* hits[MAX_HITS];
 	Player* const player = &p;
 	Blade* const player_blade = &player->blade;
-	CreatePlayer(player, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);;
-	// player->blade.hit_targets = hits;
-	
-	// Player* player = CreatePlayer(WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
+	CreatePlayer(player, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
 	if (player == NULL || world == NULL) return 1;
 	AddBeingToArray(beings_ptr, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F);
 
 	// while (beings.num < MAX_BEINGS_NUM) {
 	// 	float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
 	// 	float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-	// 	Segment* s = GetSegment(x, y);
-	// 	if (s->beings.num < MAX_SEGM_BEINGS && s->available) {
-	// 		AddBeingToArray(&beings, CreateBeing(x, y));
-	// 	}
+
 	// }
 
 	while (!quit) {
@@ -105,14 +81,10 @@ int main(int argc, char* argv[]) {
 		if (beings.num < MAX_BEINGS_NUM) {
 			float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
 			float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-			if (SDL_fabsf(player->position.x - x) > 2000.0F) {
-				if (SDL_fabsf(player->position.y - y) > 2000.0F) {
-					Segment* s = GetSegment(x, y);
-					if(s->available){
-						if (s->beings->num < MAX_SEGM_BEINGS && s->available) {
-							AddBeingToArray(beings_ptr, x, y);
-						}
-					}
+			if (SDL_fabsf(player->position.x - x) > 2000.0F && SDL_fabsf(player->position.y - y) > 2000.0F) {
+				Segment* s = GetSegment(x, y);
+				if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
+					AddBeingToArray(beings_ptr, x, y);
 				}
 			}
 		}
@@ -159,7 +131,6 @@ int main(int argc, char* argv[]) {
 			}
 			
 			SDL_RenderTexture(renderer, *(textures + 5), NULL, NULL);//viewfinder
-			// RenderPlayer(renderer, *(textures + 1));
 			RenderPlayer(renderer, textures, player_blade);
 			RenderGunSight(renderer, cursor_y, *textures);
 
@@ -215,12 +186,9 @@ int main(int argc, char* argv[]) {
 			SDL_DelayNS((TICK_TIME - (now - timer)) >> 1);
 		}
 	}
-	// DestroyPlayer(player);
 	DestroyProjectiles(projectiles_ptr);
 	DestroyBeings(beings_ptr);
 	DestroyWorld();
-	// SDL_free(beings.array);
-	// SDL_free(projectiles.array);
 	for (int i = 0; i < TEXTURES_NUM; ++i) {
 		SDL_DestroyTexture(*(textures + i));
 	}

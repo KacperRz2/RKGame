@@ -5,8 +5,6 @@ extern float si[];
 extern float co[];
 
 float RadToDeg(const float);
-// bool SetInBounds(float*, float*);
-// bool InBounds(SDL_FPoint*);
 float sine(float);
 float cosi(float);
 float SineSafe(float);

@@ -6,70 +6,35 @@
 #include <World.h>
 #include <function.h>
 
-// Projectile* CreateProjectile(const SDL_FPoint* position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
-// 	Projectile* pr = (Projectile*)SDL_malloc(sizeof(Projectile));
-// 	if (pr == NULL) return NULL;
-// 	pr->position = *position;
-// 	// pr->shift_per_tick.x = SDL_sinf(direction) * velocity;
-// 	// pr->shift_per_tick.y = -SDL_cosf(direction) * velocity;
-// 	pr->shift_per_tick.x = SineSafe(direction) * velocity;
-// 	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
-// 	// pr->time_left = 0x00000200U;
-// 	pr->damage = damage;
-// 	pr->penetration = penetration;
-// 	// pr->hit_targets = (void**)SDL_malloc(sizeof(void*) * penetration);
-// 	for(unsigned int i = 0U; i < penetration; ++i){
-// 		*(pr->hit_targets + i) = NULL;
-// 	}
-// 	pr->hits = 0;
-// 	return pr;
-// }
-
-inline void DestroyProjectile(Projectile* pr) {
-	SDL_free(pr->hit_targets);
-	SDL_free(pr);
-}
-
 void DestroyProjectiles(Projectiles_array* prs) {
-	// for (unsigned int i = 0U; i < prs->num; ++i) {
-	// 	Projectile* pr = (prs->array + i);
-	// 	DestroyProjectile(pr);
-	// }
     SDL_free(prs->array);
 	prs->num = 0U;
 }
 
 inline bool ProjectileHitsBeing(Projectile* pr, Being* b) {
-	if (SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F) {
-		if (SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F) {// int tmp = 0;
-			for(unsigned int i = pr->hits; i > 0U; --i){
-				if (*(pr->hit_targets + (i - 1U)) == b) {// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "same! %d!", tmp);
-					return false;
-				}// ++tmp;
+	if (SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F) {
+		for(unsigned int i = pr->hits; i > 0U; --i){
+			if (*(pr->hit_targets + (i - 1U)) == b) {
+				return false;
 			}
-			return true;
 		}
+		return true;
 	}
 	return false;
 }
 
-extern inline void AddProjectileToArray(Projectiles_array* prs, const SDL_FPoint* position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
-	// *(prs->array + prs->num) = pr;
-	Projectile* pr = (prs->array + prs->num);
+extern inline void AddProjectileToArray(Projectiles_array* prs, const SDL_FPoint* const position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
+	Projectile* pr = (prs->array + prs->num++);
 	pr->position = *position;
 	pr->shift_per_tick.x = SineSafe(direction) * velocity;
 	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
 	pr->damage = damage;
 	pr->penetration = penetration;
-	// for(unsigned int i = 0U; i < penetration; ++i){
-	// 	*(pr->hit_targets + i) = NULL;
-	// }
 	pr->hits = 0;
-	++prs->num;
+	// ++prs->num;
 }
 
 inline void DestroyProjectileInArray(Projectiles_array* prs, const unsigned int indx) {
-	// DestroyProjectile(*(prs->array + indx));
 	if (indx != prs->num - 1) {
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}
@@ -84,55 +49,31 @@ inline void MoveProjectile(Projectile* pr) {
 void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
 	for (unsigned int i = 0U; i < prs->num; ++i) {
 		Projectile* pr = (prs->array + i);
-		// if (pr->time_left <= 1U) {
-		// 	DestroyProjectileInArray(prs, i);
-		// 	--i;
-		// 	continue;
-		// }
-		// else {
-		// 	--pr->time_left;
-		// }
 		MoveProjectile(pr);
-		// if (!InBounds(&pr->position)) {
-		// 	DestroyProjectileInArray(prs, i);
-		// 	--i;
-		// 	continue;
-		// }
 		Segment* s = GetSegment(pr->position.x, pr->position.y);
-		if(!s->available){
+		if(s == NULL || SDL_abs(player_seg->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs(player_seg->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
 			DestroyProjectileInArray(prs, i);
 			--i;
 			continue;
 		}
-        if (SDL_abs(player_seg->indx.x - s->indx.x) > RANGE_SEGMENTS) {
-			DestroyProjectileInArray(prs, i);
-			--i;
-            continue;
-        }
-        if (SDL_abs(player_seg->indx.y - s->indx.y) > RANGE_SEGMENTS) {
-			DestroyProjectileInArray(prs, i);
-			--i;
-            continue;
-        }
 		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
-			for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
-				Segment* neighbour = GetSegmentByIndx(c, r);
-				if(!neighbour->available) continue;
-				for (unsigned int j = 0U; j < neighbour->beings->num; ++j) {
-					Being* b = *(neighbour->beings->array + j);
-					if (ProjectileHitsBeing(pr, b)) {
-						DamageBeing(b, pr->damage);
-						if(pr->hits < pr->penetration){
-							*(pr->hit_targets + pr->hits++) = b;
-						}else{
-							DestroyProjectileInArray(prs, i);
-							--i;
-							goto outside;
-						}
+		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
+			Segment* neighbour = GetSegmentByIndx(c, r);
+			if(neighbour == NULL) continue;
+			for (unsigned int j = 0U; j < neighbour->beings.num; ++j) {
+				Being* b = *(neighbour->beings.array + j);
+				if (ProjectileHitsBeing(pr, b)) {
+					DamageBeing(b, pr->damage);
+					if(pr->hits < pr->penetration){
+						*(pr->hit_targets + pr->hits++) = b;
+					}else{
+						DestroyProjectileInArray(prs, i);
+						--i;
+						goto outside;
 					}
 				}
 			}
-		}
+		}}
 		outside:;
 	}
 }
