@@ -142,8 +142,7 @@ void RenderProjectiles(SDL_Renderer* rend, Projectiles_array* prs, SDL_Texture* 
 		BULLET_SIZE,
 		BULLET_SIZE
 	};
-	for (unsigned int i = 0U; i < prs->num; ++i) {
-		Projectile* pr = (prs->array + i);
+	for (Projectile* pr = prs->array; pr != (prs->array + prs->num); ++pr) {
 
 		float dx = pr->position.x - p->position.x;
 		if(SDL_fabsf(dx) < VIEWFINDER){
@@ -174,8 +173,7 @@ void RenderBeings(SDL_Renderer* rend, Beings_array* bs, SDL_Texture* tx, Player*
 		PLAYER_SIZE,
 		PLAYER_SIZE
 	};
-	for (unsigned int i = 0; i < bs->num; ++i) {
-		Being* b = (bs->array + i);		
+    for (Being* b = bs->array; b != (bs->array + bs->num); ++b) {
 		
 		float dx = b->position.x - p->position.x;
 		if(SDL_fabsf(dx) < VIEWFINDER){

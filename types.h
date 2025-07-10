@@ -85,7 +85,7 @@ struct Player {
 	float direction;
 	float velocity;
 	float max_velocity;
-	float range;
+	// float range;
 	int hit_points;
 	int fatigue_points;
 	int magic_points;

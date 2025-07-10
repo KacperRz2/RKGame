@@ -41,6 +41,8 @@
 #define RANGE_SEGMENTS      (SEGMENTS_X / 4U)
 #define PROJECTILE_RAN_SEG  (SEGMENTS_X / 64U)
 #define MAX_HITS            25U
+#define RAD_TO_MINE         ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
+#define RANGE               700.0F
 
 // #define SQRT2				1.4142135623730950488016887242097F
 // #define WINDOW_CENTER_X		(WINDOW_W / 2)

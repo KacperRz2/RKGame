@@ -47,15 +47,19 @@ inline void MoveProjectile(Projectile* pr) {
 }
 
 void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
-	for (unsigned int i = 0U; i < prs->num; ++i) {
-		Projectile* pr = (prs->array + i);
+	for (Projectile* pr = prs->array; pr != (prs->array + prs->num); ++pr) {
 		MoveProjectile(pr);
 		Segment* s = GetSegment(pr->position.x, pr->position.y);
 		if(s == NULL || SDL_abs(player_seg->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs(player_seg->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
-			DestroyProjectileInArray(prs, i);
-			--i;
+			*pr = *(prs->array + prs->num-- - 1U);
+			--pr;
 			continue;
 		}
+		// while(s == NULL || SDL_abs(player_seg->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs(player_seg->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
+		// 	*pr = *(prs->array + prs->num-- - 1U);
+		// 	MoveProjectile(pr);
+		// 	s = GetSegment(pr->position.x, pr->position.y);
+		// }
 		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
 		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 			Segment* neighbour = GetSegmentByIndx(c, r);
@@ -67,8 +71,8 @@ void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
 					if(pr->hits < pr->penetration){
 						*(pr->hit_targets + pr->hits++) = b;
 					}else{
-						DestroyProjectileInArray(prs, i);
-						--i;
+						*pr = *(prs->array + prs->num-- - 1U);
+						--pr;
 						goto outside;
 					}
 				}
@@ -77,3 +81,32 @@ void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
 		outside:;
 	}
 }
+// void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
+// 	for (unsigned int i = 0U; i < prs->num; ++i) {
+// 		Projectile* pr = (prs->array + i);
+// 		MoveProjectile(pr);
+// 		Segment* s = GetSegment(pr->position.x, pr->position.y);
+// 		if(s == NULL || SDL_abs(player_seg->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs(player_seg->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
+// 			DestroyProjectileInArray(prs, i--);
+// 			continue;
+// 		}
+// 		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
+// 		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
+// 			Segment* neighbour = GetSegmentByIndx(c, r);
+// 			if(neighbour == NULL) continue;
+// 			for (unsigned int j = 0U; j < neighbour->beings.num; ++j) {
+// 				Being* b = *(neighbour->beings.array + j);
+// 				if (ProjectileHitsBeing(pr, b)) {
+// 					DamageBeing(b, pr->damage);
+// 					if(pr->hits < pr->penetration){
+// 						*(pr->hit_targets + pr->hits++) = b;
+// 					}else{
+// 						DestroyProjectileInArray(prs, i--);
+// 						goto outside;
+// 					}
+// 				}
+// 			}
+// 		}}
+// 		outside:;
+// 	}
+// }

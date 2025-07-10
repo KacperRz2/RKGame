@@ -5,17 +5,13 @@ int main(int argc, char* argv[]) {
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* textures[TEXTURES_NUM];
 	SDL_Event event;
-	SDL_Event* const event_ptr = &event;
 	float cursor_y;
-	float* const cursor_y_ptr = &cursor_y;
-	const SDL_FPoint zero_point = {0.0F, 0.0F};
+	// const SDL_FPoint zero_point = {0.0F, 0.0F};
 	Projectiles_array projectiles;
-	Projectiles_array* const projectiles_ptr = &projectiles;
 	projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	projectiles.num = 0U;
 	// sizeof(beings_array) / 1000;
 	Beings_array beings;
-	Beings_array* const beings_ptr = &beings;
 	beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
 	beings.num = 0U;
 	float rotation = 0.0F;
@@ -57,25 +53,29 @@ int main(int argc, char* argv[]) {
 		(int)(VIEWFINDER),
 		(int)(VIEWFINDER)
 	};
-	const SDL_Rect* const viewfinder_ptr = &viewfinder;
 
 	CreateWorld(WORLD_W, WORLD_H);
 	Player p;
 	Player* const player = &p;
-	Blade* const player_blade = &player->blade;
+	Blade* const player_blade = &p.blade;
 	CreatePlayer(player, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
-	if (player == NULL || world == NULL) return 1;
-	AddBeingToArray(beings_ptr, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F);
+	if (projectiles.array == NULL || beings.array == NULL) return 1;
+	AddBeingToArray(&beings, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F);
 
-	// while (beings.num < MAX_BEINGS_NUM) {
-	// 	float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
-	// 	float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-
-	// }
+	while (beings.num < MAX_BEINGS_NUM) {
+		float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
+		float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
+		if (SDL_fabsf(player->position.x - x) > 2000.0F && SDL_fabsf(player->position.y - y) > 2000.0F) {
+			Segment* s = GetSegment(x, y);
+			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
+				AddBeingToArray(&beings, x, y);
+			}
+		}
+	}
 
 	while (!quit) {
 		timer = SDL_GetTicksNS();
-		quit = EventsService(event_ptr, player);
+		quit = EventsService(&event, player);
 
 		// if (beings.num < MAX_BEINGS_NUM / 2048) {
 		if (beings.num < MAX_BEINGS_NUM) {
@@ -84,20 +84,20 @@ int main(int argc, char* argv[]) {
 			if (SDL_fabsf(player->position.x - x) > 2000.0F && SDL_fabsf(player->position.y - y) > 2000.0F) {
 				Segment* s = GetSegment(x, y);
 				if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-					AddBeingToArray(beings_ptr, x, y);
+					AddBeingToArray(&beings, x, y);
 				}
 			}
 		}
 
-		SDL_GetMouseState(NULL, cursor_y_ptr);
-		UpdatePlayer(player, projectiles_ptr);
+		SDL_GetMouseState(NULL, &cursor_y);
+		UpdatePlayer(player, &projectiles);
 		cursor_distance = WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - cursor_y;
 
 		Segment* player_seg = GetSegment(player->position.x, player->position.y);
-		UpdateProjectiles(projectiles_ptr, player_seg);
+		UpdateProjectiles(&projectiles, player_seg);
 		if (ticks_to_update_beings == 0U) {
 			if (!(player->control_flags & 1 << 6)) {
-				UpdateBeings(beings_ptr, player, player_seg);
+				UpdateBeings(&beings, player, player_seg);
 			}
 			ticks_to_update_beings = 1U;
 		}
@@ -115,19 +115,19 @@ int main(int argc, char* argv[]) {
 
 			SDL_SetRenderTarget(renderer, *textures);//Gun Sight
 
-			RenderGunSightElements(renderer, cursor_distance, player->range);
+			RenderGunSightElements(renderer, cursor_distance, RANGE);
 
 			SDL_SetRenderTarget(renderer, NULL);
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 			SDL_RenderClear(renderer);
-			SDL_SetRenderViewport(renderer, viewfinder_ptr);
+			SDL_SetRenderViewport(renderer, &viewfinder);
 			SDL_SetRenderDrawColor(renderer, 50, 50, 50, 0);
 			SDL_RenderFillRect(renderer, NULL);
 
-			RenderProjectiles(renderer, projectiles_ptr, *(textures + 3), player);
+			RenderProjectiles(renderer, &projectiles, *(textures + 3), player);
 
 			if (!(player->control_flags & 1 << 6)) {
-				RenderBeings(renderer, beings_ptr, *(textures + 4), player);
+				RenderBeings(renderer, &beings, *(textures + 4), player);
 			}
 			
 			SDL_RenderTexture(renderer, *(textures + 5), NULL, NULL);//viewfinder
@@ -186,8 +186,8 @@ int main(int argc, char* argv[]) {
 			SDL_DelayNS((TICK_TIME - (now - timer)) >> 1);
 		}
 	}
-	DestroyProjectiles(projectiles_ptr);
-	DestroyBeings(beings_ptr);
+	DestroyProjectiles(&projectiles);
+	DestroyBeings(&beings);
 	DestroyWorld();
 	for (int i = 0; i < TEXTURES_NUM; ++i) {
 		SDL_DestroyTexture(*(textures + i));

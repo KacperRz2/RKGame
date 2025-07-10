@@ -16,8 +16,7 @@ void CreatePlayer(Player* p, const float x, const float y) {
 	p->blade.damage = BLADE_DAMAGE;
 	p->blade.penetration = BLADE_PENETRATION;
 	p->blade.hits = 0;
-	p->position.x = x;
-	p->position.y = y;
+	SetPlayerPosition(p, x, y);
 	p->control_flags = 0x00000000U;
 	p->direction = 0.0F;
 	p->velocity = 0.0F;
@@ -25,7 +24,7 @@ void CreatePlayer(Player* p, const float x, const float y) {
 	p->hit_points = 100;
 	p->fatigue_points = 900;
 	p->magic_points = 100;
-	p->range = 700.0F;
+	// p->range = 700.0F;
 	p->max_fatigue = 1000;
 	p->max_h_p = 100;
 	p->max_magic = 100;
@@ -221,16 +220,17 @@ inline bool UnleashDestruction(Player* p){
 		{blade_true_location.position.x + 2.0F * shift_x, blade_true_location.position.y + 2.0F * shift_y},
 		{blade_true_location.position.x + shift_x, blade_true_location.position.y + shift_y}
 	};
+	Blade* const bl = &p->blade;
 	for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
 		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 			Segment* neighbour = GetSegmentByIndx(c, r);
 			if(neighbour == NULL) continue;
 			for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
 				Being* b = *(neighbour->beings.array + i);
-				if (BladeHitsBeing(&p->blade, &blade_true_location, b, dangerous_points)) {
-					DamageBeing(b, p->blade.damage);
-					if(p->blade.hits < p->blade.penetration){
-						*(p->blade.hit_targets + p->blade.hits++) = b;
+				if (BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) {
+					DamageBeing(b, bl->damage);
+					if(bl->hits < bl->penetration){
+						*(bl->hit_targets + bl->hits++) = b;
 					}else{
 						return true;
 					}
@@ -264,33 +264,37 @@ inline void UpdatePlayerBlade(Player* p){
 	};
 	static const Status_frame* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
+	// static ;
 	static Status_frame step_shift = {{0.0F, 0.0F}, 0.0};
 	static int key = 0;
 	static int steps = 128;
 	static int step = 0;
 	static unsigned int chain = 0U;
 	static unsigned int chain_next = 0U;
-	static unsigned int press_count = 0U;
-	static bool start = false;
+	// static bool start = false;
 	static bool abide = false;
 	static bool freehand = false;
 	static unsigned int idle_ticks = 0U;
-
+	static unsigned int charge = 0U;
 	if(p->control_flags & 1 << 7) {
-		start = true;
+		// start = true;
+		++charge;
 	}
 	if(!abide){
-		if(start){
+		if(charge){
 			if(!(p->control_flags & 1 << 7)){
 				chain = chain_next;
 				key = 0;
 				step = 0;
 				abide = true;
 				idle_ticks = 0U;
-				start = false;
+				// start = false;
 				p->blade.hits = 0U;
+				p->blade.damage = charge / 10;
+				p->blade.penetration = SDL_min(charge / 100U + 1U, BLADE_PENETRATION); SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "damage: %u penetration: %u", p->blade.damage, p->blade.penetration);
+				charge = 0U;
 				SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain), steps = 128);
-				chain_next = (chain_next + 1) % SDL_arraysize(sizes);
+				chain_next = (chain_next + 1U) % SDL_arraysize(sizes);
 				freehand = false;
 				return;
 			}

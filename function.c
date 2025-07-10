@@ -8,20 +8,16 @@ extern inline float RadToDeg(const float angle) {
 }
 
 extern inline float sine(float a){
-    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
-    return *(si + (unsigned int)(a * tmp));
+    return *(si + (unsigned int)(a * RAD_TO_MINE));
 }
 
 extern inline float cosi(float a){
-    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
-    return *(co + (unsigned int)(a * tmp));
+    return *(co + (unsigned int)(a * RAD_TO_MINE));
 }
 extern inline float SineSafe(float a){
-    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
-    return *(si + (unsigned int)(a * tmp) % ANGLE_PARTS);
+    return *(si + (unsigned int)(a * RAD_TO_MINE) % ANGLE_PARTS);
 }
 
 extern inline float CosiSafe(float a){
-    static const float tmp = (float)ANGLE_PARTS * 0.5F / SDL_PI_F;
-    return *(co + (unsigned int)(a * tmp) % ANGLE_PARTS);
+    return *(co + (unsigned int)(a * RAD_TO_MINE) % ANGLE_PARTS);
 }
