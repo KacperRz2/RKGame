@@ -41,6 +41,18 @@ int main(int argc, char* argv[]) {
 	int tps_count = 0;
 	Uint64 timer;
 	
+	const SDL_FRect destination_rect0a = {
+		WINDOW_W - 100.0F,
+		WINDOW_H * 0.4F,
+		50.0F,
+		50.0F
+	};
+	const SDL_FRect destination_rect0b = {
+		WINDOW_W - 90.0F,
+		WINDOW_H * 0.4F + 10.0F,
+		30.0F,
+		30.0F
+	};
 	const SDL_FRect destination_rect1 = {
 		10.0F,
 		40.0F,
@@ -55,17 +67,17 @@ int main(int argc, char* argv[]) {
 	};
 
 	CreateWorld(WORLD_W, WORLD_H);
-	Player p;
-	Player* const player = &p;
-	Blade* const player_blade = &p.blade;
-	CreatePlayer(player, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
+	Player pc;
+	Player* const pc_ptr = &pc;
+	Blade* const player_blade = &pc.blade;
+	CreatePlayer(pc_ptr, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
 	if (projectiles.array == NULL || beings.array == NULL) return 1;
 	AddBeingToArray(&beings, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F);
 
 	while (beings.num < MAX_BEINGS_NUM) {
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-		if (SDL_fabsf(player->position.x - x) > 2000.0F && SDL_fabsf(player->position.y - y) > 2000.0F) {
+		if (SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F) {
 			Segment* s = GetSegment(x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
 				AddBeingToArray(&beings, x, y);
@@ -75,13 +87,13 @@ int main(int argc, char* argv[]) {
 
 	while (!quit) {
 		timer = SDL_GetTicksNS();
-		quit = EventsService(&event, player);
+		quit = EventsService(&event, pc_ptr);
 
 		// if (beings.num < MAX_BEINGS_NUM / 2048) {
 		if (beings.num < MAX_BEINGS_NUM) {
 			float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
 			float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-			if (SDL_fabsf(player->position.x - x) > 2000.0F && SDL_fabsf(player->position.y - y) > 2000.0F) {
+			if (SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F) {
 				Segment* s = GetSegment(x, y);
 				if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
 					AddBeingToArray(&beings, x, y);
@@ -90,28 +102,30 @@ int main(int argc, char* argv[]) {
 		}
 
 		SDL_GetMouseState(NULL, &cursor_y);
-		UpdatePlayer(player, &projectiles);
+		UpdatePlayer(pc_ptr, &projectiles);
 		cursor_distance = WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - cursor_y;
 
-		Segment* player_seg = GetSegment(player->position.x, player->position.y);
+		Segment* player_seg = GetSegment(pc.position.x, pc.position.y);
 		UpdateProjectiles(&projectiles, player_seg);
-		if (ticks_to_update_beings == 0U) {
-			if (!(player->control_flags & 1 << 6)) {
-				UpdateBeings(&beings, player, player_seg);
-			}
-			ticks_to_update_beings = 1U;
-		}
-		else {
-			--ticks_to_update_beings;
-		}
 
-		if (SDL_GetTicksNS() > frame_time) {
+			if (ticks_to_update_beings == 0U) {
+				if (!(pc.control_flags & 1 << 6)) {
+					UpdateBeings(&beings, pc_ptr, player_seg);
+				}
+				ticks_to_update_beings = 1U;
+			}
+			else {
+				--ticks_to_update_beings;
+			}
+		if (SDL_GetTicksNS() <= frame_time) {
+
+		}else {
 
 			frame_time += FRAME_TIME;
 
-			SetSineCosine(player);
+			SetSineCosine(pc_ptr);
 
-			rotation = RadToDeg(player->direction);
+			rotation = RadToDeg(pc.direction);
 
 			SDL_SetRenderTarget(renderer, *textures);//Gun Sight
 
@@ -124,22 +138,25 @@ int main(int argc, char* argv[]) {
 			SDL_SetRenderDrawColor(renderer, 50, 50, 50, 0);
 			SDL_RenderFillRect(renderer, NULL);
 
-			RenderProjectiles(renderer, &projectiles, *(textures + 3), player);
+			RenderProjectiles(renderer, &projectiles, *(textures + tx_projectiole), pc_ptr);
 
-			if (!(player->control_flags & 1 << 6)) {
-				RenderBeings(renderer, &beings, *(textures + 4), player);
+			if (!(pc.control_flags & 1 << 6)) {
+				RenderBeings(renderer, &beings, *(textures + tx_being), pc_ptr);
 			}
+			// if (!(pc.control_flags & 1 << 6)) {
+			// 	UpdateAndRenderBeings(&beings, pc_ptr, player_seg, renderer, *(textures + tx_being));
+			// }
 			
-			SDL_RenderTexture(renderer, *(textures + 5), NULL, NULL);//viewfinder
+			SDL_RenderTexture(renderer, *(textures + tx_viewfinder), NULL, NULL);//viewfinder
 			RenderPlayer(renderer, textures, player_blade);
 			RenderGunSight(renderer, cursor_y, *textures);
 
 			SDL_SetRenderViewport(renderer, NULL);
 
 			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-			SDL_RenderDebugTextFormat(renderer, 10, 10, "Fatigue: %d", player->fatigue_points);
-			SDL_RenderDebugTextFormat(renderer, 10, 20, "Position: %.2f %.2f", player->position.x, player->position.y);
-			SDL_RenderDebugTextFormat(renderer, 10, 30, "Direction: %.2f", player->direction);
+			SDL_RenderDebugTextFormat(renderer, 10, 10, "Fatigue: %d", pc.fatigue_points);
+			SDL_RenderDebugTextFormat(renderer, 10, 20, "Position: %.2f %.2f", pc.position.x, pc.position.y);
+			SDL_RenderDebugTextFormat(renderer, 10, 30, "Direction: %.2f", pc.direction);
 
 			SDL_RenderDebugTextFormat(renderer, 10, 140, "Ticks per sec.: %d", tps);
 			SDL_RenderDebugTextFormat(renderer, 10, 150, "max FPS: ~%d", (int)(1000000000ULL / FRAME_TIME));
@@ -163,9 +180,11 @@ int main(int argc, char* argv[]) {
 
 			//SDL_RenderDebugTextFormat(renderer, 10, 200, "min_delay: %llu", MINIMAL_DELAY);
 
-			SDL_RenderTextureRotated(renderer, *(textures + 2), NULL, &destination_rect1, -rotation, NULL, SDL_FLIP_NONE);//compass
+			SDL_RenderTextureRotated(renderer, *(textures + tx_compass), NULL, &destination_rect1, -rotation, NULL, SDL_FLIP_NONE);//compass
+			SDL_RenderTexture(renderer, *(textures + tx_nesw), NULL, &destination_rect0a);
+			SDL_RenderTextureRotated(renderer, *(textures + tx_arrow), NULL, &destination_rect0b, rotation, NULL, SDL_FLIP_NONE);
 
-			RenderMap(renderer, player);
+			RenderMap(renderer, pc_ptr);
 
 			SDL_RenderPresent(renderer);
 		}

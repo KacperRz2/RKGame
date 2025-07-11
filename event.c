@@ -3,7 +3,7 @@
 #include <types.h>
 #include <event.h>
 
-bool EventsService(SDL_Event* e, Player* p) {
+bool EventsService(SDL_Event* const e, Player* const p) {
 	while (SDL_PollEvent(e)) {
 		if (e->type == SDL_EVENT_QUIT) {
 			return true;

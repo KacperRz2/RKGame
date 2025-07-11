@@ -1,20 +1,20 @@
 #ifndef RENDER_H_
 #define RENDER_H_
 
-extern World* const world;
+extern World world;
 
 struct Graphics_initiation_data {
 	SDL_Window** window;
 	SDL_Renderer** renderer;
 	SDL_Texture** textures[TEXTURES_NUM];
 };
-int GraphicsInitiation(struct Graphics_initiation_data*);
-void RenderGunSightCross(SDL_Renderer*);
-void RenderGunSightElements(SDL_Renderer*, const float, const float);
-void RenderPlayer(SDL_Renderer*, SDL_Texture**, Blade*);
-void RenderGunSight(SDL_Renderer*, const float, SDL_Texture*);
-void RenderProjectiles(SDL_Renderer*, Projectiles_array*, SDL_Texture*, Player*);
-void RenderBeings(SDL_Renderer*, Beings_array*, SDL_Texture*, Player*);
-void RenderMap(SDL_Renderer*, Player*);
+int GraphicsInitiation(struct Graphics_initiation_data* const);
+void RenderGunSightCross(SDL_Renderer* const);
+void RenderGunSightElements(SDL_Renderer* const, const float, const float);
+void RenderPlayer(SDL_Renderer* const, SDL_Texture** const, Blade* const);
+void RenderGunSight(SDL_Renderer* const, const float, SDL_Texture* const);
+void RenderProjectiles(SDL_Renderer* const, Projectiles_array* const, SDL_Texture* const, Player* const);
+void RenderBeings(SDL_Renderer* const, Beings_array* const, SDL_Texture* const, Player* const);
+void RenderMap(SDL_Renderer* const, Player* const);
 
 #endif

@@ -5,9 +5,9 @@ extern float si[];
 extern float co[];
 
 float RadToDeg(const float);
-float sine(float);
-float cosi(float);
-float SineSafe(float);
-float CosiSafe(float);
+float sine(const float);
+float cosi(const float);
+float SineSafe(const float);
+float CosiSafe(const float);
 
 #endif

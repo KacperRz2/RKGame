@@ -13,10 +13,11 @@
 #include <Projectile.h>
 #include <render.h>
 #include <event.h>
+#include <enum.h>
 
 float si[ANGLE_PARTS];
 float co[ANGLE_PARTS];
-World w;
-World* const world = &w;
+World world;
+// World* const wo_ptr = &world;
 
 #endif

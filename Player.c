@@ -9,7 +9,7 @@
 
 // bool tmp = false;
 
-void CreatePlayer(Player* p, const float x, const float y) {
+void CreatePlayer(Player* const p, const float x, const float y) {
 	p->blade.position.x = 16.0F;
  	p->blade.position.y = -8.0F;
 	p->blade.direction = SDL_PI_F * 0.45F;
@@ -32,12 +32,12 @@ void CreatePlayer(Player* p, const float x, const float y) {
 	p->armour = 0.875F;
 }
 
-inline void SetPlayerPosition(Player* p, const float x, const float y) {
+inline void SetPlayerPosition(Player* const p, const float x, const float y) {
 	p->position.x = x;
 	p->position.y = y;
 }
 
-extern inline void MovePlayer(Player* p, const float x, const float y) {
+extern inline void MovePlayer(Player* const p, const float x, const float y) {
 	float new_x = p->position.x + x;
 	float new_y = p->position.y + y;
 
@@ -50,7 +50,7 @@ extern inline void MovePlayer(Player* p, const float x, const float y) {
 	}
 }
 
-inline void UpdatePlayerMove(Player* p) {
+inline void UpdatePlayerMove(Player* const p) {
 	static float move_direction = 0.0F;
 	if (p->velocity > p->max_velocity) {
 		p->velocity *= DECELERATION;
@@ -127,7 +127,7 @@ inline void UpdatePlayerMove(Player* p) {
 	}
 }
 
-inline void UpdatePlayerDirection(Player* p) {
+inline void UpdatePlayerDirection(Player* const p) {
 	if (p->direction > 2.0F * SDL_PI_F) {
 		p->direction -= 2.0F * SDL_PI_F;
 	}
@@ -136,7 +136,7 @@ inline void UpdatePlayerDirection(Player* p) {
 	}
 }
 
-inline void UpdatePlayerPoints(Player* p) {
+inline void UpdatePlayerPoints(Player* const p) {
 	static unsigned int count = 4U;
 	if (count <= 1) {
 		if (p->fatigue_block_time > 0) {
@@ -149,7 +149,7 @@ inline void UpdatePlayerPoints(Player* p) {
 	--count;
 }
 
-extern inline void UpdatePlayer(Player* p, Projectiles_array* prs) {
+extern inline void UpdatePlayer(Player* const p, Projectiles_array* const prs) {
 	if (p->control_flags & 1 << 8 && prs->num < MAX_PROJECTILES_NUM) {
 		AddProjectileToArray(prs, &p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F, 10, 3U);
 	}
@@ -159,31 +159,31 @@ extern inline void UpdatePlayer(Player* p, Projectiles_array* prs) {
 	UpdatePlayerPoints(p);
 }
 
-inline void ShiftBlade(Blade* bl, Status_frame* shift){
+inline void ShiftBlade(Blade* const bl, Status_frame* const shift){
 	bl->position.x += shift->position.x;
 	bl->position.y += shift->position.y;
 	bl->direction += shift->direction;
 }
 
-inline void SetBladePosition(Blade* bl, const Status_frame* position){
+inline void SetBladePosition(Blade* const bl, const Status_frame* const position){
 	bl->position.x = position->position.x;
 	bl->position.y = position->position.y;
 	bl->direction = position->direction;
 }
 
-inline void SetShiftToBase(Blade* bl, Status_frame* step_shift, const unsigned int steps){
+inline void SetShiftToBase(Blade* const bl, Status_frame* const step_shift, const unsigned int steps){
 	step_shift->position.x = (16.0F - bl->position.x) / steps;
 	step_shift->position.y = (-8.0F - bl->position.y) / steps;
 	step_shift->direction = (SDL_PI_F * 0.45F - bl->direction) / steps;
 }
 
-inline void SetShiftToPosition(Blade* bl, Status_frame* step_shift, const Status_frame* frame, const unsigned int steps){
+inline void SetShiftToPosition(Blade* const bl, Status_frame* const step_shift, const Status_frame* const frame, const unsigned int steps){
 	step_shift->position.x = (frame->position.x - bl->position.x) / steps;
 	step_shift->position.y = (frame->position.y - bl->position.y) / steps;
 	step_shift->direction = (frame->direction - bl->direction) / steps;
 }
 
-inline Status_frame GetBladeLocation(Player* p, float* sine, float* cosine){
+inline Status_frame GetBladeLocation(Player* const p, float* const sine, float* const cosine){
 	float direct = p->direction + p->blade.direction;
 	*sine = SineSafe(direct);
 	*cosine = CosiSafe(direct);
@@ -191,7 +191,7 @@ inline Status_frame GetBladeLocation(Player* p, float* sine, float* cosine){
 	return ret;
 }
 
-inline bool BladeHitsBeing(Blade* bl, Status_frame* location, Being* b, SDL_FPoint* dangerous_points) {
+inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being* const b, SDL_FPoint* const dangerous_points) {
 	for (unsigned int i = 0U; i < 2U; ++i) {
 		if (SDL_fabsf((dangerous_points + i)->x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf((dangerous_points + i)->y - b->position.y) < PLAYER_SIZE * 0.5F) {
 			for(unsigned int j = bl->hits; j > 0U; --j){
@@ -205,7 +205,7 @@ inline bool BladeHitsBeing(Blade* bl, Status_frame* location, Being* b, SDL_FPoi
 	return false;
 }
 
-inline bool UnleashDestruction(Player* p){
+inline bool UnleashDestruction(Player* const p){
 	static const float length_part = BLADE_SIZE * 0.85F * 0.5F;
 	float sine_blade_direction;
 	float cosine_blade_direction;
@@ -241,7 +241,7 @@ inline bool UnleashDestruction(Player* p){
 	return false;
 }
 
-inline void UpdatePlayerBlade(Player* p){
+inline void UpdatePlayerBlade(Player* const p){
 	static const Status_frame blade_key_frames_0[] = {
 		{{16.0F, -8.0F}, SDL_PI_F * 0.55F},
 		{{6.0F, 8.0F}, SDL_PI_F * 0.25F},
@@ -264,35 +264,32 @@ inline void UpdatePlayerBlade(Player* p){
 	};
 	static const Status_frame* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
-	// static ;
+
 	static Status_frame step_shift = {{0.0F, 0.0F}, 0.0};
 	static int key = 0;
 	static int steps = 128;
 	static int step = 0;
 	static unsigned int chain = 0U;
 	static unsigned int chain_next = 0U;
-	// static bool start = false;
 	static bool abide = false;
 	static bool freehand = false;
 	static unsigned int idle_ticks = 0U;
-	static unsigned int charge = 0U;
+	static float charge = 0xF.Fp-4F;
 	if(p->control_flags & 1 << 7) {
-		// start = true;
-		++charge;
+		charge *= 0xF.F8p-4F;
 	}
 	if(!abide){
-		if(charge){
+		if(charge != 0xF.Fp-4F){
 			if(!(p->control_flags & 1 << 7)){
 				chain = chain_next;
 				key = 0;
 				step = 0;
 				abide = true;
 				idle_ticks = 0U;
-				// start = false;
 				p->blade.hits = 0U;
-				p->blade.damage = charge / 10;
-				p->blade.penetration = SDL_min(charge / 100U + 1U, BLADE_PENETRATION); SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "damage: %u penetration: %u", p->blade.damage, p->blade.penetration);
-				charge = 0U;
+				p->blade.damage = (int)(120.0F * (1.0F - charge));
+				p->blade.penetration = (unsigned int)((float)BLADE_PENETRATION * (1.0F - charge)); //SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "damage: %u penetration: %u", p->blade.damage, p->blade.penetration);
+				charge = 0xF.Fp-4F;
 				SetShiftToPosition(&p->blade, &step_shift, *(blade_moves + chain), steps = 128);
 				chain_next = (chain_next + 1U) % SDL_arraysize(sizes);
 				freehand = false;

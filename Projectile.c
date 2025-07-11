@@ -6,12 +6,12 @@
 #include <World.h>
 #include <function.h>
 
-void DestroyProjectiles(Projectiles_array* prs) {
+void DestroyProjectiles(Projectiles_array* const prs) {
     SDL_free(prs->array);
 	prs->num = 0U;
 }
 
-inline bool ProjectileHitsBeing(Projectile* pr, Being* b) {
+inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b) {
 	if (SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F) {
 		for(unsigned int i = pr->hits; i > 0U; --i){
 			if (*(pr->hit_targets + (i - 1U)) == b) {
@@ -23,7 +23,7 @@ inline bool ProjectileHitsBeing(Projectile* pr, Being* b) {
 	return false;
 }
 
-extern inline void AddProjectileToArray(Projectiles_array* prs, const SDL_FPoint* const position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
+extern inline void AddProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const int damage, const unsigned int penetration) {
 	Projectile* pr = (prs->array + prs->num++);
 	pr->position = *position;
 	pr->shift_per_tick.x = SineSafe(direction) * velocity;
@@ -34,19 +34,19 @@ extern inline void AddProjectileToArray(Projectiles_array* prs, const SDL_FPoint
 	// ++prs->num;
 }
 
-inline void DestroyProjectileInArray(Projectiles_array* prs, const unsigned int indx) {
+inline void DestroyProjectileInArray(Projectiles_array* const prs, const unsigned int indx) {
 	if (indx != prs->num - 1) {
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}
 	--prs->num;
 }
 
-inline void MoveProjectile(Projectile* pr) {
+inline void MoveProjectile(Projectile* const pr) {
 	pr->position.x += pr->shift_per_tick.x;
 	pr->position.y += pr->shift_per_tick.y;
 }
 
-void UpdateProjectiles(Projectiles_array* prs, Segment* player_seg) {
+void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg) {
 	for (Projectile* pr = prs->array; pr != (prs->array + prs->num); ++pr) {
 		MoveProjectile(pr);
 		Segment* s = GetSegment(pr->position.x, pr->position.y);
