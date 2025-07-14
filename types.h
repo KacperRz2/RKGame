@@ -6,12 +6,16 @@ typedef struct Walk Walk;
 typedef struct Blade Blade;
 typedef struct Status_frame Status_frame;
 //Being
+typedef struct Blade_hostile Blade_hostile;
+typedef struct Being_type Being_type;
 typedef struct Being Being;
 typedef struct Beings_array Beings_array;
 typedef struct Segment_beings Segment_beings;
 //Projectile
 typedef struct Projectile Projectile;
 typedef struct Projectiles_array Projectiles_array;
+typedef struct Projectile_hostile Projectile_hostile;
+typedef struct Projectiles_h_array Projectiles_h_array;
 //World
 typedef struct Segment Segment;
 typedef struct World World;
@@ -36,13 +40,27 @@ struct Status_frame {
 	float direction;
 };
 //Being
-struct Being {
-    SDL_FPoint position;
-    Segment* segment;
-	unsigned int indx;
+struct Being_type {
     float velocity;
     int hit_points;
+	int damage_close;
+	int damage_far;
+};
+struct Blade_hostile {
+	SDL_FPoint position;
+	float direction;
+	int attack_tiks_left;
+};
+struct Being {
+    SDL_FPoint position;
+	float direction;
+    Segment* segment;
+	unsigned int indx;
+    int hit_points;
+	const Being_type* type;
     Walk walk;
+	Blade_hostile blade;
+	unsigned int reload_ticks_left;
 };
 struct Beings_array {
 	Being* array;
@@ -61,8 +79,17 @@ struct Projectile {
 	void* hit_targets[MAX_HITS];
 	unsigned int hits;
 };
+struct Projectile_hostile {
+	SDL_FPoint position;
+	SDL_FPoint shift_per_tick;
+	int damage;
+};
 struct Projectiles_array {
 	Projectile* array;
+	unsigned int num;
+};
+struct Projectiles_h_array {
+	Projectile_hostile* array;
 	unsigned int num;
 };
 //World

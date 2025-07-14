@@ -5,6 +5,9 @@
 #include <World.h>
 #include <function.h>
 #include <Player.h>
+#include <Projectile.h>
+
+extern const Being_type test_being;
 
 inline void AddBeingToSegment(Segment* const s, Being* const b) {
     b->segment = s;
@@ -30,10 +33,17 @@ extern inline void AddBeingToArray(Beings_array* const bs, const float x, const 
     Being* b = (bs->array + bs->num);
     b->position.x = x;
     b->position.y = y;
-    b->velocity = PLAYER_VELOCITY * 2.5F;
+    b->direction = 0.0F;
+    // b->velocity = PLAYER_VELOCITY * 2.5F;
+    b->type = &test_being;
     AddBeingToSegment(GetSegment(x, y), b);
-    b->hit_points = 100;
+    b->hit_points = b->type->hit_points;
     b->walk.time_left = 0;
+	b->blade.position.x = 16.0F;
+ 	b->blade.position.y = -8.0F;
+    b->blade.direction = 0.0F;
+    b->blade.attack_tiks_left = 0;
+    b->reload_ticks_left = 0;
     ++bs->num;
 }
 
@@ -98,7 +108,8 @@ inline void StartBeingWalkWithRandTurn45Deg(Being* const b, const int time, cons
 }
 
 extern inline bool CollideWithBeing(Being* const b, const float x, const float y){
-    if(SDL_sqrtf((x - b->position.x) * (x - b->position.x) + (y - b->position.y) * (y - b->position.y)) < (float)PLAYER_SIZE){
+    // if(SDL_sqrtf((x - b->position.x) * (x - b->position.x) + (y - b->position.y) * (y - b->position.y)) < (float)PLAYER_SIZE){
+    if(pow2(x - b->position.x) + pow2(y - b->position.y) < (float)pow2(PLAYER_SIZE)){
         return true;
     }
     return false;
@@ -110,7 +121,7 @@ bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, float* 
 
         Being* b2 = *(s->beings.array + i);
 
-        if (b2 == b) continue;
+        if (b2 == b || b2->walk.time_left != 0) continue;
 
         if(CollideWithBeing(b2, *new_x, *new_y)){
             StartBeingWalkWithRandTurn45Deg(b, 128, x_shift, y_shift);
@@ -152,7 +163,30 @@ void UpdateBeingWalk(Being* const b) {
     --b->walk.time_left;
 }
 
-void UpdateBeings(Beings_array* const bs, Player* const p, Segment* const player_seg) {
+inline void ShiftHBlade(Blade_hostile* const bl, const Status_frame* const shift){
+	bl->position.x += shift->position.x;
+	bl->position.y += shift->position.y;
+	bl->direction += shift->direction;
+}
+
+inline Status_frame GetHBladeLocation(Being* const b, float* const sine, float* const cosine){
+	float direct = b->direction + b->blade.direction;
+	*sine = SineSafe(direct);
+	*cosine = CosiSafe(direct);
+	Status_frame ret = {{b->position.x + *sine * b->blade.position.x, b->position.y - *cosine * b->blade.position.y}, direct};
+	return ret;
+}
+
+inline void HaltBeing(Being* const b, const int ticks){
+    b->walk.time_left = ticks;
+}
+
+void UpdateBeings(Beings_array* const bs, Player* const p, Segment* const player_seg, Projectiles_h_array* const prs) {
+    static const Status_frame blade_base_frame = {{16.0F, -8.0F}, 0.0F};
+    static const Status_frame shift_prepare = {{(20.0F - 16.0F) / BEING_ATTACK_STEPS, (-16.0F - -8.0F) / BEING_ATTACK_STEPS}, (0.5F - 0.0F) / BEING_ATTACK_STEPS};
+    static const Status_frame shift_attack = {{(0.0F - 20.0F) / BEING_ATTACK_STEPS, (24.0F - -16.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.5F) / BEING_ATTACK_STEPS};
+    static const Status_frame shift_reset = {{(16.0F - 0.0F) / BEING_ATTACK_STEPS, (-8.0F - 24.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.0F) / BEING_ATTACK_STEPS};
+    static const float blade_length = BLADE_SIZE * 0.85F;
     for (Being* b = bs->array; b != (bs->array + bs->num); ++b) {
 
         if (b->hit_points <= 0) {
@@ -160,34 +194,73 @@ void UpdateBeings(Beings_array* const bs, Player* const p, Segment* const player
             --b;
             continue;
         }
-        // while(b->hit_points <= 0) {
-        //     *b = *(bs->array + bs->num-- - 1U);
-        // }
-        // for (unsigned int i = 0U; i < bs->num; ++i) {
-        // Being* b = (bs->array + i);
-        // if (b->hit_points <= 0) {
-        //     DestroyBeingInArray(bs, i);
-        //     --i;
-        //     continue;
-        // }
-        float distance_x = p->position.x - b->position.x;
-        float distance_y = p->position.y - b->position.y;
-        float distance = SDL_sqrtf(distance_x * distance_x + distance_y * distance_y);
-        float velocity_xy;
-        
-        if (distance < 70.0F) {
-            if(distance < PLAYER_SIZE){
-                velocity_xy = distance / (PLAYER_VELOCITY * 1.875F);
-                MovePlayer(p, distance_x / velocity_xy, distance_y / velocity_xy);
+        if(b->reload_ticks_left > 0){
+            --b->reload_ticks_left;
+        }
+        if(b->blade.attack_tiks_left > 0){
+            ShiftHBlade(&b->blade, &shift_attack);
+            if(b->blade.attack_tiks_left == 1){
+                float sine;
+                float cosine;
+                Status_frame blade_location = GetHBladeLocation(b, &sine, &cosine);
+                SDL_FPoint dangerous_point = {blade_location.position.x + sine * blade_length, blade_location.position.y - cosine * blade_length};
+                if(PointInPlayer(dangerous_point.x, dangerous_point.y, p)){
+                    // DamagePlayer(p, b->type->damage_close);
+                    p->hit_points -= b->type->damage_close;
+                }
+                b->blade.attack_tiks_left = -(BEING_ATTACK_STEPS - 1);
+            }else{
+                --b->blade.attack_tiks_left;
             }
-            continue;
+        }else if(b->blade.attack_tiks_left < 0){
+            if(b->blade.attack_tiks_left < -BEING_ATTACK_STEPS){
+                ShiftHBlade(&b->blade, &shift_prepare);
+            }else if(b->blade.attack_tiks_left == -BEING_ATTACK_STEPS){
+                ShiftHBlade(&b->blade, &shift_prepare);
+                b->blade.attack_tiks_left = BEING_ATTACK_STEPS;
+            }else{
+                ShiftHBlade(&b->blade, &shift_reset);
+            }
+            ++b->blade.attack_tiks_left;
         }
         if (b->walk.time_left) {
 
             UpdateBeingWalk(b);
             continue;
         }
-        velocity_xy = distance / b->velocity;
+        float distance_x = p->position.x - b->position.x;
+        float distance_y = p->position.y - b->position.y;
+        float distance_squared = distance_x * distance_x + distance_y * distance_y;
+        // float distance;// = SDL_sqrtf(distance_x * distance_x + distance_y * distance_y);
+        float velocity_xy;
+        if (distance_squared < pow2(VIEWFINDER)) {
+            b->direction = SDL_atan2f(-distance_y, -distance_x) - SDL_PI_F * 0.5F;
+            if (distance_squared < pow2(70.0F)) {
+                // b->walk.time_left = 0;
+                if(b->blade.attack_tiks_left == 0 && b->reload_ticks_left == 0){
+                    b->blade.position = blade_base_frame.position;
+                    b->blade.direction = blade_base_frame.direction;
+                    b->blade.attack_tiks_left = -(BEING_ATTACK_STEPS * 2);
+                    b->reload_ticks_left = 512U;
+                }
+                if(distance_squared < pow2(PLAYER_SIZE)){
+                    velocity_xy = SDL_sqrtf(distance_squared) / (PLAYER_VELOCITY * 1.875F);
+                    MovePlayer(p, distance_x / velocity_xy, distance_y / velocity_xy);
+                }
+                continue;
+            }else if(distance_squared < pow2(700.0F) && b->reload_ticks_left == 0 && prs->num < MAX_PROJECTILES_NUM){
+                HaltBeing(b, -256);
+                AddHProjectileToArray(prs, &b->position, b->direction, 3.0F, b->type->damage_far);
+                b->reload_ticks_left = 512U;
+            }
+        }
+        if (b->walk.time_left) {
+
+            UpdateBeingWalk(b);
+            continue;
+        }
+        float distance = SDL_sqrtf(distance_squared);
+        velocity_xy = distance / b->type->velocity;
         float x_shift = distance_x / velocity_xy;
         float y_shift = distance_y / velocity_xy;
         float new_x = b->position.x + x_shift;
@@ -218,7 +291,8 @@ void UpdateBeings(Beings_array* const bs, Player* const p, Segment* const player
                 if ((bool)SDL_rand(2)) {
                     StartBeingWalkWithRandTurn(b, 128, x_shift * 0.5F, y_shift * 0.5F);
                 }else {
-                    StartBeingWalkWithRandTurn(b, -128, 0.0F, 0.0F);
+                    // StartBeingWalkWithRandTurn(b, -128, 0.0F, 0.0F);
+                    HaltBeing(b, -128);
                 }
                 continue;
             }

@@ -10,6 +10,9 @@ int main(int argc, char* argv[]) {
 	Projectiles_array projectiles;
 	projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	projectiles.num = 0U;
+	Projectiles_h_array h_projectiles;
+	h_projectiles.array = (Projectile_hostile*)SDL_malloc(sizeof(Projectile_hostile) * MAX_PROJECTILES_NUM);
+	h_projectiles.num = 0U;
 	// sizeof(beings_array) / 1000;
 	Beings_array beings;
 	beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
@@ -90,16 +93,16 @@ int main(int argc, char* argv[]) {
 		quit = EventsService(&event, pc_ptr);
 
 		// if (beings.num < MAX_BEINGS_NUM / 2048) {
-		if (beings.num < MAX_BEINGS_NUM) {
-			float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
-			float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-			if (SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F) {
-				Segment* s = GetSegment(x, y);
-				if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-					AddBeingToArray(&beings, x, y);
-				}
-			}
-		}
+		// if (beings.num < MAX_BEINGS_NUM && !(pc.control_flags & tmp0)) {
+		// 	float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
+		// 	float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
+		// 	if (SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F) {
+		// 		Segment* s = GetSegment(x, y);
+		// 		if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
+		// 			AddBeingToArray(&beings, x, y);
+		// 		}
+		// 	}
+		// }
 
 		SDL_GetMouseState(NULL, &cursor_y);
 		UpdatePlayer(pc_ptr, &projectiles);
@@ -107,19 +110,18 @@ int main(int argc, char* argv[]) {
 
 		Segment* player_seg = GetSegment(pc.position.x, pc.position.y);
 		UpdateProjectiles(&projectiles, player_seg);
+		UpdateHProjectiles(&h_projectiles, pc_ptr);
 
 			if (ticks_to_update_beings == 0U) {
-				if (!(pc.control_flags & 1 << 6)) {
-					UpdateBeings(&beings, pc_ptr, player_seg);
+				if (!(pc.control_flags & tmp0)) {
+					UpdateBeings(&beings, pc_ptr, player_seg, &h_projectiles);
 				}
 				ticks_to_update_beings = 1U;
 			}
 			else {
 				--ticks_to_update_beings;
 			}
-		if (SDL_GetTicksNS() <= frame_time) {
-
-		}else {
+		if (SDL_GetTicksNS() > frame_time) {
 
 			frame_time += FRAME_TIME;
 
@@ -138,11 +140,12 @@ int main(int argc, char* argv[]) {
 			SDL_SetRenderDrawColor(renderer, 50, 50, 50, 0);
 			SDL_RenderFillRect(renderer, NULL);
 
-			RenderProjectiles(renderer, &projectiles, *(textures + tx_projectiole), pc_ptr);
-
-			if (!(pc.control_flags & 1 << 6)) {
-				RenderBeings(renderer, &beings, *(textures + tx_being), pc_ptr);
+			if (!(pc.control_flags & tmp0)) {
+				RenderBeings(renderer, &beings, textures, pc_ptr);
 			}
+
+			RenderProjectiles(renderer, &projectiles, *(textures + tx_projectiole), pc_ptr);
+			RenderHProjectiles(renderer, &h_projectiles, *(textures + tx_h_projectile), pc_ptr);
 			// if (!(pc.control_flags & 1 << 6)) {
 			// 	UpdateAndRenderBeings(&beings, pc_ptr, player_seg, renderer, *(textures + tx_being));
 			// }
@@ -159,11 +162,12 @@ int main(int argc, char* argv[]) {
 			SDL_RenderDebugTextFormat(renderer, 10, 30, "Direction: %.2f", pc.direction);
 
 			SDL_RenderDebugTextFormat(renderer, 10, 140, "Ticks per sec.: %d", tps);
-			SDL_RenderDebugTextFormat(renderer, 10, 150, "max FPS: ~%d", (int)(1000000000ULL / FRAME_TIME));
+			SDL_RenderDebugTextFormat(renderer, 10, 150, "max FPS: ~%u", (1000000000ULL / FRAME_TIME));
 
 			SDL_RenderDebugTextFormat(renderer, 10, 160, "beings: %d", beings.num);
 			SDL_RenderDebugTextFormat(renderer, 10, 170, "projectiles: %d", projectiles.num);
-			// SDL_RenderDebugTextFormat(renderer, 10, 180, "beings in seg0x0: %d", (*(*(world->segments + 0) + 0)).beings.num);
+			SDL_RenderDebugTextFormat(renderer, 10, 180, "projectiles: %d", h_projectiles.num);
+			SDL_RenderDebugTextFormat(renderer, 10, 190, "hp: %d", pc.hit_points);
 			// SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
 			// SDL_RenderDebugTextFormat(renderer, 10, 250, "sizeof: %d MB", sizeof(world->segments) / 100000);
 			SDL_RenderDebugTextFormat(renderer, 10, 260, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);

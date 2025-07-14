@@ -18,7 +18,10 @@ bool CollideWithBeing(Being* const, const float, const float);
 bool ResolveBeingCollisionInNewSegment(Being* const, Segment* const, float* const, float* const, const float, const float);
 void TurnBeingWalk(Being* const);
 void UpdateBeingWalk(Being* const);
-void UpdateBeings(Beings_array* const, Player* const, Segment* const);
+void ShiftHBlade(Blade_hostile* const, const Status_frame* const);
+Status_frame GetHBladeLocation(Being* const, float* const, float* const);
+void HaltBeing(Being* const, const int); // const int ticks < 0!
+void UpdateBeings(Beings_array* const, Player* const, Segment* const, Projectiles_h_array* const);
 // void UpdateAndRenderBeings(Beings_array* const, Player* const, Segment* const, SDL_Renderer* const, SDL_Texture* const);
 void DamageBeing(Being* const, int);
 

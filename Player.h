@@ -16,5 +16,7 @@ Status_frame GetBladeLocation(Player* const, float* const, float* const);
 bool BladeHitsBeing(Blade* const, Status_frame* const, Being* const, SDL_FPoint* const);
 bool UnleashDestruction(Player* const);
 void UpdatePlayerBlade(Player* const);
+bool PointInPlayer(const float, const float, Player*);
+void DamagePlayer(Player* const, const int);
 
 #endif

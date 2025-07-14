@@ -6,6 +6,7 @@
 #include <function.h>
 #include <World.h>
 #include <Being.h>
+#include <enum.h>
 
 // bool tmp = false;
 
@@ -51,39 +52,40 @@ extern inline void MovePlayer(Player* const p, const float x, const float y) {
 }
 
 inline void UpdatePlayerMove(Player* const p) {
+	static const Uint32 tmp = forward | back | right | left;
 	static float move_direction = 0.0F;
 	if (p->velocity > p->max_velocity) {
 		p->velocity *= DECELERATION;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00000001U || (p->control_flags & 0b00001111U) == 0b00001101U) {
+	else if ((p->control_flags & tmp) == forward || (p->control_flags & tmp) == (tmp & ~(back))) {
 		p->velocity += ACCELERATION;
 		move_direction = p->direction;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00000010U) {
+	else if ((p->control_flags & tmp) == back) {
 		p->velocity = (p->velocity + ACCELERATION) * 0.93F;
 		move_direction = p->direction + SDL_PI_F;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00000100U) {
+	else if ((p->control_flags & tmp) == right) {
 		p->velocity += ACCELERATION;
 		move_direction = p->direction + SDL_PI_F * 0.5F;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00001000U) {
+	else if ((p->control_flags & tmp) == left) {
 		p->velocity += ACCELERATION;
 		move_direction = p->direction + SDL_PI_F * 1.5F;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00000101U) {
+	else if ((p->control_flags & tmp) == (forward | right)) {
 		p->velocity += ACCELERATION;
 		move_direction = p->direction + SDL_PI_F * 0.25F;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00001001U) {
+	else if ((p->control_flags & tmp) == (forward | left)) {
 		p->velocity += ACCELERATION;
 		move_direction = p->direction + SDL_PI_F * 1.75F;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00000110U) {
+	else if ((p->control_flags & tmp) == (back | right)) {
 		p->velocity = (p->velocity + ACCELERATION) * 0.93F;
 		move_direction = p->direction + SDL_PI_F * 0.75F;
 	}
-	else if ((p->control_flags & 0b00001111U) == 0b00001010U) {
+	else if ((p->control_flags & tmp) == (back | left)) {
 		p->velocity = (p->velocity + ACCELERATION) * 0.93F;
 		move_direction = p->direction + SDL_PI_F * 1.25F;
 	}
@@ -91,28 +93,28 @@ inline void UpdatePlayerMove(Player* const p) {
 		p->velocity *= DECELERATION;
 		if (p->velocity < 0.05F) p->velocity = 0.0F;
 	}
-	if (!(p->control_flags & 1 << 0) && p->control_flags & 1 << 4) {
+	if (!(p->control_flags & forward) && p->control_flags & dodge) {
 		if (p->fatigue_points > 99) {
 			p->fatigue_points -= 100;
 			p->fatigue_block_time = 50;
-			if (!(p->control_flags & 0b00001111U)) {
+			if (!(p->control_flags & tmp)) {
 				move_direction = p->direction + SDL_PI_F;
 			}
 			p->velocity = 10.0F;
 		}
 		else {
 			p->fatigue_block_time += 2;
-			if (!(p->control_flags & 0b00001111U)) {
+			if (!(p->control_flags & tmp)) {
 				move_direction = p->direction + SDL_PI_F;
 			}
 			p->velocity = 1.0F;
 		}
-		p->control_flags &= ~(1 << 4);
+		p->control_flags &= ~(dodge);
 	}
-	if ((p->control_flags & 0b00100011U) == 0b00100001U) {
+	if ((p->control_flags & (run | forward | back)) == (run | forward)) {
 		if (p->fatigue_points <= 1) {
 			p->max_velocity = PLAYER_VELOCITY;
-			p->control_flags &= ~(1 << 5);
+			p->control_flags &= ~(run);
 		}
 		else {
 			p->max_velocity = RUN_VELOCITY;
@@ -150,7 +152,7 @@ inline void UpdatePlayerPoints(Player* const p) {
 }
 
 extern inline void UpdatePlayer(Player* const p, Projectiles_array* const prs) {
-	if (p->control_flags & 1 << 8 && prs->num < MAX_PROJECTILES_NUM) {
+	if (p->control_flags & fire && prs->num < MAX_PROJECTILES_NUM) {
 		AddProjectileToArray(prs, &p->position, p->direction + 0.25F * (SDL_randf() - 0.5F), 3.0F, 10, 3U);
 	}
 	UpdatePlayerBlade(p);
@@ -275,12 +277,12 @@ inline void UpdatePlayerBlade(Player* const p){
 	static bool freehand = false;
 	static unsigned int idle_ticks = 0U;
 	static float charge = 0xF.Fp-4F;
-	if(p->control_flags & 1 << 7) {
+	if(p->control_flags & attack) {
 		charge *= 0xF.F8p-4F;
 	}
 	if(!abide){
 		if(charge != 0xF.Fp-4F){
-			if(!(p->control_flags & 1 << 7)){
+			if(!(p->control_flags & attack)){
 				chain = chain_next;
 				key = 0;
 				step = 0;
@@ -325,4 +327,16 @@ inline void UpdatePlayerBlade(Player* const p){
 		}
 	}
 	++step;
+}
+
+extern inline bool PointInPlayer(const float x, const float y, Player* const pl){
+	// if(SDL_sqrtf((x - pl->position.x) * (x - pl->position.x) + (y - pl->position.y) * (y - pl->position.y)) < (float)PLAYER_SIZE * 0.5F){
+	if(pow2(x - pl->position.x) + pow2(y - pl->position.y) < (float)pow2(PLAYER_SIZE * 0.5F)){
+		return true;
+	}
+	return false;
+}
+
+extern inline void DamagePlayer(Player* const p, const int damage){
+	p->hit_points -= damage;
 }

@@ -18,6 +18,11 @@
 float si[ANGLE_PARTS];
 float co[ANGLE_PARTS];
 World world;
-// World* const wo_ptr = &world;
+const Being_type test_being = {
+    PLAYER_VELOCITY * 2.5F,
+    100,
+    2,
+    1
+};
 
 #endif
