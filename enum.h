@@ -26,4 +26,12 @@ enum control {
     fire = 1 << 8
 };
 
+enum being_status {
+    idle,
+    follow,
+    shoot,
+    strike,
+    walk,
+    dead
+};
 #endif

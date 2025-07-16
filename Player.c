@@ -230,7 +230,9 @@ inline bool UnleashDestruction(Player* const p){
 			for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
 				Being* b = *(neighbour->beings.array + i);
 				if (BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) {
-					DamageBeing(b, bl->damage);
+					if(DamageBeing(b, bl->damage)){
+						--i;
+					}
 					if(bl->hits < bl->penetration){
 						*(bl->hit_targets + bl->hits++) = b;
 					}else{

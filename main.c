@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 	Blade* const player_blade = &pc.blade;
 	CreatePlayer(pc_ptr, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
 	if (projectiles.array == NULL || beings.array == NULL) return 1;
-	AddBeingToArray(&beings, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F);
+	AddBeingToArray(&beings, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F, GetSegment(WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F));
 
 	while (beings.num < MAX_BEINGS_NUM) {
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 		if (SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F) {
 			Segment* s = GetSegment(x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-				AddBeingToArray(&beings, x, y);
+				AddBeingToArray(&beings, x, y, s);
 			}
 		}
 	}

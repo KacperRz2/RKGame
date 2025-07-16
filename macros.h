@@ -32,7 +32,7 @@
 #define SEGMENTS_SIZE		(WORLD_SIZE / (float)SEGMENTS_X)
 #define MAX_PROJECTILES_NUM	0x800U
 #define MAX_SEGM_BEINGS		16
-#define MAX_BEINGS_NUM		0x10000U//(SEGMENTS_X * SEGMENTS_Y * MAX_SEGM_BEINGS / 32)
+#define MAX_BEINGS_NUM		0x10000U//0x10000U//(SEGMENTS_X * SEGMENTS_Y * MAX_SEGM_BEINGS / 32)
 #define ANGLE_PARTS		    512
 #define MIN_ANGLE           (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BLADE_DAMAGE        50
@@ -45,7 +45,7 @@
 #define RANGE               700.0F
 #define BEING_ATTACK_STEPS  64
 #define pow2(x)             ((x) * (x))
-
+#define BEING_RELOAD        512
 
 // #define SQRT2				1.4142135623730950488016887242097F
 // #define WINDOW_CENTER_X		(WINDOW_W / 2)

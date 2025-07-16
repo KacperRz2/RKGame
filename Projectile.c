@@ -6,6 +6,7 @@
 #include <World.h>
 #include <Player.h>
 #include <function.h>
+#include <enum.h>
 
 void DestroyProjectiles(Projectiles_array* const prs) {
     SDL_free(prs->array);
@@ -56,11 +57,6 @@ void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg) 
 			--pr;
 			continue;
 		}
-		// while(s == NULL || SDL_abs(player_seg->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs(player_seg->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
-		// 	*pr = *(prs->array + prs->num-- - 1U);
-		// 	MoveProjectile(pr);
-		// 	s = GetSegment(pr->position.x, pr->position.y);
-		// }
 		for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
 		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 			Segment* neighbour = GetSegmentByIndx(c, r);
@@ -68,7 +64,9 @@ void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg) 
 			for (unsigned int j = 0U; j < neighbour->beings.num; ++j) {
 				Being* b = *(neighbour->beings.array + j);
 				if (ProjectileHitsBeing(pr, b)) {
-					DamageBeing(b, pr->damage);
+					if(DamageBeing(b, pr->damage)){
+						--j;
+					}
 					if(pr->hits < pr->penetration){
 						*(pr->hit_targets + pr->hits++) = b;
 					}else{

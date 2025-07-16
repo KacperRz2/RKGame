@@ -49,7 +49,7 @@ struct Being_type {
 struct Blade_hostile {
 	SDL_FPoint position;
 	float direction;
-	int attack_tiks_left;
+	// int attack_tiks_left;
 };
 struct Being {
     SDL_FPoint position;
@@ -58,9 +58,10 @@ struct Being {
 	unsigned int indx;
     int hit_points;
 	const Being_type* type;
-    Walk walk;
+	int status;
+	int status_ticks_left;
 	Blade_hostile blade;
-	unsigned int reload_ticks_left;
+	SDL_FPoint walk_shift;
 };
 struct Beings_array {
 	Being* array;
