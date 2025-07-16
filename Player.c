@@ -197,7 +197,7 @@ inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being*
 	for (unsigned int i = 0U; i < 2U; ++i) {
 		if (SDL_fabsf((dangerous_points + i)->x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf((dangerous_points + i)->y - b->position.y) < PLAYER_SIZE * 0.5F) {
 			for(unsigned int j = bl->hits; j > 0U; --j){
-				if (*(bl->hit_targets + (j - 1U)) == b) {
+				if (*(bl->hit_targets + (j - 1U)) == b->id) {
 					return false;
 				}
 			}
@@ -234,7 +234,7 @@ inline bool UnleashDestruction(Player* const p){
 						--i;
 					}
 					if(bl->hits < bl->penetration){
-						*(bl->hit_targets + bl->hits++) = b;
+						*(bl->hit_targets + bl->hits++) = b->id;
 					}else{
 						return true;
 					}

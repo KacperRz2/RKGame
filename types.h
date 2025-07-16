@@ -32,7 +32,7 @@ struct Blade {
 	float direction;
 	int damage;
 	unsigned int penetration;
-	void* hit_targets[MAX_HITS];
+	unsigned int hit_targets[MAX_HITS];
 	unsigned int hits;
 };
 struct Status_frame {
@@ -62,6 +62,7 @@ struct Being {
 	int status_ticks_left;
 	Blade_hostile blade;
 	SDL_FPoint walk_shift;
+	unsigned int id;
 };
 struct Beings_array {
 	Being* array;
@@ -77,7 +78,7 @@ struct Projectile {
 	SDL_FPoint shift_per_tick;
 	int damage;
 	unsigned int penetration;
-	void* hit_targets[MAX_HITS];
+	unsigned int hit_targets[MAX_HITS];
 	unsigned int hits;
 };
 struct Projectile_hostile {

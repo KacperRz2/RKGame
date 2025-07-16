@@ -18,6 +18,9 @@ inline void AddBeingToSegment(Segment* const s, Being* const b) {
 }
 
 inline void RemoveBeingFromSegment(Being* const b) {
+    if(b != *(b->segment->beings.array + b->indx)){
+        SDL_LogInfo(SDL_LOG_CATEGORY_TEST, ">:(");
+    }
     if (b->indx != b->segment->beings.num - 1) {
         *(b->segment->beings.array + b->indx) = *(b->segment->beings.array + b->segment->beings.num - 1);
         (*(b->segment->beings.array + b->indx))->indx = b->indx;
@@ -38,6 +41,7 @@ void DestroyBeings(Beings_array* const bs) {
 }
 
 extern inline void AddBeingToArray(Beings_array* const bs, const float x, const float y, Segment* const s) {
+    static int being_id = 0U;
     Being* b = (bs->array + bs->num);
     b->position.x = x;
     b->position.y = y;
@@ -50,6 +54,7 @@ extern inline void AddBeingToArray(Beings_array* const bs, const float x, const 
 	b->blade.position.x = 16.0F;
  	b->blade.position.y = -8.0F;
     b->blade.direction = 0.0F;
+    b->id = being_id++;
     ++bs->num;
 }
 
@@ -352,8 +357,8 @@ void UpdateBeings(Beings_array* const bs, Player* const p, Segment* const player
             if(b != (bs->array + bs->num - 1U)){
                 UpdateSegmentBeingPointer((bs->array + bs->num - 1U), b);
                 *b = *(bs->array + bs->num - 1U);
-                --b;
             }
+            --b;
             --bs->num;
             continue;
         }

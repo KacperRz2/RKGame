@@ -16,7 +16,7 @@ void DestroyProjectiles(Projectiles_array* const prs) {
 inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b) {
 	if (SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F) {
 		for(unsigned int i = pr->hits; i > 0U; --i){
-			if (*(pr->hit_targets + (i - 1U)) == b) {
+			if (*(pr->hit_targets + (i - 1U)) == b->id) {
 				return false;
 			}
 		}
@@ -61,6 +61,7 @@ void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg) 
 		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
 			Segment* neighbour = GetSegmentByIndx(c, r);
 			if(neighbour == NULL) continue;
+			static unsigned int mark = 1U;
 			for (unsigned int j = 0U; j < neighbour->beings.num; ++j) {
 				Being* b = *(neighbour->beings.array + j);
 				if (ProjectileHitsBeing(pr, b)) {
@@ -68,7 +69,7 @@ void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg) 
 						--j;
 					}
 					if(pr->hits < pr->penetration){
-						*(pr->hit_targets + pr->hits++) = b;
+						*(pr->hit_targets + pr->hits++) = b->id;
 					}else{
 						*pr = *(prs->array + prs->num-- - 1U);
 						--pr;

@@ -80,6 +80,8 @@ int main(int argc, char* argv[]) {
 	while (beings.num < MAX_BEINGS_NUM) {
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
+		x /= 2.0F;
+		y /= 2.0F;
 		if (SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F) {
 			Segment* s = GetSegment(x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
@@ -112,15 +114,15 @@ int main(int argc, char* argv[]) {
 		UpdateProjectiles(&projectiles, player_seg);
 		UpdateHProjectiles(&h_projectiles, pc_ptr);
 
-			if (ticks_to_update_beings == 0U) {
-				if (!(pc.control_flags & tmp0)) {
-					UpdateBeings(&beings, pc_ptr, player_seg, &h_projectiles);
-				}
-				ticks_to_update_beings = 1U;
+		if (ticks_to_update_beings == 0U) {
+			if (!(pc.control_flags & tmp0)) {
+				UpdateBeings(&beings, pc_ptr, player_seg, &h_projectiles);
 			}
-			else {
-				--ticks_to_update_beings;
-			}
+			ticks_to_update_beings = 1U;
+		}
+		else {
+			--ticks_to_update_beings;
+		}
 		if (SDL_GetTicksNS() > frame_time) {
 
 			frame_time += FRAME_TIME;
@@ -129,14 +131,17 @@ int main(int argc, char* argv[]) {
 
 			rotation = RadToDeg(pc.direction);
 
-			SDL_SetRenderTarget(renderer, *textures);//Gun Sight
+			// SDL_SetRenderTarget(renderer, *textures);//Gun Sight
 
-			RenderGunSightElements(renderer, cursor_distance, RANGE);
+			// RenderGunSightElements(renderer, cursor_distance, RANGE);
 
-			SDL_SetRenderTarget(renderer, NULL);
+			// SDL_SetRenderTarget(renderer, NULL);
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 			SDL_RenderClear(renderer);
+
 			SDL_SetRenderViewport(renderer, &viewfinder);
+			// SDL_SetRenderScale(renderer, 1.0F, 0.5F);
+
 			SDL_SetRenderDrawColor(renderer, 50, 50, 50, 0);
 			SDL_RenderFillRect(renderer, NULL);
 
@@ -152,8 +157,9 @@ int main(int argc, char* argv[]) {
 			
 			SDL_RenderTexture(renderer, *(textures + tx_viewfinder), NULL, NULL);//viewfinder
 			RenderPlayer(renderer, textures, player_blade);
-			RenderGunSight(renderer, cursor_y, *textures);
+			// RenderGunSight(renderer, cursor_y, *textures);
 
+			// SDL_SetRenderScale(renderer, 1.0F, 1.0F);
 			SDL_SetRenderViewport(renderer, NULL);
 
 			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
