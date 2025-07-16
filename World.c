@@ -51,3 +51,7 @@ extern inline void SetSineCosine(Player* const p) {
 	world.sin_player_direction = sine(p->direction);
 	world.cos_player_direction = cosi(p->direction);
 }
+
+extern inline void UpdateSegmentBeingPointer(Being* old, Being* new){
+	*(old->segment->beings.array + old->indx) = new;
+}

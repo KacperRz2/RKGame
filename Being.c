@@ -349,11 +349,17 @@ void UpdateBeings(Beings_array* const bs, Player* const p, Segment* const player
     for (Being* b = bs->array; b != (bs->array + bs->num); ++b) {
 
         if (b->status == dead) {
-            // RemoveBeingFromSegment(b);
-            *b = *(bs->array + bs->num-- - 1U);
-            --b;
+            if(b != (bs->array + bs->num - 1U)){
+                UpdateSegmentBeingPointer((bs->array + bs->num - 1U), b);
+                *b = *(bs->array + bs->num - 1U);
+                --b;
+            }
+            --bs->num;
             continue;
         }
+        // if(b != *(b->segment->beings.array + b->indx)){
+        //     SDL_LogInfo(SDL_LOG_CATEGORY_TEST, ">:(");
+        // }
         if(b->status == walk){
             UpdateBeingWalk(b);
             continue;
