@@ -224,24 +224,24 @@ inline bool UnleashDestruction(Player* const p){
 	};
 	Blade* const bl = &p->blade;
 	for (unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c) {
-		for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
-			Segment* neighbour = GetSegmentByIndx(c, r);
-			if(neighbour == NULL) continue;
-			for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
-				Being* b = *(neighbour->beings.array + i);
-				if (BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) {
-					if(DamageBeing(b, bl->damage)){
-						--i;
-					}
-					if(bl->hits < bl->penetration){
-						*(bl->hit_targets + bl->hits++) = b->id;
-					}else{
-						return true;
-					}
+	for (unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r) {
+		Segment* neighbour = GetSegmentByIndx(c, r);
+		if(neighbour == NULL) continue;
+		for (unsigned int i = 0U; i < neighbour->beings.num; ++i) {
+			Being* b = *(neighbour->beings.array + i);
+			if (!BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) continue;
+			if(DamageBeing(b, bl->damage)){
+				if(bl->hits < --bl->penetration){
+					--i;
+					continue;
 				}
+			}else if(bl->hits < bl->penetration){
+				*(bl->hit_targets + bl->hits++) = b->id;
+				continue;
 			}
+			return true;
 		}
-	}
+	}}
 	return false;
 }
 

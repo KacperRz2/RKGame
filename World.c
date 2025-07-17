@@ -4,6 +4,8 @@
 #include <World.h>
 #include <function.h>
 
+
+
 void CreateWorld(const float x, const float y) {
 	world.width = x;
 	world.height = y;

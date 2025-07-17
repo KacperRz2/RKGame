@@ -176,7 +176,7 @@ inline void UpdateBeingWalk(Being* const b) {
 }
 
 inline void UpdateBeingIdle(Being* const b, const float distance_squared) {
-    if (distance_squared < pow2(VIEWFINDER)) {
+    if (distance_squared < pow2(900.0F)) {
         if (distance_squared < pow2(140.0F)) {
             b->status = strike;
             b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);

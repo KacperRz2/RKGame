@@ -5,6 +5,7 @@
 typedef struct Walk Walk;
 typedef struct Blade Blade;
 typedef struct Status_frame Status_frame;
+typedef struct Render_data Render_data;
 //Being
 typedef struct Blade_hostile Blade_hostile;
 typedef struct Being_type Being_type;
@@ -38,6 +39,13 @@ struct Blade {
 struct Status_frame {
 	SDL_FPoint position;
 	float direction;
+};
+struct Render_data {
+	float viewfinder;
+	SDL_FRect visible_rect;
+	SDL_Rect viewfinder_rect;
+	int window_w;
+	int window_h;
 };
 //Being
 struct Being_type {

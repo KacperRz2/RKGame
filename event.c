@@ -3,8 +3,9 @@
 #include <types.h>
 #include <event.h>
 #include <enum.h>
+#include <render.h>
 
-bool EventsService(SDL_Event* const e, Player* const p) {
+bool EventsService(SDL_Event* const e, Player* const p, SDL_Window* window) {
 	while (SDL_PollEvent(e)) {
 		if (e->type == SDL_EVENT_QUIT) {
 			return true;
@@ -50,6 +51,25 @@ bool EventsService(SDL_Event* const e, Player* const p) {
 				p->control_flags &= ~(run); break;
 			//case SDL_SCANCODE_H:
 			//	p->control_flags &= ~(1 << 6); break;
+			case SDL_SCANCODE_KP_PLUS:
+				SetRenderData(rend_data.window_w + 10, rend_data.window_h + 10);
+				SDL_SetWindowSize(window, rend_data.window_w, rend_data.window_h);
+				SDL_SyncWindow(window); break;
+			case SDL_SCANCODE_KP_MINUS:
+				SetRenderData(rend_data.window_w - 10, rend_data.window_h - 10);
+				SDL_SetWindowSize(window, rend_data.window_w, rend_data.window_h);
+				SDL_SyncWindow(window);  break;
+			case SDL_SCANCODE_KP_8:
+				int w; int h;
+				SDL_SetWindowFullscreen(window, true);
+				SDL_SyncWindow(window); 
+				SDL_GetWindowSize(window, &w, &h);
+				SetRenderData(w, h); break;
+			case SDL_SCANCODE_KP_2:
+				SDL_SetWindowFullscreen(window, false);
+				SDL_SyncWindow(window); 
+				SDL_GetWindowSize(window, &w, &h);
+				SetRenderData(w, h); break;
 			default: break;
 			}
 		}

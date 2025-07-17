@@ -1,12 +1,12 @@
 #include <header.h>
 
 int main(int argc, char* argv[]) {
+	SetRenderData(1600, 900);
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* textures[TEXTURES_NUM];
 	SDL_Event event;
 	float cursor_y;
-	// const SDL_FPoint zero_point = {0.0F, 0.0F};
 	Projectiles_array projectiles;
 	projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	projectiles.num = 0U;
@@ -17,7 +17,6 @@ int main(int argc, char* argv[]) {
 	Beings_array beings;
 	beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
 	beings.num = 0U;
-	float rotation = 0.0F;
 	float cursor_distance = 0.0F;
 	unsigned int ticks_to_update_beings = 1U;
 	bool quit = false;
@@ -43,32 +42,6 @@ int main(int argc, char* argv[]) {
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 timer;
-	
-	const SDL_FRect destination_rect0a = {
-		WINDOW_W - 100.0F,
-		WINDOW_H * 0.4F,
-		50.0F,
-		50.0F
-	};
-	const SDL_FRect destination_rect0b = {
-		WINDOW_W - 90.0F,
-		WINDOW_H * 0.4F + 10.0F,
-		30.0F,
-		30.0F
-	};
-	const SDL_FRect destination_rect1 = {
-		10.0F,
-		40.0F,
-		50.0F,
-		50.0F
-	};
-	const SDL_Rect viewfinder = {
-		(int)((WINDOW_W - VIEWFINDER) * 0.5F),
-		(int)((WINDOW_H - VIEWFINDER) * 0.5F),
-		(int)(VIEWFINDER),
-		(int)(VIEWFINDER)
-	};
-
 	CreateWorld(WORLD_W, WORLD_H);
 	Player pc;
 	Player* const pc_ptr = &pc;
@@ -92,7 +65,7 @@ int main(int argc, char* argv[]) {
 
 	while (!quit) {
 		timer = SDL_GetTicksNS();
-		quit = EventsService(&event, pc_ptr);
+		quit = EventsService(&event, pc_ptr, window);
 
 		// if (beings.num < MAX_BEINGS_NUM / 2048) {
 		// if (beings.num < MAX_BEINGS_NUM && !(pc.control_flags & tmp0)) {
@@ -119,8 +92,7 @@ int main(int argc, char* argv[]) {
 				UpdateBeings(&beings, pc_ptr, player_seg, &h_projectiles);
 			}
 			ticks_to_update_beings = 1U;
-		}
-		else {
+		} else {
 			--ticks_to_update_beings;
 		}
 		if (SDL_GetTicksNS() > frame_time) {
@@ -128,8 +100,6 @@ int main(int argc, char* argv[]) {
 			frame_time += FRAME_TIME;
 
 			SetSineCosine(pc_ptr);
-
-			rotation = RadToDeg(pc.direction);
 
 			// SDL_SetRenderTarget(renderer, *textures);//Gun Sight
 
@@ -139,8 +109,7 @@ int main(int argc, char* argv[]) {
 			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 			SDL_RenderClear(renderer);
 
-			SDL_SetRenderViewport(renderer, &viewfinder);
-			// SDL_SetRenderScale(renderer, 1.0F, 0.5F);
+			SDL_SetRenderViewport(renderer, &rend_data.viewfinder_rect);
 
 			SDL_SetRenderDrawColor(renderer, 50, 50, 50, 0);
 			SDL_RenderFillRect(renderer, NULL);
@@ -151,9 +120,6 @@ int main(int argc, char* argv[]) {
 
 			RenderProjectiles(renderer, &projectiles, *(textures + tx_projectiole), pc_ptr);
 			RenderHProjectiles(renderer, &h_projectiles, *(textures + tx_h_projectile), pc_ptr);
-			// if (!(pc.control_flags & 1 << 6)) {
-			// 	UpdateAndRenderBeings(&beings, pc_ptr, player_seg, renderer, *(textures + tx_being));
-			// }
 			
 			SDL_RenderTexture(renderer, *(textures + tx_viewfinder), NULL, NULL);//viewfinder
 			RenderPlayer(renderer, textures, player_blade);
@@ -162,39 +128,9 @@ int main(int argc, char* argv[]) {
 			// SDL_SetRenderScale(renderer, 1.0F, 1.0F);
 			SDL_SetRenderViewport(renderer, NULL);
 
-			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-			SDL_RenderDebugTextFormat(renderer, 10, 10, "Fatigue: %d", pc.fatigue_points);
-			SDL_RenderDebugTextFormat(renderer, 10, 20, "Position: %.2f %.2f", pc.position.x, pc.position.y);
-			SDL_RenderDebugTextFormat(renderer, 10, 30, "Direction: %.2f", pc.direction);
+			RenderTextInfo(renderer, pc_ptr, tps, &beings, &projectiles, &h_projectiles, player_seg);
 
-			SDL_RenderDebugTextFormat(renderer, 10, 140, "Ticks per sec.: %d", tps);
-			SDL_RenderDebugTextFormat(renderer, 10, 150, "max FPS: ~%u", (1000000000ULL / FRAME_TIME));
-
-			SDL_RenderDebugTextFormat(renderer, 10, 160, "beings: %d", beings.num);
-			SDL_RenderDebugTextFormat(renderer, 10, 170, "projectiles: %d", projectiles.num);
-			SDL_RenderDebugTextFormat(renderer, 10, 180, "projectiles: %d", h_projectiles.num);
-			SDL_RenderDebugTextFormat(renderer, 10, 190, "hp: %d", pc.hit_points);
-			// SDL_RenderDebugTextFormat(renderer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
-			// SDL_RenderDebugTextFormat(renderer, 10, 250, "sizeof: %d MB", sizeof(world->segments) / 100000);
-			SDL_RenderDebugTextFormat(renderer, 10, 260, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
-			//for (unsigned int i = 0U; i < projectiles.num; ++i) {
-			//    Projectile* pr = *(projectiles.array + i);
-			//    s = GetSegment(world, pr->position.x, pr->position.y);
-			//    SDL_RenderDebugTextFormat(renderer, 10, 270 + i * 10, "%u     : %.0f %.0f", i, s->coordinates.x, s->coordinates.y);
-			//}
-			//for (unsigned int i = 0U; i < beings.num; ++i) {
-			//    Being* b = *(beings.array + i);
-			//    Segment* s = b->segment;
-			//    SDL_RenderDebugTextFormat(renderer, 10, 200 + i * 10, "%u: %.0f %.0f", i, s->coordinates.x, s->coordinates.y);
-			//}
-
-			//SDL_RenderDebugTextFormat(renderer, 10, 200, "min_delay: %llu", MINIMAL_DELAY);
-
-			SDL_RenderTextureRotated(renderer, *(textures + tx_compass), NULL, &destination_rect1, -rotation, NULL, SDL_FLIP_NONE);//compass
-			SDL_RenderTexture(renderer, *(textures + tx_nesw), NULL, &destination_rect0a);
-			SDL_RenderTextureRotated(renderer, *(textures + tx_arrow), NULL, &destination_rect0b, rotation, NULL, SDL_FLIP_NONE);
-
-			RenderMap(renderer, pc_ptr);
+			RenderMap(renderer, textures, pc_ptr);
 
 			SDL_RenderPresent(renderer);
 		}

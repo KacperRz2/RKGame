@@ -64,18 +64,19 @@ void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg) 
 			static unsigned int mark = 1U;
 			for (unsigned int j = 0U; j < neighbour->beings.num; ++j) {
 				Being* b = *(neighbour->beings.array + j);
-				if (ProjectileHitsBeing(pr, b)) {
-					if(DamageBeing(b, pr->damage)){
+				if (!ProjectileHitsBeing(pr, b)) continue;
+				if(DamageBeing(b, pr->damage)){
+					if(pr->hits < --pr->penetration){
 						--j;
+						continue;
 					}
-					if(pr->hits < pr->penetration){
-						*(pr->hit_targets + pr->hits++) = b->id;
-					}else{
-						*pr = *(prs->array + prs->num-- - 1U);
-						--pr;
-						goto outside;
-					}
+				}else if(pr->hits < pr->penetration){
+					*(pr->hit_targets + pr->hits++) = b->id;
+					continue;
 				}
+				*pr = *(prs->array + prs->num-- - 1U);
+				--pr;
+				goto outside;	//to next projectile
 			}
 		}}
 		outside:;

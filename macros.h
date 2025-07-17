@@ -2,10 +2,10 @@
 #define MACROS_H_
 
 #define SQRT2DIV2			(1.4142135623730950488016887242097F * 0.5F)
-#define WINDOW_W			1600//1920//1280
-#define WINDOW_H			900//1080//1024
-#define VIEWFINDER			(WINDOW_H * 0.984375F)
-#define VIEWFINDER_CENTER	(VIEWFINDER * 0.5F)
+#define WINDOW_W			rend_data.window_w//1600//1920//1280
+#define WINDOW_H			rend_data.window_h//900//1080//1024
+#define VIEWFINDER			rend_data.viewfinder//(WINDOW_H * 0.984375F)
+#define VIEWFINDER_CENTER	(VIEWFINDER * 0.5F)//(VIEWFINDER * 0.5F)
 #define WINDOW_CENTER_Y		(WINDOW_H / 2)
 #define WORLD_W				0x2p+16F
 #define WORLD_H				WORLD_W//4500.0F
