@@ -21,5 +21,6 @@ void RenderBeings(SDL_Renderer* const, Beings_array* const, SDL_Texture** const,
 void RenderMap(SDL_Renderer* const, SDL_Texture** const, Player* const);
 bool GetRenderPointFromTrue(const float, const float, const Player* const, SDL_FPoint* const);
 void RenderTextInfo(SDL_Renderer* const, Player* const , const Uint64, Beings_array* const, Projectiles_array* const, Projectiles_h_array* const, Segment* const);
+void RenderPlayerStatus(SDL_Renderer* const, Player* const);
 
 #endif

@@ -3,8 +3,8 @@
 #include <types.h>
 #include <World.h>
 #include <function.h>
-
-
+#include <Player.h>
+#include <Being.h>
 
 void CreateWorld(const float x, const float y) {
 	world.width = x;
@@ -56,4 +56,31 @@ extern inline void SetSineCosine(Player* const p) {
 
 extern inline void UpdateSegmentBeingPointer(Being* old, Being* new){
 	*(old->segment->beings.array + old->indx) = new;
+}
+
+void StartLevel(Player* const p, Beings_array* const bs){
+	for (unsigned int c = 0U; c < SEGMENTS_X; ++c) {
+	for (unsigned int r = 0U; r < SEGMENTS_Y; ++r) {
+			if(*(*(world.segments + c) + r) != NULL){
+				(*(*(world.segments + c) + r))->beings.num = 0U;
+			}
+		}
+	}
+
+	bs->num = 0U;
+	CreatePlayer(p, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
+	AddBeingToArray(bs, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F, GetSegment(WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F));
+
+	while (bs->num < MAX_BEINGS_NUM) {
+		float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
+		float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
+		x /= 2.0F;
+		y /= 2.0F;
+		if (SDL_fabsf(p->position.x - x) > 2000.0F && SDL_fabsf(p->position.y - y) > 2000.0F) {
+			Segment* s = GetSegment(x, y);
+			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
+				AddBeingToArray(bs, x, y, s);
+			}
+		}
+	}
 }

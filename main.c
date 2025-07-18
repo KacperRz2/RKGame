@@ -46,22 +46,8 @@ int main(int argc, char* argv[]) {
 	Player pc;
 	Player* const pc_ptr = &pc;
 	Blade* const player_blade = &pc.blade;
-	CreatePlayer(pc_ptr, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
 	if (projectiles.array == NULL || beings.array == NULL) return 1;
-	AddBeingToArray(&beings, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F, GetSegment(WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F));
-
-	while (beings.num < MAX_BEINGS_NUM) {
-		float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
-		float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-		x /= 2.0F;
-		y /= 2.0F;
-		if (SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F) {
-			Segment* s = GetSegment(x, y);
-			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-				AddBeingToArray(&beings, x, y, s);
-			}
-		}
-	}
+	StartLevel(pc_ptr, &beings);
 
 	while (!quit) {
 		timer = SDL_GetTicksNS();
@@ -95,6 +81,13 @@ int main(int argc, char* argv[]) {
 		} else {
 			--ticks_to_update_beings;
 		}
+
+		if(pc.hit_points < 1){
+			projectiles.num = 0;
+			h_projectiles.num = 0;
+			StartLevel(pc_ptr, &beings);
+		}
+
 		if (SDL_GetTicksNS() > frame_time) {
 
 			frame_time += FRAME_TIME;
@@ -131,6 +124,8 @@ int main(int argc, char* argv[]) {
 			RenderTextInfo(renderer, pc_ptr, tps, &beings, &projectiles, &h_projectiles, player_seg);
 
 			RenderMap(renderer, textures, pc_ptr);
+
+			RenderPlayerStatus(renderer, pc_ptr);
 
 			SDL_RenderPresent(renderer);
 		}

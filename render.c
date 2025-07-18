@@ -311,3 +311,55 @@ void RenderTextInfo(SDL_Renderer* const rend, Player* const p, const Uint64 tps,
 
 	//SDL_RenderDebugTextFormat(renderer, 10, 200, "min_delay: %llu", MINIMAL_DELAY);
 }
+
+void RenderPlayerStatus(SDL_Renderer* const rend, Player* const p){
+	const SDL_FRect rect0a = {
+		10.0F,
+		WINDOW_H * 0.5F,
+		(WINDOW_W - VIEWFINDER) * 0.49F,
+		30.0F
+	};
+	const SDL_FRect rect1a = {
+		10.0F,
+		WINDOW_H * 0.5F + 40.0F,
+		(WINDOW_W - VIEWFINDER) * 0.49F,
+		30.0F
+	};
+	const SDL_FRect rect2a = {
+		10.0F,
+		WINDOW_H * 0.5F + 80.0F,
+		(WINDOW_W - VIEWFINDER) * 0.49F,
+		30.0F
+	};
+	SDL_FRect rect0b = {
+		11.0F,
+		WINDOW_H * 0.5F + 1.0F,
+		0.0F,
+		28.0F
+	};
+	SDL_FRect rect1b = {
+		11.0F,
+		WINDOW_H * 0.5F + 41.0F,
+		0.0F,
+		28.0F
+	};
+	SDL_FRect rect2b = {
+		11.0F,
+		WINDOW_H * 0.5F + 81.0F,
+		0.0F,
+		28.0F
+	};
+	rect0b.w = (float)p->hit_points / (float)p->max_h_p * (rect0a.w - 2.0F);
+	rect1b.w = (float)p->magic_points / (float)p->max_magic * (rect1a.w - 2.0F);
+	rect2b.w = (float)p->fatigue_points / (float)p->max_fatigue * (rect1a.w - 2.0F);
+	SDL_SetRenderDrawColor(rend, 255U, 255U, 255U, 0U);
+	SDL_RenderRect(rend, &rect0a);
+	SDL_RenderRect(rend, &rect1a);
+	SDL_RenderRect(rend, &rect2a);
+	SDL_SetRenderDrawColor(rend, 255U, 0U, 0U, 0U);
+	SDL_RenderFillRect(rend, &rect0b);
+	SDL_SetRenderDrawColor(rend, 0U, 127U, 255U, 0U);
+	SDL_RenderFillRect(rend, &rect1b);
+	SDL_SetRenderDrawColor(rend, 0U, 255U, 0U, 0U);
+	SDL_RenderFillRect(rend, &rect2b);
+}

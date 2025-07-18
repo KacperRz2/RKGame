@@ -9,5 +9,6 @@ Segment* GetSegment(const float, const float);
 Segment* GetSegmentByIndx(const unsigned int, const unsigned int);
 void SetSineCosine(Player* const);
 void UpdateSegmentBeingPointer(Being*, Being*);
+void StartLevel(Player* const, Beings_array* const);
 
 #endif
