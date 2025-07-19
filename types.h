@@ -24,11 +24,11 @@ typedef struct World World;
 typedef struct Player Player;
 
 //other
-struct Walk {
+struct Walk{
 	int time_left;
 	SDL_FPoint shift;
 };
-struct Blade {
+struct Blade{
 	SDL_FPoint position;
 	float direction;
 	int damage;
@@ -36,11 +36,11 @@ struct Blade {
 	unsigned int hit_targets[MAX_HITS];
 	unsigned int hits;
 };
-struct Status_frame {
+struct Status_frame{
 	SDL_FPoint position;
 	float direction;
 };
-struct Render_data {
+struct Render_data{
 	float viewfinder;
 	SDL_FRect visible_rect;
 	SDL_Rect viewfinder_rect;
@@ -48,18 +48,18 @@ struct Render_data {
 	int window_h;
 };
 //Being
-struct Being_type {
+struct Being_type{
     float velocity;
     int hit_points;
 	int damage_close;
 	int damage_far;
 };
-struct Blade_hostile {
+struct Blade_hostile{
 	SDL_FPoint position;
 	float direction;
 	// int attack_tiks_left;
 };
-struct Being {
+struct Being{
     SDL_FPoint position;
 	float direction;
     Segment* segment;
@@ -72,16 +72,16 @@ struct Being {
 	SDL_FPoint walk_shift;
 	unsigned int id;
 };
-struct Beings_array {
+struct Beings_array{
 	Being* array;
     unsigned int num;
 };
-struct Segment_beings {
+struct Segment_beings{
 	Being* array[MAX_SEGM_BEINGS];
     unsigned int num;
 };
 //Projectile
-struct Projectile {
+struct Projectile{
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
 	int damage;
@@ -89,25 +89,25 @@ struct Projectile {
 	unsigned int hit_targets[MAX_HITS];
 	unsigned int hits;
 };
-struct Projectile_hostile {
+struct Projectile_hostile{
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
 	int damage;
 };
-struct Projectiles_array {
+struct Projectiles_array{
 	Projectile* array;
 	unsigned int num;
 };
-struct Projectiles_h_array {
+struct Projectiles_h_array{
 	Projectile_hostile* array;
 	unsigned int num;
 };
 //World
-struct Segment {
+struct Segment{
 	Segment_beings beings;
 	SDL_Point indx;
 };
-struct World {
+struct World{
 	Segment*** segments;
 	float sin_player_direction;
 	float cos_player_direction;
@@ -115,7 +115,7 @@ struct World {
 	float height;
 };
 //Player
-struct Player {
+struct Player{
 	Uint32 control_flags;
 	SDL_FPoint position;
 	Blade blade;

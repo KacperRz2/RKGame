@@ -1,7 +1,7 @@
 #ifndef ENUM_H_
 #define ENUM_H_
 
-enum texture_num {
+enum texture_num{
     tx_pc = 1,
     tx_compass,
     tx_projectiole,
@@ -14,7 +14,7 @@ enum texture_num {
     tx_h_projectile
 };
 
-enum control {
+enum control{
     forward = 1 << 0,
     back = 1 << 1,
     right = 1 << 2,
@@ -26,12 +26,18 @@ enum control {
     fire = 1 << 8
 };
 
-enum being_status {
+enum being_status{
     idle,
     follow,
     shoot,
     strike,
     walk,
     dead
+};
+
+enum menu_option{
+    menu_unknown,
+    menu_start,
+    menu_quit
 };
 #endif

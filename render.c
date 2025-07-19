@@ -4,8 +4,9 @@
 #include <render.h>
 #include <function.h>
 #include <enum.h>
+#include <World.h>
 
-int GraphicsInitiation(struct Graphics_initiation_data* const data) {
+int GraphicsInitiation(struct Graphics_initiation_data* const data){
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
 	const char* texture_files[TEXTURE_FILES_NUM] = {
@@ -22,25 +23,25 @@ int GraphicsInitiation(struct Graphics_initiation_data* const data) {
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
-	if (!SDL_Init(SDL_INIT_VIDEO)) {
+	if(!SDL_Init(SDL_INIT_VIDEO)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
 		return 3;
 	}
 
-	if (!SDL_CreateWindowAndRenderer("KacWindow", WINDOW_W, WINDOW_H, SDL_WINDOW_BORDERLESS, data->window, data->renderer)) {
+	if(!SDL_CreateWindowAndRenderer("KacWindow", WINDOW_W, WINDOW_H, SDL_WINDOW_BORDERLESS, data->window, data->renderer)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
 		return 3;
 	}
 
-	for (int i = 0; i < TEXTURE_FILES_NUM; ++i) {
-		SDL_asprintf(&bmp_path, "%s%s", SDL_GetBasePath(), *(texture_files + i));
+	for(int i = 0; i < TEXTURE_FILES_NUM; ++i){
+		SDL_asprintf(&bmp_path, "%sdata/%s", SDL_GetBasePath(), *(texture_files + i));
 		surface = SDL_LoadBMP(bmp_path);
-		if (!surface) {
+		if(!surface){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 			return 3;
 		}
 		**(data->textures + i + TEXTURE_TARGET_NUM) = SDL_CreateTextureFromSurface(*data->renderer, surface);
-		if (!**(data->textures + i + TEXTURE_TARGET_NUM)) {
+		if(!**(data->textures + i + TEXTURE_TARGET_NUM)){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 			return 3;
 		}
@@ -51,8 +52,7 @@ int GraphicsInitiation(struct Graphics_initiation_data* const data) {
 
 	**data->textures = SDL_CreateTexture(*data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GUN_SIGHT_SIZE, GUN_SIGHT_SIZE);
 
-	if (**data->textures == NULL)
-	{
+	if(**data->textures == NULL){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError()); return 1;
 	}
 	
@@ -77,7 +77,7 @@ void SetRenderData(const float window_w, const float window_h){
 	rend_data.visible_rect.h = VIEWFINDER;
 }
 
-void RenderGunSightCross(SDL_Renderer* const rend) {
+void RenderGunSightCross(SDL_Renderer* const rend){
 	static const SDL_FRect rect0 = { 
 		GUN_SIGHT_SIZE * 0.5F - 1.0F,
 		1.0F,
@@ -94,14 +94,13 @@ void RenderGunSightCross(SDL_Renderer* const rend) {
 	SDL_RenderFillRect(rend, &rect1);
 }
 
-void RenderGunSightElements(SDL_Renderer* const rend, const float distance, const float range) {
+void RenderGunSightElements(SDL_Renderer* const rend, const float distance, const float range){
 	SDL_SetRenderDrawColor(rend, 64, 64, 64, 0);
 	SDL_RenderClear(rend);
-	if (distance > range) {
+	if(distance > range){
 		SDL_SetRenderDrawColor(rend, 255, 0, 0, 64);
 		RenderGunSightCross(rend);
-	}
-	else {
+	}else{
 		SDL_FRect rect;
 		rect.w = GUN_SIGHT_SIZE * distance / range * 0.9F;
 		rect.h = rect.w;
@@ -114,7 +113,7 @@ void RenderGunSightElements(SDL_Renderer* const rend, const float distance, cons
 	}
 }
 
-void RenderPlayer(SDL_Renderer* const rend, SDL_Texture** const tx, Blade* const blade) {
+void RenderPlayer(SDL_Renderer* const rend, SDL_Texture** const tx, Blade* const blade){
 	const SDL_FRect rect = {
 		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F,
 		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
@@ -137,7 +136,7 @@ void RenderPlayer(SDL_Renderer* const rend, SDL_Texture** const tx, Blade* const
 	SDL_RenderTextureRotated(rend, *(tx + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
 }
 
-void RenderGunSight(SDL_Renderer* const rend, const float cursor_point_y, SDL_Texture* const tx) {
+void RenderGunSight(SDL_Renderer* const rend, const float cursor_point_y, SDL_Texture* const tx){
 	SDL_FRect rect = {
 		VIEWFINDER_CENTER - GUN_SIGHT_SIZE * 0.5F,
 		0.0F,
@@ -148,16 +147,16 @@ void RenderGunSight(SDL_Renderer* const rend, const float cursor_point_y, SDL_Te
 	SDL_RenderTexture(rend, tx, NULL, &rect);
 }
 
-void RenderProjectiles(SDL_Renderer* const rend, Projectiles_array* const prs, SDL_Texture* const tx, Player* const p) {
+void RenderProjectiles(SDL_Renderer* const rend, Projectiles_array* const prs, SDL_Texture* const tx, Player* const p){
 	static SDL_FRect rect = { 
 		0.0F,
 		0.0F,
 		BULLET_SIZE,
 		BULLET_SIZE
 	};
-	for (Projectile* pr = prs->array; pr != (prs->array + prs->num); ++pr) {
+	for(Projectile* pr = prs->array; pr != (prs->array + prs->num); ++pr){
 		SDL_FPoint point;
-		if (GetRenderPointFromTrue(pr->position.x, pr->position.y, p, &point)) {
+		if(GetRenderPointFromTrue(pr->position.x, pr->position.y, p, &point)){
 			rect.x = point.x - BULLET_SIZE * 0.5F;
 			rect.y = point.y - BULLET_SIZE * 0.5F;
 			SDL_RenderTexture(rend, tx, NULL, &rect);
@@ -165,16 +164,16 @@ void RenderProjectiles(SDL_Renderer* const rend, Projectiles_array* const prs, S
 	}
 }
 
-void RenderHProjectiles(SDL_Renderer* const rend, Projectiles_h_array* const prs, SDL_Texture* const tx, Player* const p) {
+void RenderHProjectiles(SDL_Renderer* const rend, Projectiles_h_array* const prs, SDL_Texture* const tx, Player* const p){
 	static SDL_FRect rect = { 
 		0.0F,
 		0.0F,
 		BULLET_SIZE,
 		BULLET_SIZE
 	};
-	for (Projectile_hostile* pr = prs->array; pr != (prs->array + prs->num); ++pr) {
+	for(Projectile_hostile* pr = prs->array; pr != (prs->array + prs->num); ++pr){
 		SDL_FPoint point;
-		if (GetRenderPointFromTrue(pr->position.x, pr->position.y, p, &point)) {
+		if(GetRenderPointFromTrue(pr->position.x, pr->position.y, p, &point)){
 			rect.x = point.x - BULLET_SIZE * 0.5F;
 			rect.y = point.y - BULLET_SIZE * 0.5F;
 			SDL_RenderTexture(rend, tx, NULL, &rect);
@@ -182,7 +181,7 @@ void RenderHProjectiles(SDL_Renderer* const rend, Projectiles_h_array* const prs
 	}
 }
 
-void RenderBeings(SDL_Renderer* const rend, Beings_array* const bs, SDL_Texture** const tx, Player* const p) {
+void RenderBeings(SDL_Renderer* const rend, Beings_array* const bs, SDL_Texture** const tx, Player* const p){
 	static SDL_FRect rect = {
 		0.0F,
 		0.0F,
@@ -199,7 +198,7 @@ void RenderBeings(SDL_Renderer* const rend, Beings_array* const bs, SDL_Texture*
 		BLADE_SIZE * 0.5F,
 		BLADE_SIZE * 0.85F
 	};
-    for (Being* b = bs->array; b != (bs->array + bs->num); ++b) {
+    for(Being* b = bs->array; b != (bs->array + bs->num); ++b){
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(b->position.x, b->position.y, p, &point)){
 			rect.x = point.x - PLAYER_SIZE * 0.5F;
@@ -227,7 +226,7 @@ void RenderBeings(SDL_Renderer* const rend, Beings_array* const bs, SDL_Texture*
 	// SDL_RenderLines(rend, corners, 5);
 }
 
-void RenderMap(SDL_Renderer* const rend, SDL_Texture** const tx, Player* const p) {
+void RenderMap(SDL_Renderer* const rend, SDL_Texture** const tx, Player* const p){
 	static const int map_size = 300;
 	const SDL_Rect rect = {
 		(int)(((WINDOW_W - VIEWFINDER) * 0.5F) + VIEWFINDER) + 10,
@@ -266,19 +265,13 @@ void RenderMap(SDL_Renderer* const rend, SDL_Texture** const tx, Player* const p
 }
 
 inline bool GetRenderPointFromTrue(const float true_point_x, const float true_point_y, const Player* const p, SDL_FPoint* const rend_point){
-	// const SDL_FRect visible_rect = {
-	// 	0.0F,
-	// 	0.0F,
-	// 	VIEWFINDER,
-	// 	VIEWFINDER
-	// };
 	float dx = true_point_x - p->position.x;
 	if(SDL_fabsf(dx) > VIEWFINDER) return false;
 	float dy = true_point_y - p->position.y;
 	if(SDL_fabsf(dy) > VIEWFINDER) return false;
 	rend_point->x =	VIEWFINDER_CENTER + (dx * world.cos_player_direction + dy * world.sin_player_direction);
 	rend_point->y =	VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * world.sin_player_direction - dy * world.cos_player_direction);
-	if (SDL_PointInRectFloat(rend_point, &rend_data.visible_rect)) return true;
+	if(SDL_PointInRectFloat(rend_point, &rend_data.visible_rect)) return true;
 	return false;
 }
 
@@ -298,12 +291,12 @@ void RenderTextInfo(SDL_Renderer* const rend, Player* const p, const Uint64 tps,
 	// SDL_RenderDebugTextFormat(rrer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
 	// SDL_RenderDebugTextFormat(rrer, 10, 250, "sizeof: %d MB", sizeof(world->segments) / 100000);
 	SDL_RenderDebugTextFormat(rend, 10, 260, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
-	//for (unsigned int i = 0U; i < projectiles.num; ++i) {
+	//for(unsigned int i = 0U; i < projectiles.num; ++i){
 	//    Projectile* pr = *(projectiles.array + i);
 	//    s = GetSegment(world, pr->position.x, pr->position.y);
 	//    SDL_RenderDebugTextFormat(renderer, 10, 270 + i * 10, "%u     : %.0f %.0f", i, s->coordinates.x, s->coordinates.y);
 	//}
-	//for (unsigned int i = 0U; i < beings.num; ++i) {
+	//for(unsigned int i = 0U; i < beings.num; ++i){
 	//    Being* b = *(beings.array + i);
 	//    Segment* s = b->segment;
 	//    SDL_RenderDebugTextFormat(renderer, 10, 200 + i * 10, "%u: %.0f %.0f", i, s->coordinates.x, s->coordinates.y);
@@ -362,4 +355,44 @@ void RenderPlayerStatus(SDL_Renderer* const rend, Player* const p){
 	SDL_RenderFillRect(rend, &rect1b);
 	SDL_SetRenderDrawColor(rend, 0U, 255U, 0U, 0U);
 	SDL_RenderFillRect(rend, &rect2b);
+}
+
+void RenderMainMenu(SDL_Renderer* const rend){
+	static float angle = 0.0F;
+	angle += 0.02F;
+	if(angle >= SDL_PI_F * 2.0F){
+		angle = 0.0F;
+	}
+	Uint8 colour = (Uint8)((sine(angle) + 1.0F) * 127.5F);
+	SDL_SetRenderDrawColor(rend, 0U, 0U, 0U, 0U);
+	SDL_RenderClear(rend);
+	SDL_SetRenderDrawColor(rend, colour, colour, colour, 255U);
+	SDL_SetRenderScale(rend, 4.0F, 4.0F);
+	SDL_RenderDebugText(rend, WINDOW_W * 0.25F * 0.25F, WINDOW_H * 0.5F * 0.25F, "Press SPACE");
+	SDL_SetRenderScale(rend, 1.0F, 1.0F);
+	SDL_RenderPresent(rend);
+}
+
+extern inline void RenderGame(SDL_Renderer* const rend, SDL_Texture** const tx, Player* const p, Beings_array* const bs, Projectiles_array* const ps, Projectiles_h_array* const h_ps){
+	SetSineCosine(p);
+	// SDL_SetRenderTarget(renderer, *textures);//Gun Sight
+	// RenderGunSightElements(renderer, cursor_distance, RANGE);
+	// SDL_SetRenderTarget(renderer, NULL);
+	SDL_SetRenderDrawColor(rend, 0, 0, 0, 0);
+	SDL_RenderClear(rend);
+	SDL_SetRenderViewport(rend, &rend_data.viewfinder_rect);
+	SDL_SetRenderDrawColor(rend, 50, 50, 50, 0);
+	SDL_RenderFillRect(rend, NULL);
+	if(!(p->control_flags & tmp0)){
+		RenderBeings(rend, bs, tx, p);
+	}
+	RenderProjectiles(rend, ps, *(tx + tx_projectiole), p);
+	RenderHProjectiles(rend, h_ps, *(tx + tx_h_projectile), p);
+	SDL_RenderTexture(rend, *(tx + tx_viewfinder), NULL, NULL);//viewfinder
+	RenderPlayer(rend, tx, &p->blade);
+	// RenderGunSight(renderer, cursor_y, *textures);
+	// SDL_SetRenderScale(renderer, 1.0F, 1.0F);
+	SDL_SetRenderViewport(rend, NULL);
+	RenderMap(rend, tx, p);
+	RenderPlayerStatus(rend, p);
 }

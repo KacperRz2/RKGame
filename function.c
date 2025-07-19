@@ -3,7 +3,7 @@
 #include <types.h>
 #include <function.h>
 
-extern inline float RadToDeg(const float angle) {
+extern inline float RadToDeg(const float angle){
 	return angle * (180.0F / SDL_PI_F);
 }
 
