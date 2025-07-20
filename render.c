@@ -64,6 +64,8 @@ int GraphicsInitiation(struct Graphics_initiation_data* const data){
 }
 
 void SetRenderData(const float window_w, const float window_h){
+	rend_data.window = NULL;
+	rend_data.renderer = NULL;
 	rend_data.window_w = window_w;
 	rend_data.window_h = window_h;
 	rend_data.viewfinder = (WINDOW_H * 0.984375F);
@@ -75,6 +77,14 @@ void SetRenderData(const float window_w, const float window_h){
 	rend_data.visible_rect.y = 0.0F;
 	rend_data.visible_rect.w = VIEWFINDER;
 	rend_data.visible_rect.h = VIEWFINDER;
+	struct Graphics_initiation_data* graphics_initiation_data = (struct Graphics_initiation_data*)SDL_malloc(sizeof(struct Graphics_initiation_data));
+	graphics_initiation_data->window = &rend_data.window;
+	graphics_initiation_data->renderer = &rend_data.renderer;
+	for(int i = 0; i < TEXTURES_NUM; ++i){
+		*(graphics_initiation_data->textures + i) = rend_data.textures + i;
+	}
+	if(GraphicsInitiation(graphics_initiation_data)) {SDL_Quit(); exit(1);}
+	SDL_free(graphics_initiation_data);
 }
 
 void RenderGunSightCross(SDL_Renderer* const rend){
@@ -181,7 +191,7 @@ void RenderHProjectiles(SDL_Renderer* const rend, Projectiles_h_array* const prs
 	}
 }
 
-void RenderBeings(SDL_Renderer* const rend, Beings_array* const bs, SDL_Texture** const tx, Player* const p){
+void RenderBeings(SDL_Renderer* const rend, SDL_Texture** const tx, Game_data* const g_d){
 	static SDL_FRect rect = {
 		0.0F,
 		0.0F,
@@ -198,13 +208,13 @@ void RenderBeings(SDL_Renderer* const rend, Beings_array* const bs, SDL_Texture*
 		BLADE_SIZE * 0.5F,
 		BLADE_SIZE * 0.85F
 	};
-    for(Being* b = bs->array; b != (bs->array + bs->num); ++b){
+    for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
 		SDL_FPoint point;
-		if(GetRenderPointFromTrue(b->position.x, b->position.y, p, &point)){
+		if(GetRenderPointFromTrue(b->position.x, b->position.y, &g_d->pc, &point)){
 			rect.x = point.x - PLAYER_SIZE * 0.5F;
 			rect.y = point.y - PLAYER_SIZE * 0.5F;
 
-			float being_direction = b->direction - p->direction;
+			float being_direction = b->direction - g_d->pc.direction;
 
 			float sine = SineSafe(being_direction);
 			float cosine = CosiSafe(being_direction);
@@ -269,25 +279,25 @@ inline bool GetRenderPointFromTrue(const float true_point_x, const float true_po
 	if(SDL_fabsf(dx) > VIEWFINDER) return false;
 	float dy = true_point_y - p->position.y;
 	if(SDL_fabsf(dy) > VIEWFINDER) return false;
-	rend_point->x =	VIEWFINDER_CENTER + (dx * world.cos_player_direction + dy * world.sin_player_direction);
-	rend_point->y =	VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * world.sin_player_direction - dy * world.cos_player_direction);
+	rend_point->x =	VIEWFINDER_CENTER + (dx * rend_data.cos_player_direction + dy * rend_data.sin_player_direction);
+	rend_point->y =	VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * rend_data.sin_player_direction - dy * rend_data.cos_player_direction);
 	if(SDL_PointInRectFloat(rend_point, &rend_data.visible_rect)) return true;
 	return false;
 }
 
-void RenderTextInfo(SDL_Renderer* const rend, Player* const p, const Uint64 tps, Beings_array* const beings, Projectiles_array* const projectiles, Projectiles_h_array* const h_projectiles, Segment* const player_seg){
+void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const g_d, Segment* const player_seg){
 	SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
-	SDL_RenderDebugTextFormat(rend, 10, 10, "Fatigue: %d", p->fatigue_points);
-	SDL_RenderDebugTextFormat(rend, 10, 20, "Position: %.2f %.2f", p->position.x, p->position.y);
-	SDL_RenderDebugTextFormat(rend, 10, 30, "Direction: %.2f", p->direction);
+	SDL_RenderDebugTextFormat(rend, 10, 10, "Fatigue: %d", g_d->pc.fatigue_points);
+	SDL_RenderDebugTextFormat(rend, 10, 20, "Position: %.2f %.2f", g_d->pc.position.x, g_d->pc.position.y);
+	SDL_RenderDebugTextFormat(rend, 10, 30, "Direction: %.2f", g_d->pc.direction);
 
 	SDL_RenderDebugTextFormat(rend, 10, 140, "Ticks per sec.: %d", tps);
 	SDL_RenderDebugTextFormat(rend, 10, 150, "max FPS: ~%u", (1000000000ULL / FRAME_TIME));
 
-	SDL_RenderDebugTextFormat(rend, 10, 160, "beings: %d", beings->num);
-	SDL_RenderDebugTextFormat(rend, 10, 170, "projectiles: %d", projectiles->num);
-	SDL_RenderDebugTextFormat(rend, 10, 180, "projectiles: %d", h_projectiles->num);
-	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", p->hit_points);
+	SDL_RenderDebugTextFormat(rend, 10, 160, "beings: %d", g_d->beings.num);
+	SDL_RenderDebugTextFormat(rend, 10, 170, "projectiles: %d", g_d->projectiles.num);
+	SDL_RenderDebugTextFormat(rend, 10, 180, "projectiles: %d", g_d->h_projectiles.num);
+	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", g_d->pc.hit_points);
 	// SDL_RenderDebugTextFormat(rrer, 10, 190, "seg coord: %.0f %.0f", (*(*(world->segments + 0) + 0)).coordinates.x, (*(*(world->segments + 0) + 0)).coordinates.y);
 	// SDL_RenderDebugTextFormat(rrer, 10, 250, "sizeof: %d MB", sizeof(world->segments) / 100000);
 	SDL_RenderDebugTextFormat(rend, 10, 260, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
@@ -373,8 +383,8 @@ void RenderMainMenu(SDL_Renderer* const rend){
 	SDL_RenderPresent(rend);
 }
 
-extern inline void RenderGame(SDL_Renderer* const rend, SDL_Texture** const tx, Player* const p, Beings_array* const bs, Projectiles_array* const ps, Projectiles_h_array* const h_ps){
-	SetSineCosine(p);
+extern inline void RenderGame(SDL_Renderer* const rend, SDL_Texture** const tx, Game_data* const g_d){
+	SetSineCosine(&g_d->pc);
 	// SDL_SetRenderTarget(renderer, *textures);//Gun Sight
 	// RenderGunSightElements(renderer, cursor_distance, RANGE);
 	// SDL_SetRenderTarget(renderer, NULL);
@@ -383,16 +393,30 @@ extern inline void RenderGame(SDL_Renderer* const rend, SDL_Texture** const tx, 
 	SDL_SetRenderViewport(rend, &rend_data.viewfinder_rect);
 	SDL_SetRenderDrawColor(rend, 50, 50, 50, 0);
 	SDL_RenderFillRect(rend, NULL);
-	if(!(p->control_flags & tmp0)){
-		RenderBeings(rend, bs, tx, p);
+	if(!(g_d->pc.control_flags & tmp0)){
+		RenderBeings(rend, tx, g_d);
 	}
-	RenderProjectiles(rend, ps, *(tx + tx_projectiole), p);
-	RenderHProjectiles(rend, h_ps, *(tx + tx_h_projectile), p);
+	RenderProjectiles(rend, &g_d->projectiles, *(tx + tx_projectiole), &g_d->pc);
+	RenderHProjectiles(rend, &g_d->h_projectiles, *(tx + tx_h_projectile), &g_d->pc);
 	SDL_RenderTexture(rend, *(tx + tx_viewfinder), NULL, NULL);//viewfinder
-	RenderPlayer(rend, tx, &p->blade);
+	RenderPlayer(rend, tx, &g_d->pc.blade);
 	// RenderGunSight(renderer, cursor_y, *textures);
 	// SDL_SetRenderScale(renderer, 1.0F, 1.0F);
 	SDL_SetRenderViewport(rend, NULL);
-	RenderMap(rend, tx, p);
-	RenderPlayerStatus(rend, p);
+	RenderMap(rend, tx, &g_d->pc);
+	RenderPlayerStatus(rend, &g_d->pc);
+}
+
+extern inline void SetSineCosine(Player* const p){
+	rend_data.sin_player_direction = sine(p->direction);
+	rend_data.cos_player_direction = cosi(p->direction);
+}
+
+void ClearRenderData(){
+	for(int i = 0; i < TEXTURES_NUM; ++i){
+		SDL_DestroyTexture(*(rend_data.textures + i));
+	}
+	SDL_DestroyRenderer(rend_data.renderer);
+	SDL_DestroyWindow(rend_data.window);
+	SDL_Quit();
 }

@@ -48,18 +48,18 @@ inline void MoveProjectile(Projectile* const pr){
 	pr->position.y += pr->shift_per_tick.y;
 }
 
-void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg){
-	for(Projectile* pr = prs->array; pr != (prs->array + prs->num); ++pr){
+void UpdateProjectiles(Game_data* const g_d, Segment* const player_seg){
+	for(Projectile* pr = g_d->projectiles.array; pr != (g_d->projectiles.array + g_d->projectiles.num); ++pr){
 		MoveProjectile(pr);
-		Segment* s = GetSegment(pr->position.x, pr->position.y);
+		Segment* s = GetSegment(&g_d->world, pr->position.x, pr->position.y);
 		if(s == NULL || SDL_abs(player_seg->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs(player_seg->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
-			*pr = *(prs->array + prs->num-- - 1U);
+			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
 			--pr;
 			continue;
 		}
 		for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
 		for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
-			Segment* neighbour = GetSegmentByIndx(c, r);
+			Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
 			if(neighbour == NULL) continue;
 			static unsigned int mark = 1U;
 			for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
@@ -74,7 +74,7 @@ void UpdateProjectiles(Projectiles_array* const prs, Segment* const player_seg){
 					*(pr->hit_targets + pr->hits++) = b->id;
 					continue;
 				}
-				*pr = *(prs->array + prs->num-- - 1U);
+				*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
 				--pr;
 				goto outside;	//to next projectile
 			}
@@ -123,16 +123,16 @@ inline void MoveHProjectile(Projectile_hostile* const pr){
 	pr->position.y += pr->shift_per_tick.y;
 }
 
-void UpdateHProjectiles(Projectiles_h_array* const prs, Player* const p){
-	for(Projectile_hostile* pr = prs->array; pr != (prs->array + prs->num); ++pr){
+void UpdateHProjectiles(Game_data* const g_d){
+	for(Projectile_hostile* pr = g_d->h_projectiles.array; pr != (g_d->h_projectiles.array + g_d->h_projectiles.num); ++pr){
 		MoveHProjectile(pr);
-		if(ProjectileHitsPlayerOrLost(pr, p)){
-			*pr = *(prs->array + prs->num-- - 1U);
+		if(ProjectileHitsPlayerOrLost(pr, &g_d->pc)){
+			*pr = *(g_d->h_projectiles.array + g_d->h_projectiles.num-- - 1U);
 			--pr;
 			continue;
 		}
-		if(GetSegment(pr->position.x, pr->position.y) == NULL){
-			*pr = *(prs->array + prs->num-- - 1U);
+		if(GetSegment(&g_d->world, pr->position.x, pr->position.y) == NULL){
+			*pr = *(g_d->h_projectiles.array + g_d->h_projectiles.num-- - 1U);
 			--pr;
 		}
 	}

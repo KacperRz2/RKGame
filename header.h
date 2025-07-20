@@ -18,7 +18,7 @@
 
 float si[ANGLE_PARTS];
 float co[ANGLE_PARTS];
-World world;
+// World world;
 Render_data rend_data;
 const Being_type test_being = {
     PLAYER_VELOCITY * 2.5F,

@@ -22,6 +22,8 @@ typedef struct Segment Segment;
 typedef struct World World;
 //Player
 typedef struct Player Player;
+//Game
+typedef struct Game_data Game_data;
 
 //other
 struct Walk{
@@ -46,6 +48,11 @@ struct Render_data{
 	SDL_Rect viewfinder_rect;
 	int window_w;
 	int window_h;
+	float sin_player_direction;
+	float cos_player_direction;
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+	SDL_Texture* textures[TEXTURES_NUM];
 };
 //Being
 struct Being_type{
@@ -109,8 +116,6 @@ struct Segment{
 };
 struct World{
 	Segment*** segments;
-	float sin_player_direction;
-	float cos_player_direction;
 	float width;
 	float height;
 };
@@ -131,6 +136,14 @@ struct Player{
 	int max_magic;
 	int fatigue_block_time;
 	float armour;
+};
+//Game
+struct Game_data{
+	Player pc;
+	Beings_array beings;
+	Projectiles_array projectiles;
+	Projectiles_h_array h_projectiles;
+	World world;
 };
 
 #endif
