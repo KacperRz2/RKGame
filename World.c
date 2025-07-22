@@ -25,8 +25,7 @@ void CreateWorld(World* const world, const float x, const float y){
 	}
 }
 
-extern inline void DestroyWorld(World* const world){
-	// int tmp;
+extern inline void DestroyWorld(World* const world){// int tmp;
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 	for(unsigned int r = 0U; r < SEGMENTS_Y; ++r){
 			SDL_free(*(*(world->segments + c) + r));
@@ -60,15 +59,15 @@ void StartLevel(Game_data* const g_d){
 	}
 
 	g_d->beings.num = 0U;
-	CreatePlayer(&g_d->pc, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);
-	AddBeingToArray(&g_d->beings, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F, GetSegment(&g_d->world, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F));
+	CreatePlayer(&g_d->pc, WORLD_W / SEGMENTS_X * 2.0F, WORLD_H / SEGMENTS_Y * 2.0F);//test staring position
+	AddBeingToArray(&g_d->beings, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F, GetSegment(&g_d->world, WORLD_W / SEGMENTS_X * 3.0F, WORLD_H / SEGMENTS_Y * 3.0F));//test being
 
-	while (g_d->beings.num < MAX_BEINGS_NUM){
+	while (g_d->beings.num < MAX_BEINGS_NUM){//test beings
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-		x /= 2.0F;
+		x /= 2.0F;// closer to pc
 		y /= 2.0F;
-		if(SDL_fabsf(g_d->pc.position.x - x) > 2000.0F && SDL_fabsf(g_d->pc.position.y - y) > 2000.0F){
+		if(SDL_fabsf(g_d->pc.position.x - x) > 2000.0F && SDL_fabsf(g_d->pc.position.y - y) > 2000.0F){//not too close
 			Segment* s = GetSegment(&g_d->world, x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
 				AddBeingToArray(&g_d->beings, x, y, s);

@@ -33,7 +33,6 @@ extern inline void AddProjectileToArray(Projectiles_array* const prs, const SDL_
 	pr->damage = damage;
 	pr->penetration = penetration;
 	pr->hits = 0;
-	// ++prs->num;
 }
 
 inline void DestroyProjectileInArray(Projectiles_array* const prs, const unsigned int indx){

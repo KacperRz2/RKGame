@@ -68,7 +68,7 @@ void SetRenderData(const float window_w, const float window_h){
 	rend_data.renderer = NULL;
 	rend_data.window_w = window_w;
 	rend_data.window_h = window_h;
-	rend_data.viewfinder = (WINDOW_H * 0.984375F);
+	rend_data.viewfinder = VIEWFINDER_SIZE;
 	rend_data.viewfinder_rect.x = (int)((WINDOW_W - VIEWFINDER) * 0.5F);
 	rend_data.viewfinder_rect.y = (int)((WINDOW_H - VIEWFINDER) * 0.5F);
 	rend_data.viewfinder_rect.w = (int)(VIEWFINDER);
@@ -77,51 +77,58 @@ void SetRenderData(const float window_w, const float window_h){
 	rend_data.visible_rect.y = 0.0F;
 	rend_data.visible_rect.w = VIEWFINDER;
 	rend_data.visible_rect.h = VIEWFINDER;
-	struct Graphics_initiation_data* graphics_initiation_data = (struct Graphics_initiation_data*)SDL_malloc(sizeof(struct Graphics_initiation_data));
-	graphics_initiation_data->window = &rend_data.window;
-	graphics_initiation_data->renderer = &rend_data.renderer;
+	struct Graphics_initiation_data graphics_initiation_data;
+	graphics_initiation_data.window = &rend_data.window;
+	graphics_initiation_data.renderer = &rend_data.renderer;
 	for(int i = 0; i < TEXTURES_NUM; ++i){
-		*(graphics_initiation_data->textures + i) = rend_data.textures + i;
+		*(graphics_initiation_data.textures + i) = rend_data.textures + i;
 	}
-	if(GraphicsInitiation(graphics_initiation_data)) {SDL_Quit(); exit(1);}
-	SDL_free(graphics_initiation_data);
+	if(GraphicsInitiation(&graphics_initiation_data)) {SDL_Quit(); exit(1);}
+	// struct Graphics_initiation_data* graphics_initiation_data = (struct Graphics_initiation_data*)SDL_malloc(sizeof(struct Graphics_initiation_data));
+	// graphics_initiation_data->window = &rend_data.window;
+	// graphics_initiation_data->renderer = &rend_data.renderer;
+	// for(int i = 0; i < TEXTURES_NUM; ++i){
+	// 	*(graphics_initiation_data->textures + i) = rend_data.textures + i;
+	// }
+	// if(GraphicsInitiation(graphics_initiation_data)) {SDL_Quit(); exit(1);}
+	// SDL_free(graphics_initiation_data);
 }
 
-void RenderGunSightCross(SDL_Renderer* const rend){
-	static const SDL_FRect rect0 = { 
-		GUN_SIGHT_SIZE * 0.5F - 1.0F,
-		1.0F,
-		3.0F,
-		(float)GUN_SIGHT_SIZE - 2.0F
-	};
-	static const SDL_FRect rect1 = {
-		1.0F,
-		GUN_SIGHT_SIZE * 0.5F - 1.0F,
-		(float)GUN_SIGHT_SIZE - 2.0F,
-		3.0F
-	};
-	SDL_RenderFillRect(rend, &rect0);
-	SDL_RenderFillRect(rend, &rect1);
-}
+// void RenderGunSightCross(SDL_Renderer* const rend){
+// 	static const SDL_FRect rect0 = { 
+// 		GUN_SIGHT_SIZE * 0.5F - 1.0F,
+// 		1.0F,
+// 		3.0F,
+// 		(float)GUN_SIGHT_SIZE - 2.0F
+// 	};
+// 	static const SDL_FRect rect1 = {
+// 		1.0F,
+// 		GUN_SIGHT_SIZE * 0.5F - 1.0F,
+// 		(float)GUN_SIGHT_SIZE - 2.0F,
+// 		3.0F
+// 	};
+// 	SDL_RenderFillRect(rend, &rect0);
+// 	SDL_RenderFillRect(rend, &rect1);
+// }
 
-void RenderGunSightElements(SDL_Renderer* const rend, const float distance, const float range){
-	SDL_SetRenderDrawColor(rend, 64, 64, 64, 0);
-	SDL_RenderClear(rend);
-	if(distance > range){
-		SDL_SetRenderDrawColor(rend, 255, 0, 0, 64);
-		RenderGunSightCross(rend);
-	}else{
-		SDL_FRect rect;
-		rect.w = GUN_SIGHT_SIZE * distance / range * 0.9F;
-		rect.h = rect.w;
-		rect.x = GUN_SIGHT_SIZE * 0.5F - rect.w * 0.5F;
-		rect.y = rect.x;
-		SDL_SetRenderDrawColor(rend, 0, 255, 0, 64);
-		RenderGunSightCross(rend);
-		SDL_SetRenderDrawColor(rend, 0, 255, 0, 0);
-		SDL_RenderFillRect(rend, &rect);
-	}
-}
+// void RenderGunSightElements(SDL_Renderer* const rend, const float distance, const float range){
+// 	SDL_SetRenderDrawColor(rend, 64, 64, 64, 0);
+// 	SDL_RenderClear(rend);
+// 	if(distance > range){
+// 		SDL_SetRenderDrawColor(rend, 255, 0, 0, 64);
+// 		RenderGunSightCross(rend);
+// 	}else{
+// 		SDL_FRect rect;
+// 		rect.w = GUN_SIGHT_SIZE * distance / range * 0.9F;
+// 		rect.h = rect.w;
+// 		rect.x = GUN_SIGHT_SIZE * 0.5F - rect.w * 0.5F;
+// 		rect.y = rect.x;
+// 		SDL_SetRenderDrawColor(rend, 0, 255, 0, 64);
+// 		RenderGunSightCross(rend);
+// 		SDL_SetRenderDrawColor(rend, 0, 255, 0, 0);
+// 		SDL_RenderFillRect(rend, &rect);
+// 	}
+// }
 
 void RenderPlayer(SDL_Renderer* const rend, SDL_Texture** const tx, Blade* const blade){
 	const SDL_FRect rect = {
@@ -138,24 +145,24 @@ void RenderPlayer(SDL_Renderer* const rend, SDL_Texture** const tx, Blade* const
 	};
 	static const SDL_FPoint blade_rotation_point = {
 		BLADE_SIZE * 0.5F,
-		BLADE_SIZE * 0.85F
+		BLADE_SIZE * BLADE_HANDLER_POSITION
 	};
 	rect_blade.x = (VIEWFINDER_CENTER - BLADE_SIZE * 0.5F) + blade->position.x;
-	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * 0.85F + PLAYER_REND_Y_SHIFT) - blade->position.y;
+	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * BLADE_HANDLER_POSITION + PLAYER_REND_Y_SHIFT) - blade->position.y;
 	SDL_RenderTexture(rend, *(tx + tx_pc), NULL, &rect);
 	SDL_RenderTextureRotated(rend, *(tx + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
 }
 
-void RenderGunSight(SDL_Renderer* const rend, const float cursor_point_y, SDL_Texture* const tx){
-	SDL_FRect rect = {
-		VIEWFINDER_CENTER - GUN_SIGHT_SIZE * 0.5F,
-		0.0F,
-		(float)GUN_SIGHT_SIZE,
-		(float)GUN_SIGHT_SIZE
-	};
-	rect.y = cursor_point_y - GUN_SIGHT_SIZE * 0.5F;
-	SDL_RenderTexture(rend, tx, NULL, &rect);
-}
+// void RenderGunSight(SDL_Renderer* const rend, const float cursor_point_y, SDL_Texture* const tx){
+// 	SDL_FRect rect = {
+// 		VIEWFINDER_CENTER - GUN_SIGHT_SIZE * 0.5F,
+// 		0.0F,
+// 		(float)GUN_SIGHT_SIZE,
+// 		(float)GUN_SIGHT_SIZE
+// 	};
+// 	rect.y = cursor_point_y - GUN_SIGHT_SIZE * 0.5F;
+// 	SDL_RenderTexture(rend, tx, NULL, &rect);
+// }
 
 void RenderProjectiles(SDL_Renderer* const rend, Projectiles_array* const prs, SDL_Texture* const tx, Player* const p){
 	static SDL_FRect rect = { 
@@ -206,7 +213,7 @@ void RenderBeings(SDL_Renderer* const rend, SDL_Texture** const tx, Game_data* c
 	};
 	static const SDL_FPoint blade_rotation_point = {
 		BLADE_SIZE * 0.5F,
-		BLADE_SIZE * 0.85F
+		BLADE_SIZE * BLADE_HANDLER_POSITION
 	};
     for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
 		SDL_FPoint point;
@@ -219,7 +226,7 @@ void RenderBeings(SDL_Renderer* const rend, SDL_Texture** const tx, Game_data* c
 			float sine = SineSafe(being_direction);
 			float cosine = CosiSafe(being_direction);
 			rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - BLADE_SIZE * 0.5F;
-			rect_blade.y = point.y + (b->blade.position.x * sine - b->blade.position.y * cosine) - BLADE_SIZE * 0.85F;
+			rect_blade.y = point.y + (b->blade.position.x * sine - b->blade.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
 			SDL_RenderTextureRotated(rend, *(tx + tx_being), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
 			SDL_RenderTextureRotated(rend, *(tx + tx_being_blade), NULL, &rect_blade, (double)RadToDeg(b->blade.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
 		}

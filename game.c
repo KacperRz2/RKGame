@@ -28,7 +28,7 @@ void GameLoop(SDL_Event* const e, SDL_Renderer* const renderer, SDL_Window* cons
 	SetGameData(&game_data);
     float cursor_y;
 	float cursor_distance = 0.0F;
-	unsigned int ticks_to_update_beings = 1U;
+	unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;//1U;
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 now = 0ULL;
@@ -62,7 +62,7 @@ void GameLoop(SDL_Event* const e, SDL_Renderer* const renderer, SDL_Window* cons
 			if(!(game_data.pc.control_flags & tmp0)){
 				UpdateBeings(&game_data);
 			}
-			ticks_to_update_beings = 1U;
+			ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 		}else{
 			--ticks_to_update_beings;
 		}

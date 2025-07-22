@@ -50,10 +50,10 @@ extern inline void AddBeingToArray(Beings_array* const bs, const float x, const 
     AddBeingToSegment(s, b);
     b->hit_points = b->type->hit_points;
     b->status = idle;
-    b->status_ticks_left = 32;
-	b->blade.position.x = 16.0F;
- 	b->blade.position.y = -8.0F;
-    b->blade.direction = 0.0F;
+    b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
+	b->blade.position.x = BLADE_BASE_X;
+ 	b->blade.position.y = BLADE_BASE_Y;
+    b->blade.direction = BLADE_BASE_DIRECTION_BEING;
     b->id = being_id++;
     ++bs->num;
 }
@@ -125,7 +125,7 @@ bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, float* 
         Being* b2 = *(s->beings.array + i);
         if(b2 == b || b2->status == walk) continue;
         if(CollideWithBeing(b2, *new_x, *new_y)){
-            StartBeingWalkWithRandTurn45Deg(b, 128, x_shift, y_shift);
+            StartBeingWalkWithRandTurn45Deg(b, BEING_WALK_TICKS, x_shift, y_shift);
             *new_x = b->position.x + b->walk_shift.x;
             *new_y = b->position.y + b->walk_shift.y;
             return true;
@@ -164,13 +164,13 @@ inline void UpdateBeingWalk(Being* const b, World* const w){
 }
 
 inline void UpdateBeingIdle(Being* const b, const float distance_squared){
-    if(distance_squared < pow2(900.0F)){
-        if(distance_squared < pow2(140.0F)){
+    if(distance_squared < pow2(IDLE_BEING_ACTION_DISTANCE)){
+        if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
             b->status = strike;
             b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
             return;
         }
-        if(distance_squared < pow2(700.0F)){
+        if(distance_squared < pow2(BEING_SHOOT_DISTANCE)){
             b->status = shoot;
             b->status_ticks_left = BEING_RELOAD;
             return;
@@ -181,17 +181,17 @@ inline void UpdateBeingIdle(Being* const b, const float distance_squared){
         return;
     }
     b->status = follow;
-    b->status_ticks_left = 32;
+    b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
 }
 
 inline bool UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
     if(b->status_ticks_left == 0){
-        b->status_ticks_left = 128;
+        b->status_ticks_left = BEING_RELOAD_TICKS;//128;
         b->status = follow;
         return false;
     }
     if(b->status_ticks_left == 4 && prs->num < MAX_PROJECTILES_NUM){
-        AddHProjectileToArray(prs, &b->position, b->direction, 3.0F, b->type->damage_far);
+        AddHProjectileToArray(prs, &b->position, b->direction, PROJECTILE_VELOCITY, b->type->damage_far);
     }
     --b->status_ticks_left;
     return true;
@@ -223,16 +223,16 @@ inline void MoveStrikingBeing(Being* const b, float const distance, float const 
 }
 
 inline void UpdateBeingStrike(Being* const b, Player* const p, float const distance, float const distance_x, float const distance_y, World* const w){
-    static const Blade_hostile blade_base_frame = {{16.0F, -8.0F}, 0.0F};
+    static const Blade_hostile blade_base_frame = {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING};
     if(b->status_ticks_left == 0){
         b->blade = blade_base_frame;
         b->status = follow;
-        b->status_ticks_left = 128;
+        b->status_ticks_left = BEING_RELOAD_TICKS;
         return;
     }
     static const Status_frame shift_prepare = {{(20.0F - 16.0F) / BEING_ATTACK_STEPS, (-16.0F - -8.0F) / BEING_ATTACK_STEPS}, (0.5F - 0.0F) / BEING_ATTACK_STEPS};
     static const Status_frame shift_attack = {{(0.0F - 20.0F) / BEING_ATTACK_STEPS, (24.0F - -16.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.5F) / BEING_ATTACK_STEPS};
-    static const Status_frame shift_reset = {{(16.0F - 0.0F) / BEING_ATTACK_STEPS, (-8.0F - 24.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.0F) / BEING_ATTACK_STEPS};
+    static const Status_frame shift_reset = {{(BLADE_BASE_X - 0.0F) / BEING_ATTACK_STEPS, (BLADE_BASE_Y - 24.0F) / BEING_ATTACK_STEPS}, (BLADE_BASE_DIRECTION_BEING - 0.0F) / BEING_ATTACK_STEPS};
     static const float blade_length = BLADE_SIZE * 0.85F;
     if(distance >= 70.0F){
         MoveStrikingBeing(b, distance, distance_x, distance_y, w);
@@ -271,7 +271,7 @@ inline void UpdateBeingFollow(Being* const b, float const distance, float const 
         b->status = idle;
         return;
     }
-    if(distance < 70.0F){
+    if(distance < BEING_HALT_DISTANCE){
         --b->status_ticks_left;
         return;
     }
@@ -288,11 +288,11 @@ inline void UpdateBeingFollow(Being* const b, float const distance, float const 
     Segment* new_segment = GetSegment(w, new_x, new_y);
     bool collision = false;
     if(new_segment == NULL){
-        StartBeingWalkWithRandTurn45Deg(b, 128, x_shift, y_shift);
+        StartBeingWalkWithRandTurn45Deg(b, BEING_WALK_TICKS, x_shift, y_shift);
         new_x = b->position.x + b->walk_shift.x;
         new_y = b->position.y + b->walk_shift.y;
         collision = true;
-    }else if(distance < 768.0F){
+    }else if(distance < CHECK_COLLISION_DISTANCE){
         collision = ResolveBeingCollisionInNewSegment(b, new_segment, &new_x, &new_y, x_shift, y_shift);
     }
     if(collision){
@@ -301,9 +301,9 @@ inline void UpdateBeingFollow(Being* const b, float const distance, float const 
     if(new_segment != b->segment){
         if(new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS){
             if((bool)SDL_rand(2)){
-                StartBeingWalkWithRandTurn(b, 128, x_shift * 0.5F, y_shift * 0.5F);
+                StartBeingWalkWithRandTurn(b, BEING_WALK_TICKS, x_shift * 0.5F, y_shift * 0.5F);
             }else{
-                HaltBeing(b, -128);
+                HaltBeing(b, -BEING_WALK_TICKS);
             }
             return;
         }

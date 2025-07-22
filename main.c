@@ -6,7 +6,7 @@ int main(int argc, char* argv[]){
 		*(si + i) = SDL_sinf(MIN_ANGLE * i);
 		*(co + i) = SDL_cosf(MIN_ANGLE * i);
 	}
-	SetRenderData(1600, 900);
+	SetRenderData(WINDOW_START_W, WINDOW_START_H);
 	while(1){
 		if(MainMenuLoop(&event, rend_data.renderer, rend_data.window) == menu_quit) break;
 		GameLoop(&event, rend_data.renderer, rend_data.window, rend_data.textures);
