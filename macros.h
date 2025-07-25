@@ -2,13 +2,13 @@
 #define MACROS_H_
 
 #define SQRT2DIV2			        (1.4142135623730950488016887242097F * 0.5F)
-#define WINDOW_W			        rend_data.window_w//1600//1920//1280
-#define WINDOW_H			        rend_data.window_h//900//1080//1024
-#define VIEWFINDER			        rend_data.viewfinder//(WINDOW_H * 0.984375F)
-#define VIEWFINDER_CENTER	        (VIEWFINDER * 0.5F)//(VIEWFINDER * 0.5F)
+#define WINDOW_W			        (rend_data->window_w)
+#define WINDOW_H			        (rend_data->window_h)
+#define VIEWFINDER			        (rend_data->viewfinder)
+#define VIEWFINDER_CENTER	        (VIEWFINDER * 0.5F)
 #define WINDOW_CENTER_Y		        (WINDOW_H / 2)
 #define WORLD_W				        0x2p+16F
-#define WORLD_H				        WORLD_W//4500.0F
+#define WORLD_H				        WORLD_W
 #define PLAYER_REND_Y_SHIFT	        (VIEWFINDER * 0.5F * 0.875F)
 #define PLAYER_SIZE			        32//48
 #define GUN_SIGHT_SIZE		        67
@@ -18,8 +18,8 @@
 #define TICK_TIME_MS		        (TICK_TIME / 1000000ULL)
 #define ACCELERATION		        6.25e-2F
 #define PLAYER_VELOCITY		        0x0.Ap+0F
-#define RUN_VELOCITY		        (PLAYER_VELOCITY * 2.0F)//.0F
-#define ROTATION_SPEED		        3.90625e-3F//1 / 256       .0F
+#define RUN_VELOCITY		        (PLAYER_VELOCITY * 2.0F)
+#define ROTATION_SPEED		        3.90625e-3F
 #define TEXTURE_FILES_NUM	        10
 #define TEXTURE_TARGET_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM)

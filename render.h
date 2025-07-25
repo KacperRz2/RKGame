@@ -1,30 +1,22 @@
 #ifndef RENDER_H_
 #define RENDER_H_
 
-// extern World world;
-extern Render_data rend_data;
-
-struct Graphics_initiation_data{
-	SDL_Window** window;
-	SDL_Renderer** renderer;
-	SDL_Texture** textures[TEXTURES_NUM];
-};
-int GraphicsInitiation(struct Graphics_initiation_data* const);
-void SetRenderData(const float, const float);
+int GraphicsInitiation(Render_data* const);
+void SetRenderData(Render_data* const, const float, const float);
 // void RenderGunSightCross(SDL_Renderer* const);
 // void RenderGunSightElements(SDL_Renderer* const, const float, const float);
-void RenderPlayer(SDL_Renderer* const, SDL_Texture** const, Blade* const);
+void RenderPlayer(Render_data* const, Blade* const);
 // void RenderGunSight(SDL_Renderer* const, const float, SDL_Texture* const);
-void RenderProjectiles(SDL_Renderer* const, Projectiles_array* const, SDL_Texture* const, Player* const);
-void RenderHProjectiles(SDL_Renderer* const, Projectiles_h_array* const, SDL_Texture* const, Player* const);
-void RenderBeings(SDL_Renderer* const, SDL_Texture** const, Game_data* const);
-void RenderMap(SDL_Renderer* const, SDL_Texture** const, Player* const);
-bool GetRenderPointFromTrue(const float, const float, const Player* const, SDL_FPoint* const);
+void RenderProjectiles(Render_data* const, Projectiles_array* const, Player* const);
+void RenderHProjectiles(Render_data* const, Projectiles_h_array* const, Player* const);
+void RenderBeings(Render_data* const, Game_data* const);
+void RenderMap(Render_data* const, Player* const);
+bool GetRenderPointFromTrue(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const);
 void RenderTextInfo(SDL_Renderer* const, const Uint64, Game_data* const, Segment* const);//temporary func.
-void RenderPlayerStatus(SDL_Renderer* const, Player* const);
-void RenderMainMenu(SDL_Renderer* const);
-void RenderGame(SDL_Renderer* const, SDL_Texture** const, Game_data* const);
-void SetSineCosine(Player* const);
-void ClearRenderData();
+void RenderPlayerStatus(Render_data* const, Player* const);
+void RenderMainMenu(Render_data* const);
+void RenderGame(Render_data* const, Game_data* const);
+void SetSineCosine(Render_data* const, Player* const);
+void ClearRenderData(Render_data* const);
 
 #endif

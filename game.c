@@ -10,25 +10,25 @@
 #include <Projectile.h>
 #include <Being.h>
 
-int MainMenuLoop(SDL_Event* const e, SDL_Renderer* const rend, SDL_Window* const window){
+int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
     int option = menu_unknown;
     SDL_PumpEvents();
     SDL_FlushEvent(SDL_EVENT_KEY_UP);
     while(1){
-        RenderMainMenu(rend);
-        option = MenuEventsService(e, window);
+        RenderMainMenu(rend_data);
+        option = MenuEventsService(e, rend_data);
         if(option != menu_unknown) break;
         SDL_Delay(FRAME_TIME_MS);
     }
     return option;
 }
 
-void GameLoop(SDL_Event* const e, SDL_Renderer* const renderer, SDL_Window* const window, SDL_Texture** const textures){
+void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Game_data game_data;
 	SetGameData(&game_data);
     float cursor_y;
 	float cursor_distance = 0.0F;
-	unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;//1U;
+	unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 now = 0ULL;
@@ -40,18 +40,7 @@ void GameLoop(SDL_Event* const e, SDL_Renderer* const renderer, SDL_Window* cons
     StartLevel(&game_data);
     while(!quit){
         timer = SDL_GetTicksNS();
-		quit = EventsService(e, &game_data.pc, window);
-		// if(beings.num < MAX_BEINGS_NUM / 2048){
-		// if(beings.num < MAX_BEINGS_NUM && !(pc.control_flags & tmp0)){
-		// 	float x = (float)(SDL_rand((Sint32)(WORLD_W - WORLD_W / SEGMENTS_X * 4.0F))) + WORLD_W / SEGMENTS_X * 2.0F;
-		// 	float y = (float)(SDL_rand((Sint32)(WORLD_H - WORLD_H / SEGMENTS_Y * 4.0F))) + WORLD_H / SEGMENTS_Y * 2.0F;
-		// 	if(SDL_fabsf(pc.position.x - x) > 2000.0F && SDL_fabsf(pc.position.y - y) > 2000.0F){
-		// 		Segment* s = GetSegment(x, y);
-		// 		if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-		// 			AddBeingToArray(&beings, x, y);
-		// 		}
-		// 	}
-		// }
+		quit = EventsService(e, &game_data.pc, rend_data);
 		SDL_GetMouseState(NULL, &cursor_y);
 		UpdatePlayer(&game_data);
 		cursor_distance = WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - cursor_y;
@@ -73,9 +62,9 @@ void GameLoop(SDL_Event* const e, SDL_Renderer* const renderer, SDL_Window* cons
 		now = SDL_GetTicksNS();
 		if(now > prev_frame_time + FRAME_TIME){
 			prev_frame_time = now;
-            RenderGame(renderer, textures, &game_data);
-			RenderTextInfo(renderer, tps, &game_data, player_seg);
-			SDL_RenderPresent(renderer);
+            RenderGame(rend_data, &game_data);
+			RenderTextInfo(rend_data->renderer, tps, &game_data, player_seg);
+			SDL_RenderPresent(rend_data->renderer);
 		}
 
 		if(SDL_GetTicks() - TPS_time >= 1000ULL){

@@ -26,13 +26,6 @@ inline void RemoveBeingFromSegment(Being* const b){
         (*(b->segment->beings.array + b->indx))->indx = b->indx;
     }
     --b->segment->beings.num;
-    // for(unsigned int i = 0U; i < b->segment->beings.num; ++i){
-    //     Being* bb = *(b->segment->beings.array + i);
-    //     if(*(bb->segment->beings.array + bb->indx) != bb){
-    //         SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "%u>:(", i);
-    //         // SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "status:%d %d hp:%d", b->status, b->status_ticks_left, b->hit_points);
-    //     }
-    // }
 }
 
 void DestroyBeings(Beings_array* const bs){
@@ -186,7 +179,7 @@ inline void UpdateBeingIdle(Being* const b, const float distance_squared){
 
 inline bool UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
     if(b->status_ticks_left == 0){
-        b->status_ticks_left = BEING_RELOAD_TICKS;//128;
+        b->status_ticks_left = BEING_RELOAD_TICKS;
         b->status = follow;
         return false;
     }
@@ -245,7 +238,6 @@ inline void UpdateBeingStrike(Being* const b, Player* const p, float const dista
             Status_frame blade_location = GetHBladeLocation(b, &sine, &cosine);
             SDL_FPoint dangerous_point = {blade_location.position.x + sine * blade_length, blade_location.position.y - cosine * blade_length};
             if(PointInPlayer(dangerous_point.x, dangerous_point.y, p)){
-                // DamagePlayer(p, b->type->damage_close);
                 p->hit_points -= b->type->damage_close;
             }
             b->status_ticks_left = -(BEING_ATTACK_STEPS - 1);
@@ -347,9 +339,6 @@ void UpdateBeings(Game_data* const g_d){
             --g_d->beings.num;
             continue;
         }
-        // if(b != *(b->segment->beings.array + b->indx)){
-        //     SDL_LogInfo(SDL_LOG_CATEGORY_TEST, ">:(");
-        // }
         if(b->status == walk){
             UpdateBeingWalk(b, &g_d->world);
             continue;
@@ -393,131 +382,3 @@ extern inline bool DamageBeing(Being* const b, int damage){
     }
     return false;
 }
-
-// void UpdateAndRenderBeings(Beings_array* const bs, Player* const p, Segment* const player_seg, SDL_Renderer* const rend, SDL_Texture* const tx){
-//     static const SDL_FRect visible_rect = {
-// 		0.0F,
-// 		0.0F,
-// 		VIEWFINDER,
-// 		VIEWFINDER
-// 	};
-// 	static SDL_FRect rect = {
-// 		0.0F,
-// 		0.0F,
-// 		PLAYER_SIZE,
-// 		PLAYER_SIZE
-// 	};
-//     for(Being* b = bs->array; b != (bs->array + bs->num); ++b){
-
-//         if(b->hit_points <= 0){
-//             *b = *(bs->array + bs->num-- - 1U);
-//             --b;
-//             continue;
-//         }
-//         float distance_x = p->position.x - b->position.x;
-//         float distance_y = p->position.y - b->position.y;
-//         float distance = SDL_sqrtf(distance_x * distance_x + distance_y * distance_y);
-//         float velocity_xy;
-        
-//         if(distance < 70.0F){
-//             if(distance < PLAYER_SIZE){
-//                 velocity_xy = distance / (PLAYER_VELOCITY * 1.875F);
-//                 MovePlayer(p, distance_x / velocity_xy, distance_y / velocity_xy);
-//             }
-//             rect.x = VIEWFINDER_CENTER + (-distance_x * world.cos_player_direction - distance_y * world.sin_player_direction) - PLAYER_SIZE * 0.5F;
-//             rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (-distance_x * world.sin_player_direction + distance_y * world.cos_player_direction) - PLAYER_SIZE * 0.5F;
-//             SDL_RenderTexture(rend, tx, NULL, &rect);
-//             continue;
-//         }
-//         if(b->walk.time_left){
-
-//             UpdateBeingWalk(b);
-//             if(distance < VIEWFINDER){
-//                 rect.x = VIEWFINDER_CENTER + (-distance_x * world.cos_player_direction - distance_y * world.sin_player_direction) - PLAYER_SIZE * 0.5F;
-//                 rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (-distance_x * world.sin_player_direction + distance_y * world.cos_player_direction) - PLAYER_SIZE * 0.5F;
-//                 if(SDL_HasRectIntersectionFloat(&rect, &visible_rect)){
-//                     SDL_RenderTexture(rend, tx, NULL, &rect);
-//                 }
-//             }
-//             continue;
-//         }
-//         velocity_xy = distance / b->velocity;
-//         float x_shift = distance_x / velocity_xy;
-//         float y_shift = distance_y / velocity_xy;
-//         float new_x = b->position.x + x_shift;
-//         float new_y = b->position.y + y_shift;
-//         if(distance > RANGE_SEGMENTS * (WORLD_SIZE / SEGMENTS_X)){
-//             SetBeingPosition(b, new_x, new_y);
-//             continue;
-//         }
-//         Segment* new_segment = GetSegment(new_x, new_y);
-//         bool collision = false;
-//         if(new_segment == NULL){
-//             StartBeingWalkWithRandTurn45Deg(b, 128, x_shift, y_shift);
-//             new_x = b->position.x + b->walk.shift.x;
-//             new_y = b->position.y + b->walk.shift.y;
-//             collision = true;
-//         }else if(distance < 768.0F){
-
-//             collision = ResolveBeingCollisionInNewSegment(b, new_segment, &new_x, &new_y, x_shift, y_shift);
-//         }
-//         if(collision){
-
-//             new_segment = GetSegment(new_x, new_y);
-//         }
-
-//         if(new_segment != b->segment){
-//             if(new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS){
-//                 if((bool)SDL_rand(2)){
-//                     StartBeingWalkWithRandTurn(b, 128, x_shift * 0.5F, y_shift * 0.5F);
-//                 }else{
-//                     StartBeingWalkWithRandTurn(b, -128, 0.0F, 0.0F);
-//                 }
-//                 if(distance < VIEWFINDER){
-//                     rect.x = VIEWFINDER_CENTER + (-distance_x * world.cos_player_direction - distance_y * world.sin_player_direction) - PLAYER_SIZE * 0.5F;
-//                     rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (-distance_x * world.sin_player_direction + distance_y * world.cos_player_direction) - PLAYER_SIZE * 0.5F;
-//                     if(SDL_HasRectIntersectionFloat(&rect, &visible_rect)){
-//                         SDL_RenderTexture(rend, tx, NULL, &rect);
-//                     }
-//                 }
-//                 continue;
-//             }
-//         }else{
-//             SetBeingPosition(b, new_x, new_y);
-//             if(distance < VIEWFINDER){
-//                 rect.x = VIEWFINDER_CENTER + (-distance_x * world.cos_player_direction - distance_y * world.sin_player_direction) - PLAYER_SIZE * 0.5F;
-//                 rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (-distance_x * world.sin_player_direction + distance_y * world.cos_player_direction) - PLAYER_SIZE * 0.5F;
-//                 if(SDL_HasRectIntersectionFloat(&rect, &visible_rect)){
-//                     SDL_RenderTexture(rend, tx, NULL, &rect);
-//                 }
-//             }
-//             continue;
-//         };
-//         SetBeingPosition(b, new_x, new_y);
-//         MoveBeingToSegment(b, new_segment);
-//         if(distance < VIEWFINDER){
-//             rect.x = VIEWFINDER_CENTER + (-distance_x * world.cos_player_direction - distance_y * world.sin_player_direction) - PLAYER_SIZE * 0.5F;
-//             rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (-distance_x * world.sin_player_direction + distance_y * world.cos_player_direction) - PLAYER_SIZE * 0.5F;
-//             if(SDL_HasRectIntersectionFloat(&rect, &visible_rect)){
-//                 SDL_RenderTexture(rend, tx, NULL, &rect);
-//             }
-//         }
-//     }
-
-    // for(Being* b = bs->array; b != (bs->array + bs->num); ++b){
-
-	// 	float dx = b->position.x - p->position.x;
-	// 	if(SDL_fabsf(dx) < VIEWFINDER){
-	// 		float dy = b->position.y - p->position.y;
-	// 		if(SDL_fabsf(dy) < VIEWFINDER){
-
-	// 			rect.x = VIEWFINDER_CENTER + (dx * world.cos_player_direction + dy * world.sin_player_direction) - PLAYER_SIZE * 0.5F;
-	// 			rect.y = VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * world.sin_player_direction - dy * world.cos_player_direction) - PLAYER_SIZE * 0.5F;
-				
-	// 			if(SDL_HasRectIntersectionFloat(&rect, &visible_rect)){
-	// 				SDL_RenderTexture(rend, tx, NULL, &rect);
-	// 			}
-	// 		}
-	// 	}
-	// }
-// }

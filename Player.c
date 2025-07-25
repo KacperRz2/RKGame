@@ -8,8 +8,6 @@
 #include <Being.h>
 #include <enum.h>
 
-// bool tmp = false;
-
 void CreatePlayer(Player* const p, const float x, const float y){
 	p->blade.position.x = BLADE_BASE_X;
  	p->blade.position.y = BLADE_BASE_Y;
