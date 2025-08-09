@@ -2,18 +2,16 @@
 #include <macros.h>
 #include <types.h>
 #include <enum.h>
-#include <game.h>
 #include <event.h>
 #include <render.h>
 #include <World.h>
 #include <Player.h>
 #include <Projectile.h>
 #include <Being.h>
+#include <game.h>
 
 int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
     int option = menu_unknown;
-    SDL_PumpEvents();
-    SDL_FlushEvent(SDL_EVENT_KEY_UP);
     while(1){
         RenderMainMenu(rend_data);
         option = MenuEventsService(e, rend_data);
@@ -84,7 +82,7 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	ClearGameData(&game_data);
 }
 
-void SetGameData(Game_data* const g_d){
+static void SetGameData(Game_data* const g_d){
 	CreateWorld(&g_d->world, WORLD_W, WORLD_H);
 	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	g_d->h_projectiles.array = (Projectile_hostile*)SDL_malloc(sizeof(Projectile_hostile) * MAX_PROJECTILES_NUM);
@@ -94,7 +92,7 @@ void SetGameData(Game_data* const g_d){
 	g_d->h_projectiles.num = 0U;
 }
 
-void ClearGameData(Game_data* const g_d){
+static void ClearGameData(Game_data* const g_d){
 	DestroyBeings(&g_d->beings);
     DestroyHProjectiles(&g_d->h_projectiles);
     DestroyProjectiles(&g_d->projectiles);

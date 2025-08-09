@@ -13,7 +13,7 @@ void DestroyProjectiles(Projectiles_array* const prs){
 	prs->num = 0U;
 }
 
-inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
+static inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
 	if(SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F){
 		for(unsigned int i = pr->hits; i > 0U; --i){
 			if(*(pr->hit_targets + (i - 1U)) == b->id){
@@ -35,14 +35,14 @@ extern inline void AddProjectileToArray(Projectiles_array* const prs, const SDL_
 	pr->hits = 0;
 }
 
-inline void DestroyProjectileInArray(Projectiles_array* const prs, const unsigned int indx){
+static inline void DestroyProjectileInArray(Projectiles_array* const prs, const unsigned int indx){
 	if(indx != prs->num - 1){
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}
 	--prs->num;
 }
 
-inline void MoveProjectile(Projectile* const pr){
+static inline void MoveProjectile(Projectile* const pr){
 	pr->position.x += pr->shift_per_tick.x;
 	pr->position.y += pr->shift_per_tick.y;
 }
@@ -60,7 +60,6 @@ void UpdateProjectiles(Game_data* const g_d, Segment* const player_seg){
 		for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
 			Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
 			if(neighbour == NULL) continue;
-			static unsigned int mark = 1U;
 			for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
 				Being* b = *(neighbour->beings.array + j);
 				if(!ProjectileHitsBeing(pr, b)) continue;
@@ -89,14 +88,13 @@ void DestroyHProjectiles(Projectiles_h_array* const prs){
 	prs->num = 0U;
 }
 
-inline bool ProjectileHitsPlayerOrLost(Projectile_hostile* const pr, Player* const p){
-	// if(SDL_fabsf(pr->position.x - p->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf(pr->position.y - p->position.y) < PLAYER_SIZE * 0.5F){
+static inline bool ProjectileHitsPlayerOrLost(Projectile_hostile* const pr, Player* const p){
 	float distance_squated = pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y);
 	if(distance_squated < pow2(PLAYER_SIZE * 0.5F)){
 		DamagePlayer(p, pr->damage);
 		return true;
 	}
-	if(distance_squated > pow2(SEGMENTS_SIZE * PROJECTILE_RAN_SEG)){
+	if(distance_squated > pow2(SEGMENT_SIZE * PROJECTILE_RAN_SEG)){
 		return true;
 	}
 	return false;
@@ -110,14 +108,14 @@ extern inline void AddHProjectileToArray(Projectiles_h_array* const prs, const S
 	pr->damage = damage;
 }
 
-inline void DestroyHProjectileInArray(Projectiles_h_array* const prs, const unsigned int indx){
+static inline void DestroyHProjectileInArray(Projectiles_h_array* const prs, const unsigned int indx){
 	if(indx != prs->num - 1){
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}
 	--prs->num;
 }
 
-inline void MoveHProjectile(Projectile_hostile* const pr){
+static inline void MoveHProjectile(Projectile_hostile* const pr){
 	pr->position.x += pr->shift_per_tick.x;
 	pr->position.y += pr->shift_per_tick.y;
 }

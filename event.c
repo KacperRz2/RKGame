@@ -25,12 +25,6 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->control_flags |= run; break;
 			case SDL_SCANCODE_H:
 				p->control_flags ^= tmp0; break;
-			// case SDL_SCANCODE_1:
-			// 	p->control_flags &= ~(1 << 9); break;
-			// case SDL_SCANCODE_2:
-			// 	p->control_flags |= 1 << 9; break;
-			case SDL_SCANCODE_ESCAPE:
-				return true;
 			default: break;
 			}
 		}else if(e->type == SDL_EVENT_KEY_UP){
@@ -47,27 +41,8 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->control_flags &= ~(dodge); break;
 			case SDL_SCANCODE_LALT:
 				p->control_flags &= ~(run); break;
-			//case SDL_SCANCODE_H:
-			//	p->control_flags &= ~(1 << 6); break;
-			// case SDL_SCANCODE_KP_PLUS:
-			// 	SetRenderData(rend_data, rend_data->window_w + 10, rend_data->window_h + 10);
-			// 	SDL_SetWindowSize(rend_data->window, rend_data->window_w, rend_data->window_h);
-			// 	SDL_SyncWindow(rend_data->window); break;
-			// case SDL_SCANCODE_KP_MINUS:
-			// 	SetRenderData(rend_data, rend_data->window_w - 10, rend_data->window_h - 10);
-			// 	SDL_SetWindowSize(rend_data->window, rend_data->window_w, rend_data->window_h);
-			// 	SDL_SyncWindow(rend_data->window);  break;
-			// case SDL_SCANCODE_KP_8:
-			// 	int w; int h;
-			// 	SDL_SetWindowFullscreen(rend_data->window, true);
-			// 	SDL_SyncWindow(rend_data->window); 
-			// 	SDL_GetWindowSize(rend_data->window, &w, &h);
-			// 	SetRenderData(rend_data, w, h); break;
-			// case SDL_SCANCODE_KP_2:
-			// 	SDL_SetWindowFullscreen(rend_data->window, false);
-			// 	SDL_SyncWindow(rend_data->window); 
-			// 	SDL_GetWindowSize(rend_data->window, &w, &h);
-			// 	SetRenderData(rend_data, w, h); break;
+			case SDL_SCANCODE_ESCAPE:
+				return true;
 			default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
@@ -105,19 +80,6 @@ int MenuEventsService(SDL_Event* const e, Render_data* const rend_data){
 			case SDL_SCANCODE_SPACE:
 				return menu_start;
 				break;
-			// case SDL_SCANCODE_KP_8:
-			// 	int w; int h;
-			// 	SDL_SetWindowFullscreen(rend_data->window, true);
-			// 	SDL_SyncWindow(rend_data->window); 
-			// 	SDL_GetWindowSize(rend_data->window, &w, &h);
-			// 	SetRenderData(rend_data, w, h);
-			// 	break;
-			// case SDL_SCANCODE_KP_2:
-			// 	SDL_SetWindowFullscreen(rend_data->window, false);
-			// 	SDL_SyncWindow(rend_data->window); 
-			// 	SDL_GetWindowSize(rend_data->window, &w, &h);
-			// 	SetRenderData(rend_data, w, h);
-			// 	break;
 			default: break;
 			}
 		}

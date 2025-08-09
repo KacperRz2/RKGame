@@ -7,13 +7,19 @@
 #define VIEWFINDER			        (rend_data->viewfinder)
 #define VIEWFINDER_CENTER	        (VIEWFINDER * 0.5F)
 #define WINDOW_CENTER_Y		        (WINDOW_H / 2)
-#define WORLD_W				        0x2p+16F
-#define WORLD_H				        WORLD_W
 #define PLAYER_REND_Y_SHIFT	        (VIEWFINDER * 0.5F * 0.875F)
-#define PLAYER_SIZE			        32//48
+#define BIG_SEGMENTS_X              29U
+#define BIG_SEGMENT_SEGMENTS_X      32U
+#define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
+#define SEGMENTS_Y			        SEGMENTS_X
+#define SEGMENT_SIZE		        128.0F
+#define WORLD_W				        (SEGMENT_SIZE * SEGMENTS_X)
+#define WORLD_H				        WORLD_W
+#define WORLD_SIZE			        WORLD_W
+#define PLAYER_SIZE			        32
 #define GUN_SIGHT_SIZE		        67
 #define BULLET_SIZE			        16
-#define DECELERATION		        0.93F//0.995F
+#define DECELERATION		        0.93F
 #define TICK_TIME			        0x200000ULL
 #define TICK_TIME_MS		        (TICK_TIME / 1000000ULL)
 #define ACCELERATION		        6.25e-2F
@@ -26,26 +32,23 @@
 #define SIGHT_SQUARED   	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT))
 #define SIGHT_BACK_SQUARED	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT))
 #define FRAME_TIME			        0x400000ULL
-#define FRAME_TIME_MS		        	(FRAME_TIME / 1000000ULL)
-#define SEGMENTS_X			        0x400U
-#define SEGMENTS_Y			        SEGMENTS_X
-#define WORLD_SIZE			        WORLD_W
-#define SEGMENTS_SIZE		        (WORLD_SIZE / (float)SEGMENTS_X)
+#define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
 #define MAX_PROJECTILES_NUM	        0x800U
 #define MAX_SEGM_BEINGS		        16
-#define MAX_BEINGS_NUM		        0x8000U//0x10000U//(SEGMENTS_X * SEGMENTS_Y * MAX_SEGM_BEINGS / 32)
+#define MAX_BEINGS_NUM		        0x8000U
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BLADE_DAMAGE                50
 #define BLADE_PENETRATION           25U
 #define BLADE_SIZE                  64.0F
-#define RANGE_SEGMENTS              (SEGMENTS_X / 4U)
-#define PROJECTILE_RAN_SEG          (SEGMENTS_X / 64U)
+#define RANGE_SEGMENTS              ((unsigned int)(7000.0F / SEGMENT_SIZE))
+#define PROJECTILE_RAN_SEG          ((unsigned int)(2000.0F / SEGMENT_SIZE))
 #define MAX_HITS                    25U
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
 #define pow2(x)                     ((x) * (x))
+
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
 #define BLADE_BASE_X                16.0F
@@ -63,7 +66,7 @@
 #define WINDOW_START_W              1600
 #define WINDOW_START_H              900
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       100
+#define PC_HP                       3000
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    100
 #define PC_ARMOUR                   0.875F
@@ -90,10 +93,4 @@
 #define VIEWFINDER_SIZE             (WINDOW_H * 0.984375F)
 #define BLADE_HANDLER_POSITION      0.85F
 
-// #define SQRT2				1.4142135623730950488016887242097F
-// #define WINDOW_CENTER_X		(WINDOW_W / 2)
-// #define WORLD_TEXTURE_SCALE
-// #define SIGHT_ANGLE
-// #define SIGHT_BACK_ANGLE
-// #define BODY_SIZE
 #endif

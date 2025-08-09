@@ -6,14 +6,8 @@
 #include <macros.h>
 
 #include <types.h>
-#include <function.h>
 #include <enum.h>
-#include <Player.h>
-#include <World.h>
-#include <Being.h>
-#include <Projectile.h>
 #include <render.h>
-#include <event.h>
 #include <game.h>
 
 float si[ANGLE_PARTS];

@@ -10,17 +10,14 @@
 
 extern const Being_type test_being;
 
-inline void AddBeingToSegment(Segment* const s, Being* const b){
+static inline void AddBeingToSegment(Segment* const s, Being* const b){
     b->segment = s;
     *(s->beings.array + s->beings.num) = b;
     b->indx = s->beings.num;
     ++s->beings.num;
 }
 
-inline void RemoveBeingFromSegment(Being* const b){
-    // if(b != *(b->segment->beings.array + b->indx)){
-    //     SDL_LogInfo(SDL_LOG_CATEGORY_TEST, ">:(");
-    // }
+static inline void RemoveBeingFromSegment(Being* const b){
     if(b->indx != b->segment->beings.num - 1){
         *(b->segment->beings.array + b->indx) = *(b->segment->beings.array + b->segment->beings.num - 1);
         (*(b->segment->beings.array + b->indx))->indx = b->indx;
@@ -51,45 +48,44 @@ extern inline void AddBeingToArray(Beings_array* const bs, const float x, const 
     ++bs->num;
 }
 
-inline void DestroyBeingInArray(Beings_array* const bs, const unsigned int indx){
+static inline void DestroyBeingInArray(Beings_array* const bs, const unsigned int indx){
     if(indx != bs->num - 1){
         *(bs->array + indx) = *(bs->array + bs->num - 1);
     }
     --bs->num;
 }
 
-inline void MoveBeing(Being* const b, const float x, const float y){
+static inline void MoveBeing(Being* const b, const float x, const float y){
     b->position.x += x;
     b->position.y += y;
 }
 
-inline void SetBeingPosition(Being* const b, const float x, const float y){
+static inline void SetBeingPosition(Being* const b, const float x, const float y){
     b->position.x = x;
     b->position.y = y;
 }
 
-inline void MoveBeingX(Being* const b, const float x){
+static inline void MoveBeingX(Being* const b, const float x){
     b->position.x += x;
 }
 
-inline void MoveBeingY(Being* const b, const float y){
+static inline void MoveBeingY(Being* const b, const float y){
     b->position.y += y;
 }
 
-inline void MoveBeingToSegment(Being* const b, Segment* const s){
+static inline void MoveBeingToSegment(Being* const b, Segment* const s){
     RemoveBeingFromSegment(b);
     AddBeingToSegment(s, b);
 }
 
-inline void StartBeingWalk(Being* const b, const int time, const float x_shift, const float y_shift){
-    // b->walk.time_left = time;
+static inline void StartBeingWalk(Being* const b, const int time, const float x_shift, const float y_shift){
     b->status = walk;
     b->status_ticks_left = time;
     b->walk_shift.x = x_shift;
     b->walk_shift.y = y_shift;
 }
 
-inline void StartBeingWalkWithRandTurn(Being* const b, const int time, const float x_shift, const float y_shift){
+static inline void StartBeingWalkWithRandTurn(Being* const b, const int time, const float x_shift, const float y_shift){
     if((bool)SDL_rand(2)){
         StartBeingWalk(b, time, -y_shift, x_shift);
     }else{
@@ -97,7 +93,7 @@ inline void StartBeingWalkWithRandTurn(Being* const b, const int time, const flo
     }
 }
 
-inline void StartBeingWalkWithRandTurn45Deg(Being* const b, const int time, const float x_shift, const float y_shift){
+static inline void StartBeingWalkWithRandTurn45Deg(Being* const b, const int time, const float x_shift, const float y_shift){
     if((bool)SDL_rand(2)){
         StartBeingWalk(b, time, (x_shift + y_shift) * SQRT2DIV2, (y_shift - x_shift) * SQRT2DIV2);
     }else{
@@ -105,15 +101,14 @@ inline void StartBeingWalkWithRandTurn45Deg(Being* const b, const int time, cons
     }
 }
 
-extern inline bool CollideWithBeing(Being* const b, const float x, const float y){
-    // if(SDL_sqrtf((x - b->position.x) * (x - b->position.x) + (y - b->position.y) * (y - b->position.y)) < (float)PLAYER_SIZE){
+static inline bool CollideWithBeing(Being* const b, const float x, const float y){
     if(pow2(x - b->position.x) + pow2(y - b->position.y) < (float)pow2(PLAYER_SIZE)){
         return true;
     }
     return false;
 }
 
-bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, float* const new_x, float* const new_y, const float x_shift, const float y_shift){
+static bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, float* const new_x, float* const new_y, const float x_shift, const float y_shift){
     for(unsigned int i = 0U; i < s->beings.num; ++i){
         Being* b2 = *(s->beings.array + i);
         if(b2 == b || b2->status == walk) continue;
@@ -127,7 +122,7 @@ bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, float* 
     return false;
 }
 
-inline void TurnBeingWalk(Being* const b){
+static inline void TurnBeingWalk(Being* const b){
     float tmp_x = b->walk_shift.x;
     if((bool)SDL_rand(2)){
         b->walk_shift.x = -b->walk_shift.y;
@@ -138,7 +133,7 @@ inline void TurnBeingWalk(Being* const b){
     }
 }
 
-inline void UpdateBeingWalk(Being* const b, World* const w){
+static inline void UpdateBeingWalk(Being* const b, World* const w){
     if(b->status_ticks_left == 0){
         b->status = idle;
         return;
@@ -156,7 +151,7 @@ inline void UpdateBeingWalk(Being* const b, World* const w){
     --b->status_ticks_left;
 }
 
-inline void UpdateBeingIdle(Being* const b, const float distance_squared){
+static inline void UpdateBeingIdle(Being* const b, const float distance_squared){
     if(distance_squared < pow2(IDLE_BEING_ACTION_DISTANCE)){
         if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
             b->status = strike;
@@ -177,7 +172,7 @@ inline void UpdateBeingIdle(Being* const b, const float distance_squared){
     b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
 }
 
-inline bool UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
+static inline bool UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
     if(b->status_ticks_left == 0){
         b->status_ticks_left = BEING_RELOAD_TICKS;
         b->status = follow;
@@ -190,7 +185,7 @@ inline bool UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
     return true;
 }
 
-inline void MoveStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
+static inline void MoveStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
     float velocity_xy = distance / b->type->velocity;
     float x_shift = distance_x / velocity_xy;
     float y_shift = distance_y / velocity_xy;
@@ -215,7 +210,7 @@ inline void MoveStrikingBeing(Being* const b, float const distance, float const 
     MoveBeingToSegment(b, new_segment);
 }
 
-inline void UpdateBeingStrike(Being* const b, Player* const p, float const distance, float const distance_x, float const distance_y, World* const w){
+static inline void UpdateBeingStrike(Being* const b, Player* const p, float const distance, float const distance_x, float const distance_y, World* const w){
     static const Blade_hostile blade_base_frame = {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING};
     if(b->status_ticks_left == 0){
         b->blade = blade_base_frame;
@@ -227,7 +222,7 @@ inline void UpdateBeingStrike(Being* const b, Player* const p, float const dista
     static const Status_frame shift_attack = {{(0.0F - 20.0F) / BEING_ATTACK_STEPS, (24.0F - -16.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.5F) / BEING_ATTACK_STEPS};
     static const Status_frame shift_reset = {{(BLADE_BASE_X - 0.0F) / BEING_ATTACK_STEPS, (BLADE_BASE_Y - 24.0F) / BEING_ATTACK_STEPS}, (BLADE_BASE_DIRECTION_BEING - 0.0F) / BEING_ATTACK_STEPS};
     static const float blade_length = BLADE_SIZE * 0.85F;
-    if(distance >= 70.0F){
+    if(distance >= BEING_HALT_DISTANCE){
         MoveStrikingBeing(b, distance, distance_x, distance_y, w);
     }
     if(b->status_ticks_left > 0){
@@ -258,7 +253,7 @@ inline void UpdateBeingStrike(Being* const b, Player* const p, float const dista
     ++b->status_ticks_left;
 }
 
-inline void UpdateBeingFollow(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
+static inline void UpdateBeingFollow(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
     if(b->status_ticks_left == 0){
         b->status = idle;
         return;
@@ -273,8 +268,9 @@ inline void UpdateBeingFollow(Being* const b, float const distance, float const 
     float new_x = b->position.x + x_shift;
     float new_y = b->position.y + y_shift;
     if(distance > RANGE_SEGMENTS * (WORLD_SIZE / SEGMENTS_X)){
-        SetBeingPosition(b, new_x, new_y);
-        --b->status_ticks_left;
+        // SetBeingPosition(b, new_x, new_y);
+        // --b->status_ticks_left;
+        HaltBeing(b, BEING_WALK_TICKS);
         return;
     }
     Segment* new_segment = GetSegment(w, new_x, new_y);
@@ -295,7 +291,7 @@ inline void UpdateBeingFollow(Being* const b, float const distance, float const 
             if((bool)SDL_rand(2)){
                 StartBeingWalkWithRandTurn(b, BEING_WALK_TICKS, x_shift * 0.5F, y_shift * 0.5F);
             }else{
-                HaltBeing(b, -BEING_WALK_TICKS);
+                HaltBeing(b, BEING_WALK_TICKS);
             }
             return;
         }
@@ -309,13 +305,13 @@ inline void UpdateBeingFollow(Being* const b, float const distance, float const 
     --b->status_ticks_left;
 }
 
-inline void ShiftHBlade(Blade_hostile* const bl, const Status_frame* const shift){
+static inline void ShiftHBlade(Blade_hostile* const bl, const Status_frame* const shift){
 	bl->position.x += shift->position.x;
 	bl->position.y += shift->position.y;
 	bl->direction += shift->direction;
 }
 
-inline Status_frame GetHBladeLocation(Being* const b, float* const sine, float* const cosine){
+static inline Status_frame GetHBladeLocation(Being* const b, float* const sine, float* const cosine){
 	float direct = b->direction + b->blade.direction;
 	*sine = SineSafe(direct);
 	*cosine = CosiSafe(direct);
@@ -323,9 +319,9 @@ inline Status_frame GetHBladeLocation(Being* const b, float* const sine, float* 
 	return ret;
 }
 
-inline void HaltBeing(Being* const b, const int time){
+static inline void HaltBeing(Being* const b, const int time){
     b->status = idle;
-    b->status_ticks_left = time;
+    b->status_ticks_left = -time;
 }
 
 void UpdateBeings(Game_data* const g_d){

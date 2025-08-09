@@ -30,7 +30,7 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->armour = PC_ARMOUR;
 }
 
-inline void SetPlayerPosition(Player* const p, const float x, const float y){
+static inline void SetPlayerPosition(Player* const p, const float x, const float y){
 	p->position.x = x;
 	p->position.y = y;
 }
@@ -48,7 +48,7 @@ extern inline void MovePlayer(Game_data* const g_d, const float x, const float y
 	}
 }
 
-inline void UpdatePlayerMove(Game_data* const g_d){
+static inline void UpdatePlayerMove(Game_data* const g_d){
 	static const Uint32 tmp = forward | back | right | left;
 	static float move_direction = 0.0F;
 	if(g_d->pc.velocity > g_d->pc.max_velocity){
@@ -114,7 +114,7 @@ inline void UpdatePlayerMove(Game_data* const g_d){
 	}
 }
 
-inline void UpdatePlayerDirection(Player* const p){
+static inline void UpdatePlayerDirection(Player* const p){
 	if(p->direction > 2.0F * SDL_PI_F){
 		p->direction -= 2.0F * SDL_PI_F;
 	}else if(p->direction < 0.0F){
@@ -122,7 +122,7 @@ inline void UpdatePlayerDirection(Player* const p){
 	}
 }
 
-inline void UpdatePlayerPoints(Player* const p){
+static inline void UpdatePlayerPoints(Player* const p){
 	static unsigned int count = PC_FATIGUE_GAIN_INTERVAL;
 	if(count <= 1U){
 		if(p->fatigue_block_time > 0){
@@ -145,31 +145,31 @@ extern inline void UpdatePlayer(Game_data* const g_d){
 	UpdatePlayerPoints(&g_d->pc);
 }
 
-inline void ShiftBlade(Blade* const bl, Status_frame* const shift){
+static inline void ShiftBlade(Blade* const bl, Status_frame* const shift){
 	bl->position.x += shift->position.x;
 	bl->position.y += shift->position.y;
 	bl->direction += shift->direction;
 }
 
-inline void SetBladePosition(Blade* const bl, const Status_frame* const position){
+static inline void SetBladePosition(Blade* const bl, const Status_frame* const position){
 	bl->position.x = position->position.x;
 	bl->position.y = position->position.y;
 	bl->direction = position->direction;
 }
 
-inline void SetShiftToBase(Blade* const bl, Status_frame* const step_shift, const unsigned int steps){
+static inline void SetShiftToBase(Blade* const bl, Status_frame* const step_shift, const unsigned int steps){
 	step_shift->position.x = (BLADE_BASE_X - bl->position.x) / steps;
 	step_shift->position.y = (BLADE_BASE_Y - bl->position.y) / steps;
 	step_shift->direction = (BLADE_BASE_DIRECTION_PC - bl->direction) / steps;
 }
 
-inline void SetShiftToPosition(Blade* const bl, Status_frame* const step_shift, const Status_frame* const frame, const unsigned int steps){
+static inline void SetShiftToPosition(Blade* const bl, Status_frame* const step_shift, const Status_frame* const frame, const unsigned int steps){
 	step_shift->position.x = (frame->position.x - bl->position.x) / steps;
 	step_shift->position.y = (frame->position.y - bl->position.y) / steps;
 	step_shift->direction = (frame->direction - bl->direction) / steps;
 }
 
-inline Status_frame GetBladeLocation(Player* const p, float* const sine, float* const cosine){
+static inline Status_frame GetBladeLocation(Player* const p, float* const sine, float* const cosine){
 	float direct = p->direction + p->blade.direction;
 	*sine = SineSafe(direct);
 	*cosine = CosiSafe(direct);
@@ -177,7 +177,7 @@ inline Status_frame GetBladeLocation(Player* const p, float* const sine, float* 
 	return ret;
 }
 
-inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being* const b, SDL_FPoint* const dangerous_points){
+static inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being* const b, SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
 		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf((dangerous_points + i)->y - b->position.y) < PLAYER_SIZE * 0.5F){
 			for(unsigned int j = bl->hits; j > 0U; --j){
@@ -191,7 +191,7 @@ inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being*
 	return false;
 }
 
-inline bool UnleashDestruction(Game_data* const g_d){
+static bool UnleashDestruction(Game_data* const g_d){
 	static const float length_part = BLADE_SIZE * 0.85F / (float)PC_BLADE_CHECKPOINTS;
 	float sine_blade_direction;
 	float cosine_blade_direction;
@@ -199,7 +199,7 @@ inline bool UnleashDestruction(Game_data* const g_d){
 	Segment* s = GetSegment(&g_d->world, blade_true_location.position.x, blade_true_location.position.y);
 	if(s == NULL){
 		return true;
-	} //if(tmp){SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "####################");}
+	}
 	float shift_x = sine_blade_direction * length_part;
 	float shift_y = -cosine_blade_direction * length_part;
 	SDL_FPoint dangerous_points[PC_BLADE_CHECKPOINTS] = {
@@ -229,7 +229,7 @@ inline bool UnleashDestruction(Game_data* const g_d){
 	return false;
 }
 
-inline void UpdatePlayerBlade(Game_data* const g_d){
+static void UpdatePlayerBlade(Game_data* const g_d){
 	static const Status_frame blade_key_frames_0[] = {
 		{{16.0F, -8.0F}, SDL_PI_F * 0.55F},
 		{{6.0F, 8.0F}, SDL_PI_F * 0.25F},
@@ -276,7 +276,7 @@ inline void UpdatePlayerBlade(Game_data* const g_d){
 				idle_ticks = 0U;
 				g_d->pc.blade.hits = 0U;
 				g_d->pc.blade.damage = (int)(PC_BLADE_DAMAGE_BASE * (1.0F - charge));
-				g_d->pc.blade.penetration = (unsigned int)((float)BLADE_PENETRATION * (1.0F - charge)); //SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "damage: %u penetration: %u", g_d->pc.blade.damage, g_d->pc.blade.penetration);
+				g_d->pc.blade.penetration = (unsigned int)((float)BLADE_PENETRATION * (1.0F - charge));
 				charge = PC_BLADE_CHARGE_BASE;
 				SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain), steps = PC_BLADE_FIRST_MOVE_STEPS);
 				chain_next = (chain_next + 1U) % SDL_arraysize(sizes);
@@ -316,7 +316,6 @@ inline void UpdatePlayerBlade(Game_data* const g_d){
 }
 
 extern inline bool PointInPlayer(const float x, const float y, Player* const pl){
-	// if(SDL_sqrtf((x - pl->position.x) * (x - pl->position.x) + (y - pl->position.y) * (y - pl->position.y)) < (float)PLAYER_SIZE * 0.5F){
 	if(pow2(x - pl->position.x) + pow2(y - pl->position.y) < (float)pow2(PLAYER_SIZE * 0.5F)){
 		return true;
 	}
