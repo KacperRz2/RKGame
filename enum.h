@@ -2,7 +2,7 @@
 #define ENUM_H_
 
 enum texture_num{
-    tx_pc = 1,
+    tx_pc,
     tx_compass,
     tx_projectile,
     tx_being,
@@ -11,7 +11,9 @@ enum texture_num{
     tx_nesw,
     tx_arrow,
     tx_being_blade,
-    tx_h_projectile
+    tx_h_projectile,
+    tx_terrain,
+    tx_gunsightpart
 };
 
 enum control{

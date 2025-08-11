@@ -8,8 +8,9 @@
 #define VIEWFINDER_CENTER	        (VIEWFINDER * 0.5F)
 #define WINDOW_CENTER_Y		        (WINDOW_H / 2)
 #define PLAYER_REND_Y_SHIFT	        (VIEWFINDER * 0.5F * 0.875F)
+#define PLAYER_REND_Y               (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT)
 #define BIG_SEGMENTS_X              29U
-#define BIG_SEGMENT_SEGMENTS_X      32U
+#define BIG_SEGMENT_SEGMENTS_X      16U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
 #define SEGMENTS_Y			        SEGMENTS_X
 #define SEGMENT_SIZE		        128.0F
@@ -17,17 +18,17 @@
 #define WORLD_H				        WORLD_W
 #define WORLD_SIZE			        WORLD_W
 #define PLAYER_SIZE			        32
-#define GUN_SIGHT_SIZE		        67
+#define GUN_SIGHT_SIZE		        16
 #define BULLET_SIZE			        16
 #define DECELERATION		        0.93F
 #define TICK_TIME			        0x200000ULL
 #define TICK_TIME_MS		        (TICK_TIME / 1000000ULL)
 #define ACCELERATION		        6.25e-2F
 #define PLAYER_VELOCITY		        0x0.Ap+0F
-#define RUN_VELOCITY		        (PLAYER_VELOCITY * 2.0F)
+#define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        10
-#define TEXTURE_TARGET_NUM	        1
+#define TEXTURE_FILES_NUM	        12
+#define TEXTURE_TARGET_NUM	        0
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM)
 #define SIGHT_SQUARED   	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT))
 #define SIGHT_BACK_SQUARED	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT))
@@ -48,6 +49,7 @@
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
 #define pow2(x)                     ((x) * (x))
+#define half(x)                    ((x) * (0.5F))
 
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
@@ -59,7 +61,7 @@
 #define BEING_ATTACK_DISTANCE       140.0F
 #define BEING_SHOOT_DISTANCE        700.0F
 #define BEING_RELOAD_TICKS          128
-#define PROJECTILE_VELOCITY         3.0F
+#define PROJECTILE_VELOCITY         4.0F
 #define BEING_HALT_DISTANCE         70.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define UPDATE_BEINGS_INTERVAL      1U
@@ -92,5 +94,9 @@
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
 #define VIEWFINDER_SIZE             (WINDOW_H * 0.984375F)
 #define BLADE_HANDLER_POSITION      0.85F
+#define PC_SHOOT_RELOAD             8
+#define GUN_SIGHT_SPREAD_MIN        8.0F
+#define GUN_SIGHT_SPREAD_RANGE      (GUN_SIGHT_SPREAD_MIN * 4.0F)
+#define GUN_SIGHT_MIN_DISTANCE      PLAYER_SIZE
 
 #endif

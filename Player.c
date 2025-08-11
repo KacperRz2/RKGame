@@ -48,7 +48,7 @@ extern inline void MovePlayer(Game_data* const g_d, const float x, const float y
 	}
 }
 
-static inline void UpdatePlayerMove(Game_data* const g_d){
+static void UpdatePlayerMove(Game_data* const g_d){
 	static const Uint32 tmp = forward | back | right | left;
 	static float move_direction = 0.0F;
 	if(g_d->pc.velocity > g_d->pc.max_velocity){
@@ -114,7 +114,7 @@ static inline void UpdatePlayerMove(Game_data* const g_d){
 	}
 }
 
-static inline void UpdatePlayerDirection(Player* const p){
+static void UpdatePlayerDirection(Player* const p){
 	if(p->direction > 2.0F * SDL_PI_F){
 		p->direction -= 2.0F * SDL_PI_F;
 	}else if(p->direction < 0.0F){
@@ -122,7 +122,7 @@ static inline void UpdatePlayerDirection(Player* const p){
 	}
 }
 
-static inline void UpdatePlayerPoints(Player* const p){
+static void UpdatePlayerPoints(Player* const p){
 	static unsigned int count = PC_FATIGUE_GAIN_INTERVAL;
 	if(count <= 1U){
 		if(p->fatigue_block_time > 0){
@@ -135,10 +135,8 @@ static inline void UpdatePlayerPoints(Player* const p){
 	--count;
 }
 
-extern inline void UpdatePlayer(Game_data* const g_d){
-	if(g_d->pc.control_flags & fire && g_d->projectiles.num < MAX_PROJECTILES_NUM){
-		AddProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, TEST_DAMAGE, TEST_PENETRATION);
-	}
+void UpdatePlayer(Game_data* const g_d){
+	UpdatePlayerFire(g_d);
 	UpdatePlayerBlade(g_d);
 	UpdatePlayerDirection(&g_d->pc);
 	UpdatePlayerMove(g_d);
@@ -324,4 +322,13 @@ extern inline bool PointInPlayer(const float x, const float y, Player* const pl)
 
 extern inline void DamagePlayer(Player* const p, const int damage){
 	p->hit_points -= damage;
+}
+
+static void UpdatePlayerFire(Game_data* const g_d){
+	static int shoot_reload = 0;
+	if(g_d->pc.control_flags & fire && shoot_reload <= 0 && g_d->projectiles.num < MAX_PROJECTILES_NUM){
+		AddProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, TEST_DAMAGE, TEST_PENETRATION);
+		shoot_reload = PC_SHOOT_RELOAD;
+	}
+	--shoot_reload;
 }

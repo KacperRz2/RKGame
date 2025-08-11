@@ -16,7 +16,8 @@ static Status_frame GetBladeLocation(Player* const, float* const, float* const);
 static bool BladeHitsBeing(Blade* const, Status_frame* const, Being* const, SDL_FPoint* const);
 static bool UnleashDestruction(Game_data* const);
 static void UpdatePlayerBlade(Game_data* const);
-bool PointInPlayer(const float, const float, Player*);
+bool PointInPlayer(const float, const float, Player* const);
 void DamagePlayer(Player* const, const int);
+static void UpdatePlayerFire(Game_data* const);
 
 #endif

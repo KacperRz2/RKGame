@@ -19,7 +19,9 @@ int GraphicsInitiation(Render_data* const data){
 		"img5.bmp",
 		"img6.bmp",
 		"img7.bmp",
-		"img8.bmp"
+		"img8.bmp",
+		"img9.bmp",
+		"imgA.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -49,14 +51,8 @@ int GraphicsInitiation(Render_data* const data){
 
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
-
-	*data->textures = SDL_CreateTexture(data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, GUN_SIGHT_SIZE, GUN_SIGHT_SIZE);
-
-	if(*data->textures == NULL){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError()); return 1;
-	}
 	
-	SDL_SetTextureScaleMode(*(data->textures + 5), SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(*(data->textures + tx_viewfinder), SDL_SCALEMODE_NEAREST);
 
 	SDL_SetWindowRelativeMouseMode(data->window, true);
 	return 0;
@@ -214,7 +210,7 @@ static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const fl
 	float dy = true_point_y - p->position.y;
 	if(SDL_fabsf(dy) > VIEWFINDER) return false;
 	rend_point->x =	VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction);
-	rend_point->y =	VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction);
+	rend_point->y =	PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction);
 	if(SDL_PointInRectFloat(rend_point, &rend_data->visible_rect)) return true;
 	return false;
 }
@@ -303,12 +299,12 @@ void RenderMainMenu(Render_data* const rend_data){
 	SDL_RenderPresent(rend_data->renderer);
 }
 
-extern inline void RenderGame(Render_data* const rend_data, Game_data* const g_d){
+void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	SetSineCosine(rend_data, &g_d->pc);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 0);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
-	SDL_SetRenderDrawColor(rend_data->renderer, 50, 50, 50, 0);
+	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 0);
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	RenderTerrain(rend_data, g_d);
 	if(!(g_d->pc.control_flags & tmp0)){
@@ -318,6 +314,7 @@ extern inline void RenderGame(Render_data* const rend_data, Game_data* const g_d
 	RenderHProjectiles(rend_data, g_d);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
 	RenderPlayer(rend_data, &g_d->pc.blade);
+	RenderGunSight(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	RenderMap(rend_data, &g_d->pc);
 	RenderPlayerStatus(rend_data, &g_d->pc);
@@ -338,30 +335,74 @@ void ClearRenderData(Render_data* const rend_data){
 }
 
 static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
-	SDL_FPoint corner_first = {SDL_max(0, g_d->pc.position.x - VIEWFINDER), SDL_max(0, g_d->pc.position.y - VIEWFINDER)};
-	SDL_FPoint corner_last = {SDL_min(WORLD_SIZE, g_d->pc.position.x + VIEWFINDER), SDL_min(WORLD_SIZE, g_d->pc.position.y + VIEWFINDER)};
+	static SDL_FRect rect = {
+		0.0F,
+		0.0F,
+		SEGMENT_SIZE,
+		SEGMENT_SIZE
+	};
+	SDL_FPoint corner_first = {SDL_max(0.0F, g_d->pc.position.x - (VIEWFINDER + SEGMENT_SIZE)), SDL_max(0.0F, g_d->pc.position.y - (VIEWFINDER + SEGMENT_SIZE))};
+	SDL_FPoint corner_last = {SDL_min(WORLD_SIZE, g_d->pc.position.x + (VIEWFINDER + SEGMENT_SIZE)), SDL_min(WORLD_SIZE, g_d->pc.position.y + (VIEWFINDER + SEGMENT_SIZE))};
 	SDL_FPoint point = corner_first;
-	bool set = false;
-	float shift = 0.0F;
-	SDL_SetRenderDrawColor(rend_data->renderer, 255, 255, 255, 0);
+	float shift_y = SDL_fmodf(point.y, SEGMENT_SIZE) + half(SEGMENT_SIZE);
+	point.x -= SDL_fmodf(point.x, SEGMENT_SIZE) + half(SEGMENT_SIZE);
+	point.y -= shift_y;
 	while(point.x < corner_last.x){
 		while(point.y < corner_last.y){
 			Segment* s = GetSegment(&g_d->world, point.x, point.y);
 			if(s != NULL){
-				if(!set){
-					point.x = s->indx.x * SEGMENT_SIZE;
-					shift = point.y - s->indx.y * SEGMENT_SIZE;
-					point.y = s->indx.y * SEGMENT_SIZE;
-					set = true;
-				}
 				SDL_FPoint rend_point;
-				if(GetRenderPointFromTrue(rend_data, point.x, point.y, &g_d->pc, &rend_point)){
-					SDL_RenderPoint(rend_data->renderer, rend_point.x, rend_point.y);
+				if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, &g_d->pc, &rend_point)){
+					rect.x = rend_point.x - half(SEGMENT_SIZE);
+					rect.y = rend_point.y - half(SEGMENT_SIZE);
+					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &rect, -RadToDeg(g_d->pc.direction), NULL, SDL_FLIP_NONE);
 				}
 			}
 			point.y += SEGMENT_SIZE;
 		}
 		point.x += SEGMENT_SIZE;
-		point.y = corner_first.y - shift;
+		point.y = corner_first.y - shift_y;
 	}
+}
+
+static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const float extension, const Player* const p, SDL_FPoint* const rend_point){
+	const SDL_FRect extended_view = {
+		rend_data->visible_rect.x - extension,
+		rend_data->visible_rect.y - extension,
+		rend_data->visible_rect.w + extension * 2.0F,
+		rend_data->visible_rect.h + extension * 2.0F
+	};
+	float dx = true_point_x - p->position.x;
+	if(SDL_fabsf(dx) > VIEWFINDER + extension) return false;
+	float dy = true_point_y - p->position.y;
+	if(SDL_fabsf(dy) > VIEWFINDER + extension) return false;
+	rend_point->x =	VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction);
+	rend_point->y =	PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction);
+	if(SDL_PointInRectFloat(rend_point, &extended_view)) return true;
+	return false;
+}
+
+static void RenderGunSight(Render_data* const rend_data){
+    float cursor_y;
+	SDL_GetMouseState(NULL, &cursor_y);
+	float cursor_distance = PLAYER_REND_Y - cursor_y;
+	if(cursor_distance < GUN_SIGHT_MIN_DISTANCE){
+		cursor_y = PLAYER_REND_Y - GUN_SIGHT_MIN_DISTANCE;
+		cursor_distance = PLAYER_REND_Y - cursor_y;
+	}
+	float spread = cursor_distance / (float)VIEWFINDER * GUN_SIGHT_SPREAD_RANGE + GUN_SIGHT_SPREAD_MIN;
+	SDL_FRect rect = {
+		VIEWFINDER_CENTER - half(GUN_SIGHT_SIZE),
+		cursor_y - half(GUN_SIGHT_SIZE) - spread,
+		(float)GUN_SIGHT_SIZE,
+		(float)GUN_SIGHT_SIZE
+	};
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_gunsightpart), NULL, &rect);
+	rect.y += spread * 2.0F;
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_gunsightpart), NULL, &rect);
+	rect.x -= spread;
+	rect.y = cursor_y - half(GUN_SIGHT_SIZE);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
+	rect.x += spread * 2.0F;
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
 }

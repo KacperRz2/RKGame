@@ -16,5 +16,7 @@ void RenderGame(Render_data* const, Game_data* const);
 static void SetSineCosine(Render_data* const, Player* const);
 void ClearRenderData(Render_data* const);
 static void RenderTerrain(Render_data* const, Game_data* const);
+static bool GetExtendedRenderPointFromTrue(Render_data* const, const float, const float, const float, const Player* const, SDL_FPoint* const);
+static void RenderGunSight(Render_data* const);
 
 #endif
