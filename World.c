@@ -54,10 +54,14 @@ void CreateWorld(World* const world, const float x, const float y){
 			if(*(*(test_world_plan + bigc) + bigr) == true){
 				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X + 1U; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++c){
 					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X + 1U; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++r){
-						*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
-						(*(*(world->segments + c) + r))->indx.x = c;
-						(*(*(world->segments + c) + r))->indx.y = r;
-						(*(*(world->segments + c) + r))->beings.num = 0U;
+						if(SDL_randf() < 0.1F){
+							*(*(world->segments + c) + r) = NULL;
+						}else{
+							*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
+							(*(*(world->segments + c) + r))->indx.x = c;
+							(*(*(world->segments + c) + r))->indx.y = r;
+							(*(*(world->segments + c) + r))->beings.num = 0U;
+						}
 					}
 				}
 			}else{
@@ -82,8 +86,8 @@ void DestroyWorld(World* const world){
 }
 
 extern inline Segment* GetSegment(World* const world, const float x, const float y){
-	unsigned int c = (unsigned int)(x / SEGMENT_SIZE);
-	unsigned int r = (unsigned int)(y / SEGMENT_SIZE);
+	const unsigned int c = (unsigned int)(x / SEGMENT_SIZE);
+	const unsigned int r = (unsigned int)(y / SEGMENT_SIZE);
 	return *(*(world->segments + c) + r);
 }
 
@@ -103,7 +107,6 @@ void StartLevel(Game_data* const g_d){
 			}
 		}
 	}
-
 	g_d->beings.num = 0U;
 	CreatePlayer(&g_d->pc, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 2.0F);//test staring position
 	AddBeingToArray(&g_d->beings, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 8.0F, GetSegment(&g_d->world, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 8.0F));//test being

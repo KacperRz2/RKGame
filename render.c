@@ -21,7 +21,8 @@ int GraphicsInitiation(Render_data* const data){
 		"img7.bmp",
 		"img8.bmp",
 		"img9.bmp",
-		"imgA.bmp"
+		"imgA.bmp",
+		"imgB.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -55,6 +56,14 @@ int GraphicsInitiation(Render_data* const data){
 	SDL_SetTextureScaleMode(*(data->textures + tx_viewfinder), SDL_SCALEMODE_NEAREST);
 
 	SDL_SetWindowRelativeMouseMode(data->window, true);
+	SDL_WarpMouseInWindow(data->window, half(data->window_w), half(data->window_h));
+	const SDL_Rect mouse_barrier = {
+		data->viewfinder_rect.x,
+		data->viewfinder_rect.y,
+		data->viewfinder_rect.w,
+		(int)(data->viewfinder * VIEWFINDER_BEFORE_PC_PART - GUN_SIGHT_MIN_DISTANCE)
+	};
+	SDL_SetWindowMouseRect(data->window, &mouse_barrier);
 	return 0;
 }
 
@@ -64,8 +73,8 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 	rend_data->window_w = window_w;
 	rend_data->window_h = window_h;
 	rend_data->viewfinder = VIEWFINDER_SIZE;
-	rend_data->viewfinder_rect.x = (int)((WINDOW_W - VIEWFINDER) * 0.5F);
-	rend_data->viewfinder_rect.y = (int)((WINDOW_H - VIEWFINDER) * 0.5F);
+	rend_data->viewfinder_rect.x = (int)(half(WINDOW_W - VIEWFINDER));
+	rend_data->viewfinder_rect.y = (int)(half(WINDOW_H - VIEWFINDER));
 	rend_data->viewfinder_rect.w = (int)(VIEWFINDER);
 	rend_data->viewfinder_rect.h = (int)(VIEWFINDER);
 	rend_data->visible_rect.x = 0.0F;
@@ -341,21 +350,22 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 		SEGMENT_SIZE,
 		SEGMENT_SIZE
 	};
-	SDL_FPoint corner_first = {SDL_max(0.0F, g_d->pc.position.x - (VIEWFINDER + SEGMENT_SIZE)), SDL_max(0.0F, g_d->pc.position.y - (VIEWFINDER + SEGMENT_SIZE))};
-	SDL_FPoint corner_last = {SDL_min(WORLD_SIZE, g_d->pc.position.x + (VIEWFINDER + SEGMENT_SIZE)), SDL_min(WORLD_SIZE, g_d->pc.position.y + (VIEWFINDER + SEGMENT_SIZE))};
+	const SDL_FPoint corner_first = {g_d->pc.position.x - (VIEWFINDER + SEGMENT_SIZE), g_d->pc.position.y - (VIEWFINDER + SEGMENT_SIZE)};
+	const SDL_FPoint corner_last = {g_d->pc.position.x + (VIEWFINDER + SEGMENT_SIZE), g_d->pc.position.y + (VIEWFINDER + SEGMENT_SIZE)};
 	SDL_FPoint point = corner_first;
 	float shift_y = SDL_fmodf(point.y, SEGMENT_SIZE) + half(SEGMENT_SIZE);
 	point.x -= SDL_fmodf(point.x, SEGMENT_SIZE) + half(SEGMENT_SIZE);
 	point.y -= shift_y;
 	while(point.x < corner_last.x){
 		while(point.y < corner_last.y){
-			Segment* s = GetSegment(&g_d->world, point.x, point.y);
-			if(s != NULL){
-				SDL_FPoint rend_point;
-				if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, &g_d->pc, &rend_point)){
-					rect.x = rend_point.x - half(SEGMENT_SIZE);
-					rect.y = rend_point.y - half(SEGMENT_SIZE);
+			SDL_FPoint rend_point;
+			if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, &g_d->pc, &rend_point)){
+				rect.x = rend_point.x - half(SEGMENT_SIZE);
+				rect.y = rend_point.y - half(SEGMENT_SIZE);
+				if(point.x > 0.0F && point.y > 0.0F && point.x < WORLD_SIZE && point.y < WORLD_SIZE && GetSegment(&g_d->world, point.x, point.y) != NULL){
 					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &rect, -RadToDeg(g_d->pc.direction), NULL, SDL_FLIP_NONE);
+				}else{
+					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_wall), NULL, &rect, -RadToDeg(g_d->pc.direction), NULL, SDL_FLIP_NONE);
 				}
 			}
 			point.y += SEGMENT_SIZE;
@@ -385,12 +395,7 @@ static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, 
 static void RenderGunSight(Render_data* const rend_data){
     float cursor_y;
 	SDL_GetMouseState(NULL, &cursor_y);
-	float cursor_distance = PLAYER_REND_Y - cursor_y;
-	if(cursor_distance < GUN_SIGHT_MIN_DISTANCE){
-		cursor_y = PLAYER_REND_Y - GUN_SIGHT_MIN_DISTANCE;
-		cursor_distance = PLAYER_REND_Y - cursor_y;
-	}
-	float spread = cursor_distance / (float)VIEWFINDER * GUN_SIGHT_SPREAD_RANGE + GUN_SIGHT_SPREAD_MIN;
+	const float spread = (PLAYER_REND_Y - cursor_y) / (float)VIEWFINDER * GUN_SIGHT_SPREAD_RANGE + GUN_SIGHT_SPREAD_MIN;
 	SDL_FRect rect = {
 		VIEWFINDER_CENTER - half(GUN_SIGHT_SIZE),
 		cursor_y - half(GUN_SIGHT_SIZE) - spread,

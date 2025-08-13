@@ -24,8 +24,6 @@ int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
 void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Game_data game_data;
 	SetGameData(&game_data);
-    float cursor_y;
-	float cursor_distance = 0.0F;
 	unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 	int tps = 0;
 	int tps_count = 0;
@@ -39,9 +37,7 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
     while(!quit){
         timer = SDL_GetTicksNS();
 		quit = EventsService(e, &game_data.pc, rend_data);
-		SDL_GetMouseState(NULL, &cursor_y);
 		UpdatePlayer(&game_data);
-		cursor_distance = WINDOW_CENTER_Y + PLAYER_REND_Y_SHIFT - cursor_y;
 		Segment* player_seg = GetSegment(&game_data.world, game_data.pc.position.x, game_data.pc.position.y);
 		UpdateProjectiles(&game_data, player_seg);
 		UpdateHProjectiles(&game_data);

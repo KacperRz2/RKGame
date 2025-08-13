@@ -13,7 +13,8 @@ enum texture_num{
     tx_being_blade,
     tx_h_projectile,
     tx_terrain,
-    tx_gunsightpart
+    tx_gunsightpart,
+    tx_wall
 };
 
 enum control{

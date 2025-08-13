@@ -2,13 +2,16 @@
 #define MACROS_H_
 
 #define SQRT2DIV2			        (1.4142135623730950488016887242097F * 0.5F)
+#define pow2(x)                     ((x) * (x))
+#define half(x)                     ((x) * (0.5F))
 #define WINDOW_W			        (rend_data->window_w)
 #define WINDOW_H			        (rend_data->window_h)
 #define VIEWFINDER			        (rend_data->viewfinder)
 #define VIEWFINDER_CENTER	        (VIEWFINDER * 0.5F)
 #define WINDOW_CENTER_Y		        (WINDOW_H / 2)
-#define PLAYER_REND_Y_SHIFT	        (VIEWFINDER * 0.5F * 0.875F)
-#define PLAYER_REND_Y               (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT)
+#define VIEWFINDER_BEFORE_PC_PART   0.9375F
+#define PLAYER_REND_Y               (VIEWFINDER * VIEWFINDER_BEFORE_PC_PART)
+#define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(VIEWFINDER))
 #define BIG_SEGMENTS_X              29U
 #define BIG_SEGMENT_SEGMENTS_X      16U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
@@ -27,7 +30,7 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        12
+#define TEXTURE_FILES_NUM	        13
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM)
 #define SIGHT_SQUARED   	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT))
@@ -48,8 +51,6 @@
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
-#define pow2(x)                     ((x) * (x))
-#define half(x)                    ((x) * (0.5F))
 
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
