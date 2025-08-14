@@ -85,22 +85,22 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 
 static void RenderPlayer(Render_data* const rend_data, Blade* const blade){
 	const SDL_FRect rect = {
-		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F,
-		VIEWFINDER_CENTER - PLAYER_SIZE * 0.5F + PLAYER_REND_Y_SHIFT,
+		VIEWFINDER_CENTER - half(PLAYER_SIZE),
+		VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,
 		(float)PLAYER_SIZE,
 		(float)PLAYER_SIZE
 	};
 	SDL_FRect rect_blade = {
-		VIEWFINDER_CENTER - BLADE_SIZE * 0.5F - (PLAYER_SIZE * 0.25F),
-		VIEWFINDER_CENTER - BLADE_SIZE * 0.5F - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
+		VIEWFINDER_CENTER - half(BLADE_SIZE) - (PLAYER_SIZE * 0.25F),
+		VIEWFINDER_CENTER - half(BLADE_SIZE) - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
 		BLADE_SIZE,
 		BLADE_SIZE
 	};
 	static const SDL_FPoint blade_rotation_point = {
-		BLADE_SIZE * 0.5F,
+		half(BLADE_SIZE),
 		BLADE_SIZE * BLADE_HANDLER_POSITION
 	};
-	rect_blade.x = (VIEWFINDER_CENTER - BLADE_SIZE * 0.5F) + blade->position.x;
+	rect_blade.x = (VIEWFINDER_CENTER - half(BLADE_SIZE)) + blade->position.x;
 	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * BLADE_HANDLER_POSITION + PLAYER_REND_Y_SHIFT) - blade->position.y;
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect);
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
@@ -116,8 +116,8 @@ static void RenderProjectiles(Render_data* const rend_data, Game_data* const g_d
 	for(Projectile* pr = g_d->projectiles.array; pr != (g_d->projectiles.array + g_d->projectiles.num); ++pr){
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, &g_d->pc, &point)){
-			rect.x = point.x - BULLET_SIZE * 0.5F;
-			rect.y = point.y - BULLET_SIZE * 0.5F;
+			rect.x = point.x - half(BULLET_SIZE);
+			rect.y = point.y - half(BULLET_SIZE);
 			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_projectile), NULL, &rect);
 		}
 	}
@@ -133,8 +133,8 @@ static void RenderHProjectiles(Render_data* const rend_data, Game_data* const g_
 	for(Projectile_hostile* pr = g_d->h_projectiles.array; pr != (g_d->h_projectiles.array + g_d->h_projectiles.num); ++pr){
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, &g_d->pc, &point)){
-			rect.x = point.x - BULLET_SIZE * 0.5F;
-			rect.y = point.y - BULLET_SIZE * 0.5F;
+			rect.x = point.x - half(BULLET_SIZE);
+			rect.y = point.y - half(BULLET_SIZE);
 			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_h_projectile), NULL, &rect);
 		}
 	}
@@ -148,26 +148,26 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 		PLAYER_SIZE
 	};
 	SDL_FRect rect_blade = {
-		VIEWFINDER_CENTER - BLADE_SIZE * 0.5F - (PLAYER_SIZE * 0.25F),
-		VIEWFINDER_CENTER - BLADE_SIZE * 0.5F - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
+		VIEWFINDER_CENTER - half(BLADE_SIZE) - (PLAYER_SIZE * 0.25F),
+		VIEWFINDER_CENTER - half(BLADE_SIZE) - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
 		BLADE_SIZE,
 		BLADE_SIZE
 	};
 	static const SDL_FPoint blade_rotation_point = {
-		BLADE_SIZE * 0.5F,
+		half(BLADE_SIZE),
 		BLADE_SIZE * BLADE_HANDLER_POSITION
 	};
     for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, &g_d->pc, &point)){
-			rect.x = point.x - PLAYER_SIZE * 0.5F;
-			rect.y = point.y - PLAYER_SIZE * 0.5F;
+			rect.x = point.x - half(PLAYER_SIZE);
+			rect.y = point.y - half(PLAYER_SIZE);
 
 			float being_direction = b->direction - g_d->pc.direction;
 
 			float sine = SineSafe(being_direction);
 			float cosine = CosiSafe(being_direction);
-			rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - BLADE_SIZE * 0.5F;
+			rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - half(BLADE_SIZE);
 			rect_blade.y = point.y + (b->blade.position.x * sine - b->blade.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being_blade), NULL, &rect_blade, (double)RadToDeg(b->blade.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
@@ -178,7 +178,7 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 static void RenderMap(Render_data* const rend_data, Player* const p){
 	static const int map_size = 300;
 	const SDL_Rect rect = {
-		(int)(((WINDOW_W - VIEWFINDER) * 0.5F) + VIEWFINDER) + 10,
+		(int)((half(WINDOW_W - VIEWFINDER)) + VIEWFINDER) + 10,
 		50,
 		map_size,
 		map_size
@@ -243,37 +243,37 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 	const SDL_FRect rect0a = {
 		10.0F,
-		WINDOW_H * 0.5F,
+		half(WINDOW_H),
 		(WINDOW_W - VIEWFINDER) * 0.49F,
 		30.0F
 	};
 	const SDL_FRect rect1a = {
 		10.0F,
-		WINDOW_H * 0.5F + 40.0F,
+		half(WINDOW_H) + 40.0F,
 		(WINDOW_W - VIEWFINDER) * 0.49F,
 		30.0F
 	};
 	const SDL_FRect rect2a = {
 		10.0F,
-		WINDOW_H * 0.5F + 80.0F,
+		half(WINDOW_H) + 80.0F,
 		(WINDOW_W - VIEWFINDER) * 0.49F,
 		30.0F
 	};
 	SDL_FRect rect0b = {
 		11.0F,
-		WINDOW_H * 0.5F + 1.0F,
+		half(WINDOW_H) + 1.0F,
 		0.0F,
 		28.0F
 	};
 	SDL_FRect rect1b = {
 		11.0F,
-		WINDOW_H * 0.5F + 41.0F,
+		half(WINDOW_H) + 41.0F,
 		0.0F,
 		28.0F
 	};
 	SDL_FRect rect2b = {
 		11.0F,
-		WINDOW_H * 0.5F + 81.0F,
+		half(WINDOW_H) + 81.0F,
 		0.0F,
 		28.0F
 	};
@@ -303,7 +303,7 @@ void RenderMainMenu(Render_data* const rend_data){
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderDrawColor(rend_data->renderer, colour, colour, colour, 255U);
 	SDL_SetRenderScale(rend_data->renderer, 4.0F, 4.0F);
-	SDL_RenderDebugText(rend_data->renderer, WINDOW_W * 0.25F * 0.25F, WINDOW_H * 0.5F * 0.25F, "Press SPACE");
+	SDL_RenderDebugText(rend_data->renderer, WINDOW_W * 0.25F * 0.25F, half(WINDOW_H) * 0.25F, "Press SPACE");
 	SDL_SetRenderScale(rend_data->renderer, 1.0F, 1.0F);
 	SDL_RenderPresent(rend_data->renderer);
 }

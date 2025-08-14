@@ -268,8 +268,6 @@ static inline void UpdateBeingFollow(Being* const b, float const distance, float
     float new_x = b->position.x + x_shift;
     float new_y = b->position.y + y_shift;
     if(distance > RANGE_SEGMENTS * (WORLD_SIZE / SEGMENTS_X)){
-        // SetBeingPosition(b, new_x, new_y);
-        // --b->status_ticks_left;
         HaltBeing(b, BEING_WALK_TICKS);
         return;
     }
@@ -370,7 +368,7 @@ void UpdateBeings(Game_data* const g_d){
 }
 
 extern inline bool DamageBeing(Being* const b, int damage){
-    b->hit_points -= damage; // SDL_LogInfo(SDL_LOG_CATEGORY_TEST, ">:(");
+    b->hit_points -= damage;
     if(b->hit_points < 1){
         b->status = dead;
         RemoveBeingFromSegment(b);

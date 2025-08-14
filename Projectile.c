@@ -14,7 +14,7 @@ void DestroyProjectiles(Projectiles_array* const prs){
 }
 
 static inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
-	if(SDL_fabsf(pr->position.x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf(pr->position.y - b->position.y) < PLAYER_SIZE * 0.5F){
+	if(SDL_fabsf(pr->position.x - b->position.x) < half(PLAYER_SIZE) && SDL_fabsf(pr->position.y - b->position.y) < half(PLAYER_SIZE)){
 		for(unsigned int i = pr->hits; i > 0U; --i){
 			if(*(pr->hit_targets + (i - 1U)) == b->id){
 				return false;
@@ -90,7 +90,7 @@ void DestroyHProjectiles(Projectiles_h_array* const prs){
 
 static inline bool ProjectileHitsPlayerOrLost(Projectile_hostile* const pr, Player* const p){
 	float distance_squated = pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y);
-	if(distance_squated < pow2(PLAYER_SIZE * 0.5F)){
+	if(distance_squated < pow2(half(PLAYER_SIZE))){
 		DamagePlayer(p, pr->damage);
 		return true;
 	}

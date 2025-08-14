@@ -177,7 +177,7 @@ static inline Status_frame GetBladeLocation(Player* const p, float* const sine, 
 
 static inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being* const b, SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
-		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < PLAYER_SIZE * 0.5F && SDL_fabsf((dangerous_points + i)->y - b->position.y) < PLAYER_SIZE * 0.5F){
+		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(PLAYER_SIZE) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(PLAYER_SIZE)){
 			for(unsigned int j = bl->hits; j > 0U; --j){
 				if(*(bl->hit_targets + (j - 1U)) == b->id){
 					return false;
@@ -314,7 +314,7 @@ static void UpdatePlayerBlade(Game_data* const g_d){
 }
 
 extern inline bool PointInPlayer(const float x, const float y, Player* const pl){
-	if(pow2(x - pl->position.x) + pow2(y - pl->position.y) < (float)pow2(PLAYER_SIZE * 0.5F)){
+	if(pow2(x - pl->position.x) + pow2(y - pl->position.y) < (float)pow2(half(PLAYER_SIZE))){
 		return true;
 	}
 	return false;
