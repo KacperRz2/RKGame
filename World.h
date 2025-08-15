@@ -7,5 +7,9 @@ Segment* GetSegment(World* const, const float, const float);
 Segment* GetSegmentByIndx(World* const, const unsigned int, const unsigned int);
 void UpdateSegmentBeingPointer(Being*, Being*);
 void StartLevel(Game_data* const);
+static SDL_FPoint GetStartPosition(World* const);
+float SegmentPositionX(Segment* const);
+float SegmentPositionY(Segment* const);
+static unsigned int CollumOrRow(const unsigned int);
 
 #endif

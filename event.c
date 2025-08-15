@@ -62,7 +62,7 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
-			p->direction += e->motion.xrel * ((e->motion.y / (float)WINDOW_H + 0.125F) * ROTATION_SPEED);
+			p->direction += e->motion.xrel * ((e->motion.y / (float)rend_data->window_h + 0.125F) * ROTATION_SPEED);
 		}
 	}
 	return false;

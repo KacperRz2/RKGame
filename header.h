@@ -13,10 +13,11 @@
 float si[ANGLE_PARTS];
 float co[ANGLE_PARTS];
 const Being_type test_being = {
-    PLAYER_VELOCITY * 2.5F,
-    100,
-    2,
-    1
+    TEST_BEING_SIZE,
+    TEST_BEING_VELOCITY,
+    TEST_BEING_HP,
+    TEST_BEING_DMG_CLOSE,
+    TEST_BEING_DMG_FAR
 };
 
 #endif

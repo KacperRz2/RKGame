@@ -14,7 +14,7 @@ void DestroyProjectiles(Projectiles_array* const prs){
 }
 
 static inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
-	if(SDL_fabsf(pr->position.x - b->position.x) < half(PLAYER_SIZE) && SDL_fabsf(pr->position.y - b->position.y) < half(PLAYER_SIZE)){
+	if(SDL_fabsf(pr->position.x - b->position.x) < half(b->type->size) && SDL_fabsf(pr->position.y - b->position.y) < half(b->type->size)){
 		for(unsigned int i = pr->hits; i > 0U; --i){
 			if(*(pr->hit_targets + (i - 1U)) == b->id){
 				return false;

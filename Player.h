@@ -2,7 +2,7 @@
 #define PLAYER_H_
 
 void CreatePlayer(Player* const, const float, const float);
-static void SetPlayerPosition(Player* const, const float, const float);
+void SetPlayerPosition(Player* const, const float, const float);
 void MovePlayer(Game_data* const, const float, const float);
 static void UpdatePlayerMove(Game_data* const);
 static void UpdatePlayerDirection(Player* const);

@@ -102,7 +102,7 @@ static inline void StartBeingWalkWithRandTurn45Deg(Being* const b, const int tim
 }
 
 static inline bool CollideWithBeing(Being* const b, const float x, const float y){
-    if(pow2(x - b->position.x) + pow2(y - b->position.y) < (float)pow2(PLAYER_SIZE)){
+    if(pow2(x - b->position.x) + pow2(y - b->position.y) < (float)pow2(b->type->size)){
         return true;
     }
     return false;
@@ -341,7 +341,7 @@ void UpdateBeings(Game_data* const g_d){
         float distance_y = g_d->pc.position.y - b->position.y;
         float distance_squared = distance_x * distance_x + distance_y * distance_y;
         float distance = 0.0F;
-        if(distance_squared < pow2(PLAYER_SIZE)){
+        if(distance_squared < pow2(half(PLAYER_SIZE) + half(b->type->size))){
             distance = SDL_sqrtf(distance_squared);
             float velocity_xy = distance / (PLAYER_VELOCITY * 1.875F);
             MovePlayer(g_d, distance_x / velocity_xy, distance_y / velocity_xy);

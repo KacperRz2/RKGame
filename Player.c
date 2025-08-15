@@ -30,7 +30,7 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->armour = PC_ARMOUR;
 }
 
-static inline void SetPlayerPosition(Player* const p, const float x, const float y){
+extern inline void SetPlayerPosition(Player* const p, const float x, const float y){
 	p->position.x = x;
 	p->position.y = y;
 }
@@ -177,7 +177,7 @@ static inline Status_frame GetBladeLocation(Player* const p, float* const sine, 
 
 static inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being* const b, SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
-		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(PLAYER_SIZE) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(PLAYER_SIZE)){
+		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(b->type->size) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(b->type->size)){
 			for(unsigned int j = bl->hits; j > 0U; --j){
 				if(*(bl->hit_targets + (j - 1U)) == b->id){
 					return false;

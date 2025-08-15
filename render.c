@@ -73,14 +73,14 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 	rend_data->window_w = window_w;
 	rend_data->window_h = window_h;
 	rend_data->viewfinder = VIEWFINDER_SIZE;
-	rend_data->viewfinder_rect.x = (int)(half(WINDOW_W - VIEWFINDER));
-	rend_data->viewfinder_rect.y = (int)(half(WINDOW_H - VIEWFINDER));
-	rend_data->viewfinder_rect.w = (int)(VIEWFINDER);
-	rend_data->viewfinder_rect.h = (int)(VIEWFINDER);
+	rend_data->viewfinder_rect.x = (int)(half(rend_data->window_w - rend_data->viewfinder));
+	rend_data->viewfinder_rect.y = (int)(half(rend_data->window_h - rend_data->viewfinder));
+	rend_data->viewfinder_rect.w = (int)(rend_data->viewfinder);
+	rend_data->viewfinder_rect.h = (int)(rend_data->viewfinder);
 	rend_data->visible_rect.x = 0.0F;
 	rend_data->visible_rect.y = 0.0F;
-	rend_data->visible_rect.w = VIEWFINDER;
-	rend_data->visible_rect.h = VIEWFINDER;
+	rend_data->visible_rect.w = rend_data->viewfinder;
+	rend_data->visible_rect.h = rend_data->viewfinder;
 }
 
 static void RenderPlayer(Render_data* const rend_data, Blade* const blade){
@@ -90,9 +90,9 @@ static void RenderPlayer(Render_data* const rend_data, Blade* const blade){
 		(float)PLAYER_SIZE,
 		(float)PLAYER_SIZE
 	};
-	SDL_FRect rect_blade = {
-		VIEWFINDER_CENTER - half(BLADE_SIZE) - (PLAYER_SIZE * 0.25F),
-		VIEWFINDER_CENTER - half(BLADE_SIZE) - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
+	static SDL_FRect rect_blade = {
+		0.0F,
+		0.0F,
 		BLADE_SIZE,
 		BLADE_SIZE
 	};
@@ -141,15 +141,9 @@ static void RenderHProjectiles(Render_data* const rend_data, Game_data* const g_
 }
 
 static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
-	static SDL_FRect rect = {
+	static SDL_FRect rect_blade = {
 		0.0F,
 		0.0F,
-		PLAYER_SIZE,
-		PLAYER_SIZE
-	};
-	SDL_FRect rect_blade = {
-		VIEWFINDER_CENTER - half(BLADE_SIZE) - (PLAYER_SIZE * 0.25F),
-		VIEWFINDER_CENTER - half(BLADE_SIZE) - PLAYER_SIZE + PLAYER_REND_Y_SHIFT,
 		BLADE_SIZE,
 		BLADE_SIZE
 	};
@@ -160,9 +154,12 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
     for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, &g_d->pc, &point)){
-			rect.x = point.x - half(PLAYER_SIZE);
-			rect.y = point.y - half(PLAYER_SIZE);
-
+			SDL_FRect rect = {
+				point.x - half(b->type->size),
+				point.y - half(b->type->size),
+				b->type->size,
+				b->type->size
+			};
 			float being_direction = b->direction - g_d->pc.direction;
 
 			float sine = SineSafe(being_direction);
@@ -178,20 +175,20 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 static void RenderMap(Render_data* const rend_data, Player* const p){
 	static const int map_size = 300;
 	const SDL_Rect rect = {
-		(int)((half(WINDOW_W - VIEWFINDER)) + VIEWFINDER) + 10,
+		(int)((half(rend_data->window_w - rend_data->viewfinder)) + rend_data->viewfinder) + 10,
 		50,
 		map_size,
 		map_size
 	};
 	const SDL_FRect destination_rect0a = {
-		WINDOW_W - 100.0F,
-		WINDOW_H * 0.4F,
+		rend_data->window_w - 100.0F,
+		rend_data->window_h * 0.4F,
 		50.0F,
 		50.0F
 	};
 	const SDL_FRect destination_rect0b = {
-		WINDOW_W - 90.0F,
-		WINDOW_H * 0.4F + 10.0F,
+		rend_data->window_w - 90.0F,
+		rend_data->window_h * 0.4F + 10.0F,
 		30.0F,
 		30.0F
 	};
@@ -215,9 +212,9 @@ static void RenderMap(Render_data* const rend_data, Player* const p){
 
 static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const Player* const p, SDL_FPoint* const rend_point){
 	float dx = true_point_x - p->position.x;
-	if(SDL_fabsf(dx) > VIEWFINDER) return false;
+	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
 	float dy = true_point_y - p->position.y;
-	if(SDL_fabsf(dy) > VIEWFINDER) return false;
+	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
 	rend_point->x =	VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction);
 	rend_point->y =	PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction);
 	if(SDL_PointInRectFloat(rend_point, &rend_data->visible_rect)) return true;
@@ -243,37 +240,37 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 	const SDL_FRect rect0a = {
 		10.0F,
-		half(WINDOW_H),
-		(WINDOW_W - VIEWFINDER) * 0.49F,
+		half(rend_data->window_h),
+		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
 		30.0F
 	};
 	const SDL_FRect rect1a = {
 		10.0F,
-		half(WINDOW_H) + 40.0F,
-		(WINDOW_W - VIEWFINDER) * 0.49F,
+		half(rend_data->window_h) + 40.0F,
+		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
 		30.0F
 	};
 	const SDL_FRect rect2a = {
 		10.0F,
-		half(WINDOW_H) + 80.0F,
-		(WINDOW_W - VIEWFINDER) * 0.49F,
+		half(rend_data->window_h) + 80.0F,
+		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
 		30.0F
 	};
 	SDL_FRect rect0b = {
 		11.0F,
-		half(WINDOW_H) + 1.0F,
+		half(rend_data->window_h) + 1.0F,
 		0.0F,
 		28.0F
 	};
 	SDL_FRect rect1b = {
 		11.0F,
-		half(WINDOW_H) + 41.0F,
+		half(rend_data->window_h) + 41.0F,
 		0.0F,
 		28.0F
 	};
 	SDL_FRect rect2b = {
 		11.0F,
-		half(WINDOW_H) + 81.0F,
+		half(rend_data->window_h) + 81.0F,
 		0.0F,
 		28.0F
 	};
@@ -303,7 +300,7 @@ void RenderMainMenu(Render_data* const rend_data){
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderDrawColor(rend_data->renderer, colour, colour, colour, 255U);
 	SDL_SetRenderScale(rend_data->renderer, 4.0F, 4.0F);
-	SDL_RenderDebugText(rend_data->renderer, WINDOW_W * 0.25F * 0.25F, half(WINDOW_H) * 0.25F, "Press SPACE");
+	SDL_RenderDebugText(rend_data->renderer, rend_data->window_w * 0.25F * 0.25F, half(rend_data->window_h) * 0.25F, "Press SPACE");
 	SDL_SetRenderScale(rend_data->renderer, 1.0F, 1.0F);
 	SDL_RenderPresent(rend_data->renderer);
 }
@@ -350,8 +347,8 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 		SEGMENT_SIZE,
 		SEGMENT_SIZE
 	};
-	const SDL_FPoint corner_first = {g_d->pc.position.x - (VIEWFINDER + SEGMENT_SIZE), g_d->pc.position.y - (VIEWFINDER + SEGMENT_SIZE)};
-	const SDL_FPoint corner_last = {g_d->pc.position.x + (VIEWFINDER + SEGMENT_SIZE), g_d->pc.position.y + (VIEWFINDER + SEGMENT_SIZE)};
+	const SDL_FPoint corner_first = {g_d->pc.position.x - (rend_data->viewfinder + SEGMENT_SIZE), g_d->pc.position.y - (rend_data->viewfinder + SEGMENT_SIZE)};
+	const SDL_FPoint corner_last = {g_d->pc.position.x + (rend_data->viewfinder + SEGMENT_SIZE), g_d->pc.position.y + (rend_data->viewfinder + SEGMENT_SIZE)};
 	SDL_FPoint point = corner_first;
 	float shift_y = SDL_fmodf(point.y, SEGMENT_SIZE) + half(SEGMENT_SIZE);
 	point.x -= SDL_fmodf(point.x, SEGMENT_SIZE) + half(SEGMENT_SIZE);
@@ -383,9 +380,9 @@ static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, 
 		rend_data->visible_rect.h + extension * 2.0F
 	};
 	float dx = true_point_x - p->position.x;
-	if(SDL_fabsf(dx) > VIEWFINDER + extension) return false;
+	if(SDL_fabsf(dx) > rend_data->viewfinder + extension) return false;
 	float dy = true_point_y - p->position.y;
-	if(SDL_fabsf(dy) > VIEWFINDER + extension) return false;
+	if(SDL_fabsf(dy) > rend_data->viewfinder + extension) return false;
 	rend_point->x =	VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction);
 	rend_point->y =	PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction);
 	if(SDL_PointInRectFloat(rend_point, &extended_view)) return true;
@@ -395,7 +392,7 @@ static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, 
 static void RenderGunSight(Render_data* const rend_data){
     float cursor_y;
 	SDL_GetMouseState(NULL, &cursor_y);
-	const float spread = (PLAYER_REND_Y - cursor_y) / (float)VIEWFINDER * GUN_SIGHT_SPREAD_RANGE + GUN_SIGHT_SPREAD_MIN;
+	const float spread = (PLAYER_REND_Y - cursor_y) / (float)rend_data->viewfinder * GUN_SIGHT_SPREAD_RANGE + GUN_SIGHT_SPREAD_MIN;
 	SDL_FRect rect = {
 		VIEWFINDER_CENTER - half(GUN_SIGHT_SIZE),
 		cursor_y - half(GUN_SIGHT_SIZE) - spread,

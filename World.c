@@ -51,8 +51,13 @@ void CreateWorld(World* const world, const float x, const float y){
 	SDL_srand(seed);
 	SDL_Point portal0;
 	SDL_Point portal1;
+	SDL_Point door_position;
 	int rand0 = SDL_rand(4);
 	int rand1 = (rand0 + SDL_rand(3) + 1) % 4;
+	int rand2 = (rand0 + SDL_rand(2) + 1) % 4;
+	while(rand2 == rand1){
+		rand2 = (rand0 + SDL_rand(3) + 1) % 4;
+	}
 	if(rand0 == 0){
 		portal0.x = 3U;
 		portal0.y = 0U;
@@ -79,8 +84,22 @@ void CreateWorld(World* const world, const float x, const float y){
 		portal1.x = 0U;
 		portal1.y = 3U;
 	}
+	if(rand2 == 0){
+		door_position.x = 3U;
+		door_position.y = 0U;
+	}else if(rand2 == 1){
+		door_position.x = 6U;
+		door_position.y = 3U;
+	}else if(rand2 == 2){
+		door_position.x = 3U;
+		door_position.y = 6U;
+	}else{
+		door_position.x = 0U;
+		door_position.y = 3U;
+	}
 	SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "p0: %d:%d", portal0.x, portal0.y);
 	SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "p1: %d:%d", portal1.x, portal1.y);
+	SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "d: %d:%d", door_position.x, door_position.y);
 	int fields_left = 36;
 	int try = 0b0000;
 	SDL_Point fields[37];
@@ -91,7 +110,6 @@ void CreateWorld(World* const world, const float x, const float y){
 	unsigned int new_row = fields->y;
 	while(fields_left){
 		if(try == 0b1111){
-			if(indx == 0) exit(-1);
 			--indx;
 			try = 0b0000;
 			continue;
@@ -268,6 +286,10 @@ void CreateWorld(World* const world, const float x, const float y){
 			}
 		}
 	}
+	world->portalA = *(*(world->segments + CollumOrRow(portal0.x)) + CollumOrRow(portal0.y));
+	world->portalB = *(*(world->segments + CollumOrRow(portal1.x)) + CollumOrRow(portal1.y));
+	world->door = *(*(world->segments + CollumOrRow(door_position.x)) + CollumOrRow(door_position.y));
+	if(world->portalA == NULL || world->portalB == NULL || world->door == NULL) exit(-1);
 }
 
 void DestroyWorld(World* const world){
@@ -303,7 +325,8 @@ void StartLevel(Game_data* const g_d){
 		}
 	}
 	g_d->beings.num = 0U;
-	CreatePlayer(&g_d->pc, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 2.0F);//test staring position
+	SDL_FPoint start_position = GetStartPosition(&g_d->world);
+	CreatePlayer(&g_d->pc, start_position.x, start_position.y);
 	// AddBeingToArray(&g_d->beings, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 8.0F, GetSegment(&g_d->world, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 8.0F));//test being
 	Uint64 start_time = SDL_GetTicks();
 	while (g_d->beings.num < MAX_START_BEINGS_NUM){//test beings
@@ -316,5 +339,43 @@ void StartLevel(Game_data* const g_d){
 			}
 		}
 		if(SDL_GetTicks() - start_time > 1500U) break;
+	}
+}
+
+static SDL_FPoint GetStartPosition(World* const w){
+	SDL_FPoint result;
+	if(!(w->door->indx.x < SEGMENTS_X / 4 || w->portalA->indx.x < SEGMENTS_X / 4 || w->portalB->indx.x < SEGMENTS_X / 4)){
+		result.x = half(BIG_SEGMENT_SEGMENTS_X * SEGMENT_SIZE);
+		result.y = half(WORLD_SIZE);
+	}else if(!(w->door->indx.y < SEGMENTS_X / 4 || w->portalA->indx.y < SEGMENTS_X / 4 || w->portalB->indx.y < SEGMENTS_X / 4)){
+		result.x = half(WORLD_SIZE);
+		result.y = half(BIG_SEGMENT_SEGMENTS_X * SEGMENT_SIZE);
+	}else if(!(w->door->indx.x > SEGMENTS_X / 4 * 3 || w->portalA->indx.x > SEGMENTS_X / 4 * 3 || w->portalB->indx.x > SEGMENTS_X / 4 * 3)){
+		result.x = WORLD_SIZE - half(BIG_SEGMENT_SEGMENTS_X * SEGMENT_SIZE);
+		result.y = half(WORLD_SIZE);
+	}else if(!(w->door->indx.y > SEGMENTS_X / 4 * 3 || w->portalA->indx.y > SEGMENTS_X / 4 * 3 || w->portalB->indx.y > SEGMENTS_X / 4 * 3)){
+		result.x = half(WORLD_SIZE);
+		result.y = WORLD_SIZE - half(BIG_SEGMENT_SEGMENTS_X * SEGMENT_SIZE);
+	}
+	return result;
+}
+
+extern inline float SegmentPositionX(Segment* const s){
+	return s->indx.x * SEGMENT_SIZE;
+}
+
+extern inline float SegmentPositionY(Segment* const s){
+	return s->indx.y * SEGMENT_SIZE;
+}
+
+static unsigned int CollumOrRow(const unsigned int small_plan_position){
+	if(small_plan_position == 0){
+		return BIG_SEGMENT_SEGMENTS_X / 2U;
+	}
+	if(small_plan_position == 3){
+		return SEGMENTS_X / 2U;
+	}
+	if(small_plan_position == 6){
+		return SEGMENTS_X - BIG_SEGMENT_SEGMENTS_X / 2U;
 	}
 }

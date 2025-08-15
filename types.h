@@ -56,6 +56,7 @@ struct Render_data{
 };
 //Being
 struct Being_type{
+	float size;
     float velocity;
     int hit_points;
 	int damage_close;
@@ -118,6 +119,9 @@ struct World{
 	Segment*** segments;
 	float width;
 	float height;
+	Segment* portalA;
+	Segment* portalB;
+	Segment* door;
 };
 //Player
 struct Player{

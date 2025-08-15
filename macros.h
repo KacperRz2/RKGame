@@ -4,14 +4,11 @@
 #define SQRT2DIV2			        (1.4142135623730950488016887242097F * 0.5F)
 #define pow2(x)                     ((x) * (x))
 #define half(x)                     ((x) * (0.5F))
-#define WINDOW_W			        (rend_data->window_w)
-#define WINDOW_H			        (rend_data->window_h)
-#define VIEWFINDER			        (rend_data->viewfinder)
-#define VIEWFINDER_CENTER	        (VIEWFINDER * 0.5F)
-#define WINDOW_CENTER_Y		        (WINDOW_H / 2)
+#define VIEWFINDER_CENTER	        (rend_data->viewfinder * 0.5F)
+#define WINDOW_CENTER_Y		        (rend_data->window_h / 2)
 #define VIEWFINDER_BEFORE_PC_PART   0.9375F
-#define PLAYER_REND_Y               (VIEWFINDER * VIEWFINDER_BEFORE_PC_PART)
-#define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(VIEWFINDER))
+#define PLAYER_REND_Y               (rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART)
+#define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(rend_data->viewfinder))
 #define BIG_SEGMENTS_X              29U
 #define BIG_SEGMENT_SEGMENTS_X      8U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
@@ -93,12 +90,18 @@
 #define PC_BLADE_STRIKE_STEPS       32
 #define PC_BLADE_AFTER_BLOCK_STEPS  512
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
-#define VIEWFINDER_SIZE             (WINDOW_H * 0.984375F)
+#define VIEWFINDER_WINDOW_H_PART    0.984375F
+#define VIEWFINDER_SIZE             (rend_data->window_h * VIEWFINDER_WINDOW_H_PART)
 #define BLADE_HANDLER_POSITION      0.85F
 #define PC_SHOOT_RELOAD             8
 #define GUN_SIGHT_SPREAD_MIN        8.0F
 #define GUN_SIGHT_SPREAD_RANGE      (GUN_SIGHT_SPREAD_MIN * 4.0F)
 #define GUN_SIGHT_MIN_DISTANCE      PLAYER_SIZE
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x200U)
+#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x100U)
+#define TEST_BEING_SIZE             32
+#define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
+#define TEST_BEING_HP               100
+#define TEST_BEING_DMG_CLOSE        2
+#define TEST_BEING_DMG_FAR          1
 
 #endif

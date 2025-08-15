@@ -52,6 +52,7 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 		if(game_data.pc.hit_points < 1){
             break;
 		}
+		RareEventsService(&game_data, player_seg);
 
 		now = SDL_GetTicksNS();
 		if(now > prev_frame_time + FRAME_TIME){
@@ -93,4 +94,14 @@ static void ClearGameData(Game_data* const g_d){
     DestroyHProjectiles(&g_d->h_projectiles);
     DestroyProjectiles(&g_d->projectiles);
 	DestroyWorld(&g_d->world);
+}
+
+static void RareEventsService(Game_data* const g_d, Segment* const player_seg){
+	static int check_queue = 0;
+	if(check_queue == 0 && player_seg == g_d->world.portalA){
+		SetPlayerPosition(&g_d->pc, SegmentPositionX(g_d->world.portalB) - half(SEGMENT_SIZE), SegmentPositionY(g_d->world.portalB) - half(SEGMENT_SIZE));
+	}else if(check_queue == 1 && player_seg == g_d->world.portalB){
+		SetPlayerPosition(&g_d->pc, SegmentPositionX(g_d->world.portalA) - half(SEGMENT_SIZE), SegmentPositionY(g_d->world.portalA) - half(SEGMENT_SIZE));
+	}
+	check_queue = (check_queue + 1) % 2;
 }
