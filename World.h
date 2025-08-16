@@ -10,6 +10,7 @@ void StartLevel(Game_data* const);
 static SDL_FPoint GetStartPosition(World* const);
 float SegmentPositionX(Segment* const);
 float SegmentPositionY(Segment* const);
-static unsigned int CollumOrRow(const unsigned int);
+// static unsigned int CollumOrRow(const unsigned int);
+static float GetDoorPositionXorY(const unsigned int);
 
 #endif

@@ -313,9 +313,8 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 0);
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	RenderTerrain(rend_data, g_d);
-	if(!(g_d->pc.control_flags & tmp0)){
-		RenderBeings(rend_data, g_d);
-	}
+	RenderStaticThings(rend_data, g_d);
+	RenderBeings(rend_data, g_d);
 	RenderProjectiles(rend_data, g_d);
 	RenderHProjectiles(rend_data, g_d);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
@@ -407,4 +406,23 @@ static void RenderGunSight(Render_data* const rend_data){
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
 	rect.x += spread * 2.0F;
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
+}
+
+static void RenderStaticThings(Render_data* const rend_data, Game_data* const g_d){
+	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, &g_d->pc, DOOR_SIZE, tx_h_projectile);
+	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, &g_d->pc, DOOR_SIZE, tx_h_projectile);
+	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, &g_d->pc, DOOR_SIZE, tx_h_projectile);
+}
+
+static void RenderStaticThing(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num){
+	SDL_FPoint point;
+	if(GetRenderPointFromTrue(rend_data, pos_x, pos_y, p, &point)){
+		SDL_FRect rect = {
+			point.x - half(size),
+			point.y - half(size),
+			size,
+			size
+		};
+		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_num), NULL, &rect, (double)(-RadToDeg(p->direction)), NULL, SDL_FLIP_NONE);
+	}
 }

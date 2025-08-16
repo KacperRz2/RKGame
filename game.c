@@ -98,10 +98,12 @@ static void ClearGameData(Game_data* const g_d){
 
 static void RareEventsService(Game_data* const g_d, Segment* const player_seg){
 	static int check_queue = 0;
-	if(check_queue == 0 && player_seg == g_d->world.portalA){
-		SetPlayerPosition(&g_d->pc, SegmentPositionX(g_d->world.portalB) - half(SEGMENT_SIZE), SegmentPositionY(g_d->world.portalB) - half(SEGMENT_SIZE));
-	}else if(check_queue == 1 && player_seg == g_d->world.portalB){
-		SetPlayerPosition(&g_d->pc, SegmentPositionX(g_d->world.portalA) - half(SEGMENT_SIZE), SegmentPositionY(g_d->world.portalA) - half(SEGMENT_SIZE));
+	if(check_queue == 0 && SDL_fabsf(g_d->pc.position.x - g_d->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.portalA.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
+		SetPlayerPosition(&g_d->pc, g_d->world.portalB.x, g_d->world.portalB.y);
+	 	g_d->pc.control_flags &= ~(action);
+	}else if(check_queue == 1 && SDL_fabsf(g_d->pc.position.x - g_d->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.portalB.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
+		SetPlayerPosition(&g_d->pc, g_d->world.portalA.x, g_d->world.portalA.y);
+	 	g_d->pc.control_flags &= ~(action);
 	}
 	check_queue = (check_queue + 1) % 2;
 }

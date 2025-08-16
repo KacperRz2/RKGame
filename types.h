@@ -119,9 +119,9 @@ struct World{
 	Segment*** segments;
 	float width;
 	float height;
-	Segment* portalA;
-	Segment* portalB;
-	Segment* door;
+	SDL_FPoint portalA;
+	SDL_FPoint portalB;
+	SDL_FPoint door;
 };
 //Player
 struct Player{

@@ -332,3 +332,7 @@ static void UpdatePlayerFire(Game_data* const g_d){
 	}
 	--shoot_reload;
 }
+
+extern inline void HaltPlayer(Player* const p){
+	p->velocity = 0.0F;
+}

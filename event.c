@@ -23,6 +23,8 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->control_flags |= dodge; break;
 			case SDL_SCANCODE_LALT:
 				p->control_flags |= run; break;
+			case SDL_SCANCODE_E:
+				p->control_flags |= action; break;
 			case SDL_SCANCODE_H:
 				p->control_flags ^= tmp0; break;
 			default: break;
@@ -41,6 +43,8 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->control_flags &= ~(dodge); break;
 			case SDL_SCANCODE_LALT:
 				p->control_flags &= ~(run); break;
+			case SDL_SCANCODE_E:
+				p->control_flags &= ~(action); break;
 			case SDL_SCANCODE_ESCAPE:
 				return true;
 			default: break;

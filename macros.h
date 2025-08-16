@@ -10,7 +10,7 @@
 #define PLAYER_REND_Y               (rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART)
 #define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(rend_data->viewfinder))
 #define BIG_SEGMENTS_X              29U
-#define BIG_SEGMENT_SEGMENTS_X      8U
+#define BIG_SEGMENT_SEGMENTS_X      1U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
 #define SEGMENTS_Y			        SEGMENTS_X
 #define SEGMENT_SIZE		        128.0F
@@ -103,5 +103,6 @@
 #define TEST_BEING_HP               100
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
+#define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
 
 #endif

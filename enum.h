@@ -26,7 +26,8 @@ enum control{
     run = 1 << 5,
     tmp0 = 1 << 6,
     attack = 1 << 7,
-    fire = 1 << 8
+    fire = 1 << 8,
+    action = 1 << 9
 };
 
 enum being_status{
