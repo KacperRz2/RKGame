@@ -131,7 +131,6 @@ struct Player{
 	float direction;
 	float velocity;
 	float max_velocity;
-	// float range;
 	int hit_points;
 	int fatigue_points;
 	int magic_points;
@@ -140,6 +139,7 @@ struct Player{
 	int max_magic;
 	int fatigue_block_time;
 	float armour;
+	unsigned int coins;
 };
 //Game
 struct Game_data{

@@ -14,7 +14,10 @@ enum texture_num{
     tx_h_projectile,
     tx_terrain,
     tx_gunsightpart,
-    tx_wall
+    tx_wall,
+    tx_portal,
+    tx_door,
+    tx_map
 };
 
 enum control{

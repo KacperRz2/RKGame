@@ -28,6 +28,7 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->max_magic = PC_MAGIC;
 	p->fatigue_block_time = 0;
 	p->armour = PC_ARMOUR;
+	p->coins = PC_START_COINS;
 }
 
 extern inline void SetPlayerPosition(Player* const p, const float x, const float y){

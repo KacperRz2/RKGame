@@ -22,7 +22,9 @@ int GraphicsInitiation(Render_data* const data){
 		"img8.bmp",
 		"img9.bmp",
 		"imgA.bmp",
-		"imgB.bmp"
+		"imgB.bmp",
+		"imgC.bmp",
+		"imgD.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -198,15 +200,22 @@ static void RenderMap(Render_data* const rend_data, Player* const p){
 		50.0F,
 		50.0F
 	};
+	SDL_FRect static pc_rect = {
+		0.0F,
+		0.0F,
+		MINIMAP_PC_SIZE,
+		MINIMAP_PC_SIZE
+	};
 	double rotation = RadToDeg(p->direction);
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_compass), NULL, &destination_rect1, -rotation, NULL, SDL_FLIP_NONE);//compass
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_nesw), NULL, &destination_rect0a);
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_arrow), NULL, &destination_rect0b, rotation, NULL, SDL_FLIP_NONE);
-	SDL_SetRenderDrawColor(rend_data->renderer, 255, 255, 255, 0);
 	SDL_SetRenderViewport(rend_data->renderer, &rect);
-	SDL_RenderRect(rend_data->renderer, NULL);
-	SDL_SetRenderDrawColor(rend_data->renderer, 255, 127, 127, 0);
-	SDL_RenderPoint(rend_data->renderer, p->position.x * (map_size / WORLD_W), p->position.y * (map_size / WORLD_H));
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_map), NULL, NULL);
+	SDL_SetRenderDrawColor(rend_data->renderer, 192, 0, 0, 0);
+	pc_rect.x = p->position.x * (map_size / WORLD_W) - half(MINIMAP_PC_SIZE);
+	pc_rect.y = p->position.y * (map_size / WORLD_H) - half(MINIMAP_PC_SIZE);
+	SDL_RenderFillRect(rend_data->renderer, &pc_rect);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 }
 
@@ -409,9 +418,9 @@ static void RenderGunSight(Render_data* const rend_data){
 }
 
 static void RenderStaticThings(Render_data* const rend_data, Game_data* const g_d){
-	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, &g_d->pc, DOOR_SIZE, tx_h_projectile);
-	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, &g_d->pc, DOOR_SIZE, tx_h_projectile);
-	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, &g_d->pc, DOOR_SIZE, tx_h_projectile);
+	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, &g_d->pc, DOOR_SIZE, tx_portal);
+	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, &g_d->pc, DOOR_SIZE, tx_portal);
+	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, &g_d->pc, DOOR_SIZE, tx_door);
 }
 
 static void RenderStaticThing(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num){
@@ -425,4 +434,23 @@ static void RenderStaticThing(Render_data* const rend_data, const float pos_x, c
 		};
 		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_num), NULL, &rect, (double)(-RadToDeg(p->direction)), NULL, SDL_FLIP_NONE);
 	}
+}
+
+void DrawMap(Render_data* const rend_data, World* const w){
+	if(*(rend_data->textures + tx_map) != NULL){
+		SDL_DestroyTexture(*(rend_data->textures + tx_map));
+	}
+	SDL_Surface* surface = SDL_CreateSurface(BIG_SEGMENTS_X, BIG_SEGMENTS_X, SDL_PIXELFORMAT_RGBA8888);
+	for(unsigned int c = 1U; c < SEGMENTS_X - 1U; c += BIG_SEGMENT_SEGMENTS_X){
+		for(unsigned int r = 1U; r < SEGMENTS_Y - 1U; r += BIG_SEGMENT_SEGMENTS_X){
+			if(*(*(w->segments + c) + r) == NULL){
+				SDL_WriteSurfacePixel(surface, (c - 1) / BIG_SEGMENT_SEGMENTS_X, (r - 1) / BIG_SEGMENT_SEGMENTS_X, 0, 0, 0, 255);
+			}else{
+				SDL_WriteSurfacePixel(surface, (c - 1) / BIG_SEGMENT_SEGMENTS_X, (r - 1) / BIG_SEGMENT_SEGMENTS_X, 255, 255, 255, 255);
+			}
+		}
+	}
+	*(rend_data->textures + tx_map) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	SDL_SetTextureScaleMode(*(rend_data->textures + tx_map), SDL_SCALEMODE_NEAREST);
+	SDL_DestroySurface(surface);
 }

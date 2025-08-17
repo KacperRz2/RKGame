@@ -292,10 +292,6 @@ void CreateWorld(World* const world, const float x, const float y){
 			}
 		}
 	}
-	// world->portalA = *(*(world->segments + CollumOrRow(portal0.x)) + CollumOrRow(portal0.y));
-	// world->portalB = *(*(world->segments + CollumOrRow(portal1.x)) + CollumOrRow(portal1.y));
-	// world->door = *(*(world->segments + CollumOrRow(door_position.x)) + CollumOrRow(door_position.y));
-	// if(world->portalA == NULL || world->portalB == NULL || world->door == NULL) exit(-1);
 }
 
 void DestroyWorld(World* const world){
@@ -373,18 +369,6 @@ extern inline float SegmentPositionX(Segment* const s){
 extern inline float SegmentPositionY(Segment* const s){
 	return s->indx.y * SEGMENT_SIZE;
 }
-
-// static unsigned int CollumOrRow(const unsigned int small_plan_position){
-// 	if(small_plan_position == 0){
-// 		return BIG_SEGMENT_SEGMENTS_X / 2U;
-// 	}
-// 	if(small_plan_position == 3){
-// 		return SEGMENTS_X / 2U;
-// 	}
-// 	if(small_plan_position == 6){
-// 		return SEGMENTS_X - BIG_SEGMENT_SEGMENTS_X / 2U;
-// 	}
-// }
 
 static float GetDoorPositionXorY(const unsigned int small_plan_position){
 	if(small_plan_position == 0){

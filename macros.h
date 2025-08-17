@@ -10,7 +10,7 @@
 #define PLAYER_REND_Y               (rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART)
 #define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(rend_data->viewfinder))
 #define BIG_SEGMENTS_X              29U
-#define BIG_SEGMENT_SEGMENTS_X      1U
+#define BIG_SEGMENT_SEGMENTS_X      16U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
 #define SEGMENTS_Y			        SEGMENTS_X
 #define SEGMENT_SIZE		        128.0F
@@ -27,9 +27,10 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        13
+#define TEXTURE_FILES_NUM	        15
 #define TEXTURE_TARGET_NUM	        0
-#define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM)
+#define TEXTURE_CREATED_NUM	        1
+#define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
 #define SIGHT_SQUARED   	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT))
 #define SIGHT_BACK_SQUARED	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT))
 #define FRAME_TIME			        0x400000ULL
@@ -104,5 +105,8 @@
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
 #define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
+#define PC_START_COINS              123U
+#define MINIMAP_PC_SIZE             8.0F
+
 
 #endif

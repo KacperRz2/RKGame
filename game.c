@@ -24,6 +24,7 @@ int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
 void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Game_data game_data;
 	SetGameData(&game_data);
+	DrawMap(rend_data, &game_data.world);
 	unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 	int tps = 0;
 	int tps_count = 0;
