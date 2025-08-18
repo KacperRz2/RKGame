@@ -1,7 +1,7 @@
 #ifndef WORLD_H_
 #define WORLD_H_
 
-void CreateWorld(World* const, const float, const float);
+void CreateWorld(Game_data* const, const float, const float);
 void DestroyWorld(World* const);
 Segment* GetSegment(World* const, const float, const float);
 Segment* GetSegmentByIndx(World* const, const unsigned int, const unsigned int);

@@ -5,8 +5,9 @@
 #include <function.h>
 #include <Player.h>
 #include <Being.h>
+#include <Game.h>
 
-void CreateWorld(World* const world, const float x, const float y){
+void CreateWorld(Game_data* const g_d, const float x, const float y){
 	bool world_plan_base[BIG_SEGMENTS_X][BIG_SEGMENTS_X] = {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -47,6 +48,7 @@ void CreateWorld(World* const world, const float x, const float y){
 		0, 1, 1, 1, 1, 1, 0,
 		0, 0, 1, 1, 1, 0, 0,
 	};
+	World* const world = &g_d->world;
 	Uint64 seed = 2ULL;
 	SDL_srand(seed);
 	SDL_Point portal0;
@@ -290,6 +292,14 @@ void CreateWorld(World* const world, const float x, const float y){
 					}
 				}
 			}
+		}
+	}
+	while(g_d->boxes.num < BOXES_NUM){
+		unsigned int c = SDL_rand(SEGMENTS_X - 2) + 1U;
+		unsigned int r = SDL_rand(SEGMENTS_Y - 2) + 1U;
+		Segment* s = GetSegmentByIndx(world, c, r);
+		if(s != NULL){
+			AddBoxToArray(&g_d->boxes, SegmentPositionX(s) + half(SEGMENT_SIZE), SegmentPositionY(s) + half(SEGMENT_SIZE));
 		}
 	}
 }

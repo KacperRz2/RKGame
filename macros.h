@@ -27,7 +27,7 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        15
+#define TEXTURE_FILES_NUM	        16
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -64,8 +64,8 @@
 #define BEING_HALT_DISTANCE         70.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define UPDATE_BEINGS_INTERVAL      1U
-#define WINDOW_START_W              1600
-#define WINDOW_START_H              900
+#define WINDOW_START_W              1920//1600
+#define WINDOW_START_H              1080//900
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
 #define PC_HP                       3000
 #define PC_FATIGUE                  1000
@@ -105,8 +105,11 @@
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
 #define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
-#define PC_START_COINS              123U
+#define PC_START_COINS              123
 #define MINIMAP_PC_SIZE             8.0F
-
+#define KEYS_NUM                    8U
+#define BOXES_NUM                   64U
+#define BOX_SIZE                    32.0F
+#define BOX_SLOTS                   8
 
 #endif

@@ -24,6 +24,9 @@ typedef struct World World;
 typedef struct Player Player;
 //Game
 typedef struct Game_data Game_data;
+typedef struct Box_element Box_element;
+typedef struct Box Box;
+typedef struct Boxes Boxes;
 
 //other
 struct Walk{
@@ -139,15 +142,30 @@ struct Player{
 	int max_magic;
 	int fatigue_block_time;
 	float armour;
-	unsigned int coins;
+	int coins;
 };
 //Game
+struct Box_element {
+	int type;
+	void* value;
+};
+struct Box {
+	SDL_FPoint location;
+	Box_element elements[BOX_SLOTS];
+};
+struct Boxes {
+	Box* array;
+	unsigned int num;
+};
 struct Game_data{
 	Player pc;
 	Beings_array beings;
 	Projectiles_array projectiles;
 	Projectiles_h_array h_projectiles;
 	World world;
+	Boxes boxes;
+	unsigned int keys;
+	unsigned int needed_keys;
 };
 
 #endif

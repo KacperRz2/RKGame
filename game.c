@@ -81,16 +81,22 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 }
 
 static void SetGameData(Game_data* const g_d){
-	CreateWorld(&g_d->world, WORLD_W, WORLD_H);
+	g_d->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
+	g_d->boxes.num = 0U;
+	CreateWorld(g_d, WORLD_W, WORLD_H);
 	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	g_d->h_projectiles.array = (Projectile_hostile*)SDL_malloc(sizeof(Projectile_hostile) * MAX_PROJECTILES_NUM);
 	g_d->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
 	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL || g_d->h_projectiles.array == NULL){SDL_Quit(); exit(1);}
 	g_d->projectiles.num = 0U;
 	g_d->h_projectiles.num = 0U;
+	g_d->keys = 0U;
+	g_d->needed_keys = KEYS_NUM;
+
 }
 
 static void ClearGameData(Game_data* const g_d){
+	DestroyBoxes(&g_d->boxes);
 	DestroyBeings(&g_d->beings);
     DestroyHProjectiles(&g_d->h_projectiles);
     DestroyProjectiles(&g_d->projectiles);
@@ -107,4 +113,39 @@ static void RareEventsService(Game_data* const g_d, Segment* const player_seg){
 	 	g_d->pc.control_flags &= ~(action);
 	}
 	check_queue = (check_queue + 1) % 2;
+}
+
+extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const float position_y){
+	unsigned int new_box_indx = bxs->num;
+	for(unsigned int i = 0U; i < bxs->num; ++i){
+		if(position_x < (bxs->array + i)->location.x){
+			new_box_indx = i;
+			FreeBoxPlaceInArray(bxs, i);
+			break;
+		}
+	}
+	Box* bx = (bxs->array + new_box_indx);
+	++bxs->num;
+	bx->location.x = position_x;
+	bx->location.y = position_y;
+	AddToBox(bx, 0, box_coins, (void*)32);
+	for(unsigned int i = 1U; i < BOX_SLOTS; ++i){
+		AddToBox(bx, i, box_void, NULL);
+	}
+}
+
+static inline void AddToBox(Box* const bx, const unsigned int slot, const int type, void* const value){
+	(bx->elements + slot)->type = type;
+	(bx->elements + slot)->value = value;
+}
+
+static inline void FreeBoxPlaceInArray(Boxes* const bxs, const unsigned int indx){//make room for new box
+	for(unsigned int i = bxs->num - 1U; i > indx; --i){
+		*(bxs->array + i) = *(bxs->array + i - 1U);
+	}
+}
+
+static void DestroyBoxes(Boxes* const bxs){
+	SDL_free(bxs->array);
+	bxs->num = 0U;
 }

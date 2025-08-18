@@ -9,7 +9,7 @@
 int GraphicsInitiation(Render_data* const data){
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
-	const char* texture_files[TEXTURE_FILES_NUM] = {
+	const char* const texture_files[TEXTURE_FILES_NUM] = {
 		"img0.bmp",
 		"img1.bmp",
 		"img2.bmp",
@@ -24,7 +24,8 @@ int GraphicsInitiation(Render_data* const data){
 		"imgA.bmp",
 		"imgB.bmp",
 		"imgC.bmp",
-		"imgD.bmp"
+		"imgD.bmp",
+		"imgE.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -421,6 +422,9 @@ static void RenderStaticThings(Render_data* const rend_data, Game_data* const g_
 	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, &g_d->pc, DOOR_SIZE, tx_portal);
 	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, &g_d->pc, DOOR_SIZE, tx_portal);
 	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, &g_d->pc, DOOR_SIZE, tx_door);
+	for(unsigned int i = 0U; i < g_d->boxes.num; ++i){
+		RenderStaticThing(rend_data, (g_d->boxes.array + i)->location.x, (g_d->boxes.array + i)->location.y, &g_d->pc, BOX_SIZE, tx_box);
+	}
 }
 
 static void RenderStaticThing(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num){

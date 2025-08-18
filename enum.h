@@ -17,6 +17,7 @@ enum texture_num{
     tx_wall,
     tx_portal,
     tx_door,
+    tx_box,
     tx_map
 };
 
@@ -47,4 +48,14 @@ enum menu_option{
     menu_start,
     menu_quit
 };
+
+enum box_content_type{
+    box_coins,
+    box_scroll,
+    box_key,
+    box_mp,
+    box_map,
+    box_void
+};
+
 #endif
