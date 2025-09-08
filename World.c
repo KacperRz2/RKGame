@@ -279,10 +279,14 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 			if(*(*(world_plan_base + bigc) + bigr) == true){
 				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X + 1U; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++c){
 					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X + 1U; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++r){
+						if(!(c == bigc * BIG_SEGMENT_SEGMENTS_X + 1U || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X || r == bigr * BIG_SEGMENT_SEGMENTS_X + 1U || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X) || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U){
 							*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
 							(*(*(world->segments + c) + r))->indx.x = c;
 							(*(*(world->segments + c) + r))->indx.y = r;
 							(*(*(world->segments + c) + r))->beings.num = 0U;
+						}else{
+							*(*(world->segments + c) + r) = NULL;
+						}
 					}
 				}
 			}else{
@@ -295,8 +299,8 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 		}
 	}
 	while(g_d->boxes.num < BOXES_NUM){
-		unsigned int c = SDL_rand(SEGMENTS_X - 2) + 1U;
-		unsigned int r = SDL_rand(SEGMENTS_Y - 2) + 1U;
+		unsigned int c = SDL_rand(SEGMENTS_X - 3) + 2U;
+		unsigned int r = SDL_rand(SEGMENTS_Y - 3) + 2U;
 		Segment* s = GetSegmentByIndx(world, c, r);
 		if(s != NULL){
 			AddBoxToArray(&g_d->boxes, SegmentPositionX(s) + half(SEGMENT_SIZE), SegmentPositionY(s) + half(SEGMENT_SIZE));
@@ -357,17 +361,17 @@ void StartLevel(Game_data* const g_d){
 static SDL_FPoint GetStartPosition(World* const w){
 	SDL_FPoint result;
 	if(!(w->door.x < WORLD_SIZE / 4 || w->portalA.x < WORLD_SIZE / 4 || w->portalB.x < WORLD_SIZE / 4)){
-		result.x = SEGMENT_SIZE * 1.25F;
+		result.x = SEGMENT_SIZE * 2.25F;
 		result.y = half(WORLD_SIZE);
 	}else if(!(w->door.y < WORLD_SIZE / 4 || w->portalA.y < WORLD_SIZE / 4 || w->portalB.y < WORLD_SIZE / 4)){
 		result.x = half(WORLD_SIZE);
-		result.y = SEGMENT_SIZE * 1.25F;
+		result.y = SEGMENT_SIZE * 2.25F;
 	}else if(!(w->door.x > WORLD_SIZE / 4 * 3 || w->portalA.x > WORLD_SIZE / 4 * 3 || w->portalB.x > WORLD_SIZE / 4 * 3)){
-		result.x = WORLD_SIZE - SEGMENT_SIZE * 1.25F;
+		result.x = WORLD_SIZE - SEGMENT_SIZE * 2.25F;
 		result.y = half(WORLD_SIZE);
 	}else if(!(w->door.y > WORLD_SIZE / 4 * 3 || w->portalA.y > WORLD_SIZE / 4 * 3 || w->portalB.y > WORLD_SIZE / 4 * 3)){
 		result.x = half(WORLD_SIZE);
-		result.y = WORLD_SIZE - SEGMENT_SIZE * 1.25F;
+		result.y = WORLD_SIZE - SEGMENT_SIZE * 2.25F;
 	}
 	return result;
 }

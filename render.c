@@ -244,6 +244,8 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 	SDL_RenderDebugTextFormat(rend, 10, 170, "projectiles: %d", g_d->projectiles.num);
 	SDL_RenderDebugTextFormat(rend, 10, 180, "projectiles: %d", g_d->h_projectiles.num);
 	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", g_d->pc.hit_points);
+	SDL_RenderDebugTextFormat(rend, 10, 200, "coins: %d", g_d->pc.coins);
+	SDL_RenderDebugTextFormat(rend, 10, 210, "boxes: %d", g_d->boxes.num);
 	SDL_RenderDebugTextFormat(rend, 10, 260, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
 }
 
@@ -445,8 +447,8 @@ void DrawMap(Render_data* const rend_data, World* const w){
 		SDL_DestroyTexture(*(rend_data->textures + tx_map));
 	}
 	SDL_Surface* surface = SDL_CreateSurface(BIG_SEGMENTS_X, BIG_SEGMENTS_X, SDL_PIXELFORMAT_RGBA8888);
-	for(unsigned int c = 1U; c < SEGMENTS_X - 1U; c += BIG_SEGMENT_SEGMENTS_X){
-		for(unsigned int r = 1U; r < SEGMENTS_Y - 1U; r += BIG_SEGMENT_SEGMENTS_X){
+	for(unsigned int c = BIG_SEGMENT_SEGMENTS_X / 2; c < SEGMENTS_X - 1U; c += BIG_SEGMENT_SEGMENTS_X){
+		for(unsigned int r = BIG_SEGMENT_SEGMENTS_X / 2; r < SEGMENTS_Y - 1U; r += BIG_SEGMENT_SEGMENTS_X){
 			if(*(*(w->segments + c) + r) == NULL){
 				SDL_WriteSurfacePixel(surface, (c - 1) / BIG_SEGMENT_SEGMENTS_X, (r - 1) / BIG_SEGMENT_SEGMENTS_X, 0, 0, 0, 255);
 			}else{

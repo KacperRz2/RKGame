@@ -10,5 +10,8 @@ void AddBoxToArray(Boxes* const, const float, const float);
 static void AddToBox(Box* const, const unsigned int, const int, void* const);
 static void FreeBoxPlaceInArray(Boxes* const, const unsigned int);
 static void DestroyBoxes(Boxes* const);
+static int GetNearbyBoxIndx(Game_data* const);
+static void LootBox(Game_data* const, const unsigned int);
+static void DestroyBoxInArray(Boxes* const, unsigned int);
 
 #endif

@@ -111,8 +111,14 @@ static void RareEventsService(Game_data* const g_d, Segment* const player_seg){
 	}else if(check_queue == 1 && SDL_fabsf(g_d->pc.position.x - g_d->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.portalB.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
 		SetPlayerPosition(&g_d->pc, g_d->world.portalA.x, g_d->world.portalA.y);
 	 	g_d->pc.control_flags &= ~(action);
+	}else if(check_queue == 2 && (g_d->pc.control_flags & action) && g_d->boxes.num > 0U){
+		int box_indx = GetNearbyBoxIndx(g_d);
+		if(box_indx != -1){
+			LootBox(g_d, box_indx);
+	 		g_d->pc.control_flags &= ~(action);
+		}
 	}
-	check_queue = (check_queue + 1) % 2;
+	check_queue = (check_queue + 1) % 3;
 }
 
 extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const float position_y){
@@ -124,8 +130,8 @@ extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const
 			break;
 		}
 	}
-	Box* bx = (bxs->array + new_box_indx);
 	++bxs->num;
+	Box* bx = (bxs->array + new_box_indx);
 	bx->location.x = position_x;
 	bx->location.y = position_y;
 	AddToBox(bx, 0, box_coins, (void*)32);
@@ -140,7 +146,7 @@ static inline void AddToBox(Box* const bx, const unsigned int slot, const int ty
 }
 
 static inline void FreeBoxPlaceInArray(Boxes* const bxs, const unsigned int indx){//make room for new box
-	for(unsigned int i = bxs->num - 1U; i > indx; --i){
+	for(unsigned int i = bxs->num; i > indx; --i){
 		*(bxs->array + i) = *(bxs->array + i - 1U);
 	}
 }
@@ -148,4 +154,71 @@ static inline void FreeBoxPlaceInArray(Boxes* const bxs, const unsigned int indx
 static void DestroyBoxes(Boxes* const bxs){
 	SDL_free(bxs->array);
 	bxs->num = 0U;
+}
+
+static int GetNearbyBoxIndx(Game_data* const g_d){
+	int left = 0;
+	int right = g_d->boxes.num;
+	int center;
+	int new_center = (right - left) / 2 + left;
+	do{
+		center = new_center;
+		if(SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
+			break;
+		}else if(g_d->pc.position.x > (g_d->boxes.array + center)->location.x){
+			left = center;
+		}else{
+			right = center;
+		}
+		new_center = (right - left) / 2 + left;
+	}while(new_center != center);
+	if(SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
+		if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+			return center;
+		}
+	}else{
+		return -1;
+	}
+	int search_range = 1;
+	while(1){
+		if(center + search_range >= g_d->boxes.num || SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center + search_range)->location.x) >= half(BOX_SIZE + PLAYER_SIZE)){
+			break;
+		}
+		if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center + search_range)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+			return center + search_range;
+		}
+		++search_range;
+	}
+	search_range = 1;
+	while(1){
+		if(center - search_range < 0 || SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center - search_range)->location.x) >= half(BOX_SIZE + PLAYER_SIZE)){
+			break;
+		}
+		if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center - search_range)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+			return center - search_range;
+		}
+		++search_range;
+	}
+	return -1;
+}
+
+static inline void LootBox(Game_data* const g_d, const unsigned int box_indx){
+	Box_element* elem = (g_d->boxes.array + box_indx)->elements;
+	int element_type = elem->type;
+	while(element_type != box_void){
+		if(element_type == box_coins){
+			g_d->pc.coins += (int)((intptr_t)elem->value);
+		}
+		++elem;
+		element_type = elem->type;
+	}
+	DestroyBoxInArray(&g_d->boxes, box_indx);
+}
+
+static inline void DestroyBoxInArray(Boxes* const bxs, unsigned int indx){
+	while(indx < bxs->num - 1U){
+		*(bxs->array + indx) = *(bxs->array + indx + 1U);
+		++indx;
+	}
+	--bxs->num;
 }

@@ -50,12 +50,12 @@ enum menu_option{
 };
 
 enum box_content_type{
+    box_void,
     box_coins,
     box_scroll,
     box_key,
     box_mp,
-    box_map,
-    box_void
+    box_map
 };
 
 #endif

@@ -64,8 +64,8 @@
 #define BEING_HALT_DISTANCE         70.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define UPDATE_BEINGS_INTERVAL      1U
-#define WINDOW_START_W              1920//1600
-#define WINDOW_START_H              1080//900
+#define WINDOW_START_W              1600
+#define WINDOW_START_H              900
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
 #define PC_HP                       3000
 #define PC_FATIGUE                  1000
@@ -108,7 +108,7 @@
 #define PC_START_COINS              123
 #define MINIMAP_PC_SIZE             8.0F
 #define KEYS_NUM                    8U
-#define BOXES_NUM                   64U
+#define BOXES_NUM                   0x200U
 #define BOX_SIZE                    32.0F
 #define BOX_SLOTS                   8
 
