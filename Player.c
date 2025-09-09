@@ -25,7 +25,6 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->magic_points = PC_MAGIC;
 	p->max_fatigue = PC_FATIGUE;
 	p->max_h_p = PC_HP;
-	p->max_magic = PC_MAGIC;
 	p->fatigue_block_time = 0;
 	p->armour = PC_ARMOUR;
 	p->coins = PC_START_COINS;
@@ -82,8 +81,8 @@ static void UpdatePlayerMove(Game_data* const g_d){
 		g_d->pc.velocity *= DECELERATION;
 		if(g_d->pc.velocity < 0.05F) g_d->pc.velocity = 0.0F;
 	}
-	if(!(g_d->pc.control_flags & forward) && g_d->pc.control_flags & dodge){
-		if(g_d->pc.fatigue_points >= PC_DODGE_FATIG){
+	if(g_d->pc.control_flags & dodge && !(g_d->pc.control_flags & forward)){
+		if(g_d->pc.fatigue_points >= PC_DODGE_FATIG && g_d->pc.fatigue_block_time < 1){
 			g_d->pc.fatigue_points -= PC_DODGE_FATIG;
 			g_d->pc.fatigue_block_time = PC_DODGE_FATIG_BLOCK_TIME;
 			if(!(g_d->pc.control_flags & tmp)){

@@ -257,14 +257,14 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 		30.0F
 	};
 	const SDL_FRect rect1a = {
-		10.0F,
+		half(rend_data->window_w - rend_data->viewfinder) + rend_data->viewfinder + 10.0F,
 		half(rend_data->window_h) + 40.0F,
-		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
+		(rend_data->window_w - rend_data->viewfinder) * 0.48F,
 		30.0F
 	};
 	const SDL_FRect rect2a = {
 		10.0F,
-		half(rend_data->window_h) + 80.0F,
+		half(rend_data->window_h) + 40.0F,
 		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
 		30.0F
 	};
@@ -274,29 +274,24 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 		0.0F,
 		28.0F
 	};
-	SDL_FRect rect1b = {
+	SDL_FRect rect2b = {
 		11.0F,
 		half(rend_data->window_h) + 41.0F,
 		0.0F,
 		28.0F
 	};
-	SDL_FRect rect2b = {
-		11.0F,
-		half(rend_data->window_h) + 81.0F,
-		0.0F,
-		28.0F
-	};
 	rect0b.w = (float)p->hit_points / (float)p->max_h_p * (rect0a.w - 2.0F);
-	rect1b.w = (float)p->magic_points / (float)p->max_magic * (rect1a.w - 2.0F);
-	rect2b.w = (float)p->fatigue_points / (float)p->max_fatigue * (rect1a.w - 2.0F);
+	rect2b.w = (float)p->fatigue_points / (float)p->max_fatigue * (rect2a.w - 2.0F);
 	SDL_SetRenderDrawColor(rend_data->renderer, 255U, 255U, 255U, 0U);
 	SDL_RenderRect(rend_data->renderer, &rect0a);
 	SDL_RenderRect(rend_data->renderer, &rect1a);
 	SDL_RenderRect(rend_data->renderer, &rect2a);
 	SDL_SetRenderDrawColor(rend_data->renderer, 255U, 0U, 0U, 0U);
 	SDL_RenderFillRect(rend_data->renderer, &rect0b);
-	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 127U, 255U, 0U);
-	SDL_RenderFillRect(rend_data->renderer, &rect1b);
+	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 127U, 255U, 255U);
+	SDL_SetRenderScale(rend_data->renderer, 2.0F, 4.0F);
+	SDL_RenderDebugTextFormat(rend_data->renderer, (half(rend_data->window_w - rend_data->viewfinder) + rend_data->viewfinder + 11.0F) * 0.5F, (half(rend_data->window_h) + 41.0F) * 0.25F, "%d", p->magic_points);
+	SDL_SetRenderScale(rend_data->renderer, 1.0F, 1.0F);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 255U, 0U, 0U);
 	SDL_RenderFillRect(rend_data->renderer, &rect2b);
 }

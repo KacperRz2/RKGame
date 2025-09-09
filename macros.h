@@ -69,7 +69,8 @@
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
 #define PC_HP                       3000
 #define PC_FATIGUE                  1000
-#define PC_MAGIC                    100
+#define PC_MAGIC                    0x10
+#define PC_M_MAGIC                  0x10000000
 #define PC_ARMOUR                   0.875F
 #define MOVING_BACK_VELO_MODI       0.93F
 #define PC_DODGE_FATIG              100
@@ -109,7 +110,7 @@
 #define MINIMAP_PC_SIZE             8.0F
 #define KEYS_NUM                    8U
 #define BOXES_NUM                   0x200U
-#define BOX_SIZE                    32.0F
+#define BOX_SIZE                    48.0F
 #define BOX_SLOTS                   8
 
 #endif

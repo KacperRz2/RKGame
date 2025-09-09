@@ -139,7 +139,6 @@ struct Player{
 	int magic_points;
 	int max_h_p;
 	int max_fatigue;
-	int max_magic;
 	int fatigue_block_time;
 	float armour;
 	int coins;
