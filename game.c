@@ -48,12 +48,12 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 			}
 			ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 		}else{
+			RareEventsService(&game_data, player_seg);
 			--ticks_to_update_beings;
 		}
 		if(game_data.pc.hit_points < 1){
             break;
 		}
-		RareEventsService(&game_data, player_seg);
 
 		now = SDL_GetTicksNS();
 		if(now > prev_frame_time + FRAME_TIME){
@@ -117,14 +117,17 @@ static void RareEventsService(Game_data* const g_d, Segment* const player_seg){
 			LootBox(g_d, box_indx);
 	 		g_d->pc.control_flags &= ~(action);
 		}
+	}else if(check_queue == 3 && g_d->keys >= g_d->needed_keys && SDL_fabsf(g_d->pc.position.x - g_d->world.door.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.door.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
+		g_d->pc.hit_points = 0;
+	 	g_d->pc.control_flags &= ~(action);
 	}
-	check_queue = (check_queue + 1) % 3;
+	check_queue = (check_queue + 1) % 4;
 }
 
 extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const float position_y){
 	unsigned int new_box_indx = bxs->num;
 	for(unsigned int i = 0U; i < bxs->num; ++i){
-		if(position_x < (bxs->array + i)->location.x || (position_x == (bxs->array + i)->location.x && position_y < (bxs->array + i)->location.y)){
+		if(position_x < (bxs->array + i)->location.x){
 			new_box_indx = i;
 			FreeBoxPlaceInArray(bxs, i);
 			break;
@@ -135,8 +138,9 @@ extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const
 	bx->location.x = position_x;
 	bx->location.y = position_y;
 	AddToBox(bx, 0, box_coins, (void*)32);
-	AddToBox(bx, 1, box_mp, (void*)PC_MAGIC);
-	for(unsigned int i = 2U; i < BOX_SLOTS; ++i){
+	AddToBox(bx, 1, box_key, (void*)1);
+	AddToBox(bx, 2, box_mp, (void*)PC_MAGIC);
+	for(unsigned int i = 3U; i < BOX_SLOTS; ++i){
 		AddToBox(bx, i, box_mp, (void*)0);
 	}
 }
@@ -165,13 +169,20 @@ static int GetNearbyBoxIndx(Game_data* const g_d){
 	do{
 		center = new_center;
 		if(SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
-			if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
-				return center;
-			}else if(g_d->pc.position.y > (g_d->boxes.array + center)->location.y){
-				left = center;
-			}else{
-				right = center;
-			}
+			do{
+				if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+					return center;
+				}
+				++center;
+			}while(center < g_d->boxes.num && SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
+			center = new_center - 1;
+			do{
+				if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+					return center;
+				}
+				--center;
+			}while(center >= 0 && SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
+			return -1;
 		}else if(g_d->pc.position.x > (g_d->boxes.array + center)->location.x){
 			left = center;
 		}else{
@@ -189,6 +200,8 @@ static inline void LootBox(Game_data* const g_d, const unsigned int box_indx){
 		element_type = elem->type;
 		if(element_type == box_coins){
 			g_d->pc.coins += (int)((intptr_t)elem->value);
+		}else if(element_type == box_key){
+			g_d->keys += (int)((intptr_t)elem->value);
 		}else if(element_type == box_mp){
 			g_d->pc.magic_points += (int)((intptr_t)elem->value);
 			break;

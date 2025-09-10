@@ -246,6 +246,8 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", g_d->pc.hit_points);
 	SDL_RenderDebugTextFormat(rend, 10, 200, "coins: %d", g_d->pc.coins);
 	SDL_RenderDebugTextFormat(rend, 10, 210, "boxes: %d", g_d->boxes.num);
+	SDL_RenderDebugTextFormat(rend, 10, 220, "keys: %d", g_d->keys);
+	SDL_RenderDebugTextFormat(rend, 10, 230, "needed: %d", g_d->needed_keys);
 	SDL_RenderDebugTextFormat(rend, 10, 260, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
 }
 

@@ -303,7 +303,7 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 		unsigned int r = SDL_rand(SEGMENTS_Y - 3) + 2U;
 		Segment* s = GetSegmentByIndx(world, c, r);
 		if(s != NULL){
-			AddBoxToArray(&g_d->boxes, SegmentPositionX(s) + half(SEGMENT_SIZE), SegmentPositionY(s) + half(SEGMENT_SIZE));
+			AddBoxToArray(&g_d->boxes, SegmentPositionX(s) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE, SegmentPositionY(s) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE);
 		}
 	}
 }

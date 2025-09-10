@@ -110,7 +110,7 @@
 #define MINIMAP_PC_SIZE             8.0F
 #define KEYS_NUM                    8U
 #define BOXES_NUM                   0x200U
-#define BOX_SIZE                    48.0F
+#define BOX_SIZE                    32.0F
 #define BOX_SLOTS                   8
 
 #endif
