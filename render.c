@@ -327,7 +327,11 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	RenderProjectiles(rend_data, g_d);
 	RenderHProjectiles(rend_data, g_d);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
-	RenderPlayer(rend_data, &g_d->pc.blade);
+	if(g_d->pc.control_flags & range_mode){
+		RenderPlayerRanger(rend_data);
+	}else{
+		RenderPlayer(rend_data, &g_d->pc.blade);
+	}
 	RenderGunSight(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	RenderMap(rend_data, &g_d->pc);
@@ -456,4 +460,14 @@ void DrawMap(Render_data* const rend_data, World* const w){
 	*(rend_data->textures + tx_map) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
 	SDL_SetTextureScaleMode(*(rend_data->textures + tx_map), SDL_SCALEMODE_NEAREST);
 	SDL_DestroySurface(surface);
+}
+
+static void RenderPlayerRanger(Render_data* const rend_data){
+	const SDL_FRect rect = {
+		VIEWFINDER_CENTER - half(PLAYER_SIZE),
+		VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,
+		(float)PLAYER_SIZE,
+		(float)PLAYER_SIZE
+	};
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect);
 }

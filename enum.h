@@ -30,8 +30,9 @@ enum control{
     run = 1 << 5,
     tmp0 = 1 << 6,
     attack = 1 << 7,
-    fire = 1 << 8,
-    action = 1 << 9
+    block = 1 << 8,
+    action = 1 << 9,
+    range_mode = 1 << 10
 };
 
 enum being_status{

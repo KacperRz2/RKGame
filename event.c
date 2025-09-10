@@ -25,6 +25,8 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->control_flags |= run; break;
 			case SDL_SCANCODE_E:
 				p->control_flags |= action; break;
+			case SDL_SCANCODE_Q:
+				p->control_flags ^= range_mode; break;
 			case SDL_SCANCODE_H:
 				p->control_flags ^= tmp0; break;
 			default: break;
@@ -54,7 +56,7 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				case SDL_BUTTON_LEFT:
 					p->control_flags ^= attack; break;
 				case SDL_BUTTON_RIGHT:
-					p->control_flags ^= fire; break;
+					p->control_flags ^= block; break;
 				default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_UP){
@@ -62,7 +64,7 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				case SDL_BUTTON_LEFT:
 					p->control_flags &= ~(attack); break;
 				case SDL_BUTTON_RIGHT:
-					p->control_flags &= ~(fire); break;
+					p->control_flags &= ~(block); break;
 				default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_MOTION){

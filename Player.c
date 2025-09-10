@@ -136,8 +136,11 @@ static void UpdatePlayerPoints(Player* const p){
 }
 
 void UpdatePlayer(Game_data* const g_d){
-	UpdatePlayerFire(g_d);
-	UpdatePlayerBlade(g_d);
+	if(g_d->pc.control_flags & range_mode){
+		UpdatePlayerFire(g_d);
+	}else{
+		UpdatePlayerBlade(g_d);
+	}
 	UpdatePlayerDirection(&g_d->pc);
 	UpdatePlayerMove(g_d);
 	UpdatePlayerPoints(&g_d->pc);
@@ -326,7 +329,7 @@ extern inline void DamagePlayer(Player* const p, const int damage){
 
 static void UpdatePlayerFire(Game_data* const g_d){
 	static int shoot_reload = 0;
-	if(g_d->pc.control_flags & fire && shoot_reload <= 0 && g_d->projectiles.num < MAX_PROJECTILES_NUM){
+	if(g_d->pc.control_flags & attack && shoot_reload <= 0 && g_d->projectiles.num < MAX_PROJECTILES_NUM){
 		AddProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, TEST_DAMAGE, TEST_PENETRATION);
 		shoot_reload = PC_SHOOT_RELOAD;
 	}

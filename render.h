@@ -21,5 +21,6 @@ static void RenderGunSight(Render_data* const);
 static void RenderStaticThings(Render_data* const, Game_data* const);
 static void RenderStaticThing(Render_data* const, const float, const float, Player* const, const float, const int);
 void DrawMap(Render_data* const, World* const);
+static void RenderPlayerRanger(Render_data* const);
 
 #endif
