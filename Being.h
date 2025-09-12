@@ -22,6 +22,8 @@ static void UpdateBeingWalk(Being* const, World* const);
 static void UpdateBeingIdle(Being* const, const float);
 static bool UpdateBeingShoot(Being* const, Projectiles_h_array* const);
 static void MoveStrikingBeing(Being* const, float const, float const, float const, World* const);
+static void MoveBackStrikingBeing(Being* const, float const, float const, float const, World* const);
+static void SetBeingPositionIfAllowed(Being* const, float const, float const, World* const);
 static void UpdateBeingStrike(Being* const, Player* const, float const, float const, float const, World* const);
 static void UpdateBeingFollow(Being* const, float const, float const, float const, World* const);
 

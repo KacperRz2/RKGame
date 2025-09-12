@@ -18,6 +18,7 @@ enum texture_num{
     tx_portal,
     tx_door,
     tx_box,
+    tx_barrier,
     tx_map
 };
 

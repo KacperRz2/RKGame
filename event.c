@@ -54,9 +54,9 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
 			switch (e->button.button){
 				case SDL_BUTTON_LEFT:
-					p->control_flags ^= attack; break;
+					p->control_flags |= attack; break;
 				case SDL_BUTTON_RIGHT:
-					p->control_flags ^= block; break;
+					p->control_flags |= block; break;
 				default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_UP){

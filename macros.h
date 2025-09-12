@@ -27,7 +27,7 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        16
+#define TEXTURE_FILES_NUM	        17
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -62,6 +62,7 @@
 #define BEING_RELOAD_TICKS          128
 #define PROJECTILE_VELOCITY         4.0F
 #define BEING_HALT_DISTANCE         70.0F
+#define BEING_MIN_DISTANCE          64.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define UPDATE_BEINGS_INTERVAL      1U
 #define WINDOW_START_W              1600
@@ -95,11 +96,11 @@
 #define VIEWFINDER_WINDOW_H_PART    0.984375F
 #define VIEWFINDER_SIZE             (rend_data->window_h * VIEWFINDER_WINDOW_H_PART)
 #define BLADE_HANDLER_POSITION      0.85F
-#define PC_SHOOT_RELOAD             8
+#define PC_SHOOT_RELOAD             64
 #define GUN_SIGHT_SPREAD_MIN        8.0F
 #define GUN_SIGHT_SPREAD_RANGE      (GUN_SIGHT_SPREAD_MIN * 4.0F)
 #define GUN_SIGHT_MIN_DISTANCE      PLAYER_SIZE
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x100U)
+#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x80U)
 #define TEST_BEING_SIZE             32
 #define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
 #define TEST_BEING_HP               100

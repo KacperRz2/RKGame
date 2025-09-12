@@ -3,7 +3,7 @@
 
 int GraphicsInitiation(Render_data* const);
 void SetRenderData(Render_data* const, const float, const float);
-static void RenderPlayer(Render_data* const, Blade* const);
+static void RenderBlade(Render_data* const, Blade* const);
 static void RenderProjectiles(Render_data* const, Game_data* const);
 static void RenderHProjectiles(Render_data* const, Game_data* const);
 static void RenderBeings(Render_data* const, Game_data* const);
@@ -21,6 +21,7 @@ static void RenderGunSight(Render_data* const);
 static void RenderStaticThings(Render_data* const, Game_data* const);
 static void RenderStaticThing(Render_data* const, const float, const float, Player* const, const float, const int);
 void DrawMap(Render_data* const, World* const);
-static void RenderPlayerRanger(Render_data* const);
+static void RenderPlayer(Render_data* const);
+static void RenderBarrier(Render_data* const);
 
 #endif

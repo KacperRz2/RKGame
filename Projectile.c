@@ -91,7 +91,11 @@ void DestroyHProjectiles(Projectiles_h_array* const prs){
 static inline bool ProjectileHitsPlayerOrLost(Projectile_hostile* const pr, Player* const p){
 	float distance_squated = pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y);
 	if(distance_squated < pow2(half(PLAYER_SIZE))){
-		DamagePlayer(p, pr->damage);
+		if(p->control_flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
+			HitBarrier(p, pr->damage);
+		}else{
+			DamagePlayer(p, pr->damage);
+		}
 		return true;
 	}
 	if(distance_squated > pow2(SEGMENT_SIZE * PROJECTILE_RAN_SEG)){

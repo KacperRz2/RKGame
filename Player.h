@@ -20,5 +20,6 @@ bool PointInPlayer(const float, const float, Player* const);
 void DamagePlayer(Player* const, const int);
 static void UpdatePlayerFire(Game_data* const);
 void HaltPlayer(Player* const);
+void HitBarrier(Player* const, const int);
 
 #endif

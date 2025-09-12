@@ -81,33 +81,37 @@ static void UpdatePlayerMove(Game_data* const g_d){
 		g_d->pc.velocity *= DECELERATION;
 		if(g_d->pc.velocity < 0.05F) g_d->pc.velocity = 0.0F;
 	}
-	if(g_d->pc.control_flags & dodge && !(g_d->pc.control_flags & forward)){
-		if(g_d->pc.fatigue_points >= PC_DODGE_FATIG && g_d->pc.fatigue_block_time < 1){
-			g_d->pc.fatigue_points -= PC_DODGE_FATIG;
-			g_d->pc.fatigue_block_time = PC_DODGE_FATIG_BLOCK_TIME;
-			if(!(g_d->pc.control_flags & tmp)){
-				move_direction = g_d->pc.direction + SDL_PI_F;
+	if(!(g_d->pc.control_flags & block)){
+		if(g_d->pc.control_flags & dodge && !(g_d->pc.control_flags & forward)){
+			if(g_d->pc.fatigue_points >= PC_DODGE_FATIG && g_d->pc.fatigue_block_time < 1){
+				g_d->pc.fatigue_points -= PC_DODGE_FATIG;
+				g_d->pc.fatigue_block_time = PC_DODGE_FATIG_BLOCK_TIME;
+				if(!(g_d->pc.control_flags & tmp)){
+					move_direction = g_d->pc.direction + SDL_PI_F;
+				}
+				g_d->pc.velocity = PC_DODGE_VELOCITY;
+			}else{
+				g_d->pc.fatigue_block_time += PC_FAILURE_FATIG_BLOCK_TIME;
+				if(!(g_d->pc.control_flags & tmp)){
+					move_direction = g_d->pc.direction + SDL_PI_F;
+				}
+				g_d->pc.velocity = PC_FAILURE_VELOCITY;
 			}
-			g_d->pc.velocity = PC_DODGE_VELOCITY;
-		}else{
-			g_d->pc.fatigue_block_time += PC_FAILURE_FATIG_BLOCK_TIME;
-			if(!(g_d->pc.control_flags & tmp)){
-				move_direction = g_d->pc.direction + SDL_PI_F;
-			}
-			g_d->pc.velocity = PC_FAILURE_VELOCITY;
+			g_d->pc.control_flags &= ~(dodge);
 		}
-		g_d->pc.control_flags &= ~(dodge);
-	}
-	if((g_d->pc.control_flags & (run | forward | back)) == (run | forward)){
-		if(g_d->pc.fatigue_points <= 1){
-			g_d->pc.max_velocity = PLAYER_VELOCITY;
-			g_d->pc.control_flags &= ~(run);
+		if((g_d->pc.control_flags & (run | forward | back)) == (run | forward)){
+			if(g_d->pc.fatigue_points <= 1){
+				g_d->pc.max_velocity = PLAYER_VELOCITY;
+				g_d->pc.control_flags &= ~(run);
+			}else{
+				g_d->pc.max_velocity = RUN_VELOCITY;
+				--(g_d->pc.fatigue_points);
+			}
 		}else{
-			g_d->pc.max_velocity = RUN_VELOCITY;
-			--(g_d->pc.fatigue_points);
+			g_d->pc.max_velocity = PLAYER_VELOCITY;
 		}
 	}else{
-		g_d->pc.max_velocity = PLAYER_VELOCITY;
+		g_d->pc.max_velocity = half(PLAYER_VELOCITY);
 	}
 	if(g_d->pc.velocity > 0.0F){
 		MovePlayer(g_d, SDL_sinf(move_direction) * g_d->pc.velocity, -SDL_cosf(move_direction) * g_d->pc.velocity);
@@ -130,19 +134,23 @@ static void UpdatePlayerPoints(Player* const p){
 		}else if(p->fatigue_points < p->max_fatigue){
 			++(p->fatigue_points);
 		}
-		count = PC_FATIGUE_GAIN_INTERVAL;
+		if(p->control_flags & block){
+			count = PC_FATIGUE_GAIN_INTERVAL * 2;
+		}else{
+			count = PC_FATIGUE_GAIN_INTERVAL;
+		}
 	}
 	--count;
 }
 
 void UpdatePlayer(Game_data* const g_d){
+	UpdatePlayerDirection(&g_d->pc);
+	UpdatePlayerMove(g_d);
 	if(g_d->pc.control_flags & range_mode){
 		UpdatePlayerFire(g_d);
 	}else{
 		UpdatePlayerBlade(g_d);
 	}
-	UpdatePlayerDirection(&g_d->pc);
-	UpdatePlayerMove(g_d);
 	UpdatePlayerPoints(&g_d->pc);
 }
 
@@ -338,4 +346,8 @@ static void UpdatePlayerFire(Game_data* const g_d){
 
 extern inline void HaltPlayer(Player* const p){
 	p->velocity = 0.0F;
+}
+
+extern inline void HitBarrier(Player* const p, const int damage){
+	p->fatigue_points /= 2;
 }

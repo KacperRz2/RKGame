@@ -25,7 +25,8 @@ int GraphicsInitiation(Render_data* const data){
 		"imgB.bmp",
 		"imgC.bmp",
 		"imgD.bmp",
-		"imgE.bmp"
+		"imgE.bmp",
+		"imgF.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -86,13 +87,13 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 	rend_data->visible_rect.h = rend_data->viewfinder;
 }
 
-static void RenderPlayer(Render_data* const rend_data, Blade* const blade){
-	const SDL_FRect rect = {
-		VIEWFINDER_CENTER - half(PLAYER_SIZE),
-		VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,
-		(float)PLAYER_SIZE,
-		(float)PLAYER_SIZE
-	};
+static void RenderBlade(Render_data* const rend_data, Blade* const blade){
+	// const SDL_FRect rect = {
+	// 	VIEWFINDER_CENTER - half(PLAYER_SIZE),
+	// 	VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,
+	// 	(float)PLAYER_SIZE,
+	// 	(float)PLAYER_SIZE
+	// };
 	static SDL_FRect rect_blade = {
 		0.0F,
 		0.0F,
@@ -105,7 +106,7 @@ static void RenderPlayer(Render_data* const rend_data, Blade* const blade){
 	};
 	rect_blade.x = (VIEWFINDER_CENTER - half(BLADE_SIZE)) + blade->position.x;
 	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * BLADE_HANDLER_POSITION + PLAYER_REND_Y_SHIFT) - blade->position.y;
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect);
+	// SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect);
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
 }
 
@@ -164,13 +165,14 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 				b->type->size
 			};
 			float being_direction = b->direction - g_d->pc.direction;
-
-			float sine = SineSafe(being_direction);
-			float cosine = CosiSafe(being_direction);
-			rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - half(BLADE_SIZE);
-			rect_blade.y = point.y + (b->blade.position.x * sine - b->blade.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
+			if(b->status == follow || b->status == strike){
+				float sine = SineSafe(being_direction);
+				float cosine = CosiSafe(being_direction);
+				rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - half(BLADE_SIZE);
+				rect_blade.y = point.y + (b->blade.position.x * sine - b->blade.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
+				SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being_blade), NULL, &rect_blade, (double)RadToDeg(b->blade.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
+			}
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
-			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being_blade), NULL, &rect_blade, (double)RadToDeg(b->blade.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
 		}
 	}
 }
@@ -323,14 +325,16 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	RenderTerrain(rend_data, g_d);
 	RenderStaticThings(rend_data, g_d);
-	RenderBeings(rend_data, g_d);
 	RenderProjectiles(rend_data, g_d);
+	if(!(g_d->pc.control_flags & range_mode)){
+		RenderBlade(rend_data, &g_d->pc.blade);
+	}
+	RenderBeings(rend_data, g_d);
 	RenderHProjectiles(rend_data, g_d);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
-	if(g_d->pc.control_flags & range_mode){
-		RenderPlayerRanger(rend_data);
-	}else{
-		RenderPlayer(rend_data, &g_d->pc.blade);
+	RenderPlayer(rend_data);
+	if(g_d->pc.control_flags & block){
+		RenderBarrier(rend_data);
 	}
 	RenderGunSight(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
@@ -462,7 +466,7 @@ void DrawMap(Render_data* const rend_data, World* const w){
 	SDL_DestroySurface(surface);
 }
 
-static void RenderPlayerRanger(Render_data* const rend_data){
+static void RenderPlayer(Render_data* const rend_data){
 	const SDL_FRect rect = {
 		VIEWFINDER_CENTER - half(PLAYER_SIZE),
 		VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,
@@ -470,4 +474,14 @@ static void RenderPlayerRanger(Render_data* const rend_data){
 		(float)PLAYER_SIZE
 	};
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect);
+}
+
+static void RenderBarrier(Render_data* const rend_data){
+	const SDL_FRect rect = {
+		VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F),
+		VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F) + PLAYER_REND_Y_SHIFT,
+		(float)PLAYER_SIZE * 2.0F,
+		(float)PLAYER_SIZE * 2.0F
+	};
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_barrier), NULL, &rect);
 }
