@@ -146,11 +146,9 @@ static void UpdatePlayerPoints(Player* const p){
 void UpdatePlayer(Game_data* const g_d){
 	UpdatePlayerDirection(&g_d->pc);
 	UpdatePlayerMove(g_d);
-	if(g_d->pc.control_flags & range_mode){
-		UpdatePlayerFire(g_d);
-	}else{
-		UpdatePlayerBlade(g_d);
-	}
+	UpdatePlayerPush(g_d);
+	UpdatePlayerFire(g_d);
+	UpdatePlayerBlade(g_d);
 	UpdatePlayerPoints(&g_d->pc);
 }
 
@@ -170,6 +168,12 @@ static inline void SetShiftToBase(Blade* const bl, Status_frame* const step_shif
 	step_shift->position.x = (BLADE_BASE_X - bl->position.x) / steps;
 	step_shift->position.y = (BLADE_BASE_Y - bl->position.y) / steps;
 	step_shift->direction = (BLADE_BASE_DIRECTION_PC - bl->direction) / steps;
+}
+
+static inline void SetBladePositionToBase(Blade* const bl){
+	bl->position.x = BLADE_BASE_X;
+	bl->position.y = BLADE_BASE_Y;
+	bl->direction = BLADE_BASE_DIRECTION_PC;
 }
 
 static inline void SetShiftToPosition(Blade* const bl, Status_frame* const step_shift, const Status_frame* const frame, const unsigned int steps){
@@ -228,9 +232,13 @@ static bool UnleashDestruction(Game_data* const g_d){
 					--i;
 					continue;
 				}
-			}else if(bl->hits < bl->penetration){
-				*(bl->hit_targets + bl->hits++) = b->id;
-				continue;
+			}else{
+				float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
+				StunBeing(b, SineSafe(angle) * bl->damage / 32, -CosiSafe(angle) * bl->damage / 32, BEING_DEFAULT_LEFT_TICKS * 2);
+				if(bl->hits < bl->penetration){
+					*(bl->hit_targets + bl->hits++) = b->id;
+					continue;
+				}
 			}
 			return true;
 		}
@@ -272,9 +280,25 @@ static void UpdatePlayerBlade(Game_data* const g_d){
 	static bool freehand = false;
 	static unsigned int idle_ticks = 0U;
 	static float charge = PC_BLADE_CHARGE_BASE;
-	if(g_d->pc.control_flags & attack){
-		charge *= PC_BLADE_CHARGE_MODIFIER;
+	if(g_d->pc.control_flags & range_mode){
+		if(step <= steps){
+			SetBladePositionToBase(&g_d->pc.blade);
+			abide = false;
+			freehand = false;
+			charge = PC_BLADE_CHARGE_BASE;
+			idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
+			step = steps + 1;
+			chain_next = 0U;
+		}
+		return;
 	}
+	if(g_d->pc.control_flags & block){
+		abide = false;
+		charge = PC_BLADE_CHARGE_BASE;
+		idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
+	}else if(g_d->pc.control_flags & attack){
+		charge *= PC_BLADE_CHARGE_MODIFIER;
+	} 
 	if(!abide){
 		if(charge != PC_BLADE_CHARGE_BASE){
 			if(!(g_d->pc.control_flags & attack)){
@@ -337,11 +361,43 @@ extern inline void DamagePlayer(Player* const p, const int damage){
 
 static void UpdatePlayerFire(Game_data* const g_d){
 	static int shoot_reload = 0;
-	if(g_d->pc.control_flags & attack && shoot_reload <= 0 && g_d->projectiles.num < MAX_PROJECTILES_NUM){
+	if(shoot_reload > 0){
+		--shoot_reload;
+	}else if((g_d->pc.control_flags & (range_mode | attack | block)) == (range_mode | attack) && g_d->projectiles.num < MAX_PROJECTILES_NUM){
 		AddProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, TEST_DAMAGE, TEST_PENETRATION);
 		shoot_reload = PC_SHOOT_RELOAD;
 	}
-	--shoot_reload;
+}
+
+static void UpdatePlayerPush(Game_data* const g_d){
+	static int push_reload = 0;
+	if(push_reload > 0){
+		--push_reload;
+	}else if((g_d->pc.control_flags & (attack | block)) == (attack | block) && g_d->pc.fatigue_points >= PC_PUSH_FATIG){
+		g_d->pc.fatigue_points -= PC_PUSH_FATIG;
+		g_d->pc.fatigue_block_time += PC_PUSH_FATIG_BLOCK_TIME;
+		push_reload = PC_PUSH_RELOAD;
+		Segment* s = GetSegment(&g_d->world, g_d->pc.position.x, g_d->pc.position.y);
+		for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
+		for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
+			Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
+			if(neighbour == NULL) continue;
+			for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
+				Being* b = *(neighbour->beings.array + i);
+				if(pow2(g_d->pc.position.x - b->position.x) + pow2(g_d->pc.position.y - b->position.y) < pow2(PC_PUSH_REACH)){
+					float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
+					if(angle < 0.0F){
+						angle += FULL_ANGLE;
+					}
+					float difference = SDL_fabsf(g_d->pc.direction - angle);
+					if(difference <= SDL_PI_F * 0.5F || difference >= SDL_PI_F * 1.5F){
+						StunBeing(b, sine(angle) * DEFAULT_FLY_VELOCITY, -cosi(angle) * DEFAULT_FLY_VELOCITY, BEING_DEFAULT_LEFT_TICKS * 16);
+					}
+				}
+			}
+		}}
+
+	}
 }
 
 extern inline void HaltPlayer(Player* const p){
@@ -349,5 +405,13 @@ extern inline void HaltPlayer(Player* const p){
 }
 
 extern inline void HitBarrier(Player* const p, const int damage){
-	p->fatigue_points /= 2;
+	p->fatigue_points -= damage * BLOCK_COST;
+	if(p->fatigue_points < 0){
+		p->control_flags &= ~(block);
+		p->fatigue_points = 0;
+	}
+}
+
+static inline float GetDirectionToPush(SDL_FPoint* const pushing, SDL_FPoint* const pushed){
+    return SDL_atan2f(pushed->y - pushing->y, pushed->x - pushing->x) + SDL_PI_F * 0.5F;
 }

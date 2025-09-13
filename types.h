@@ -80,7 +80,8 @@ struct Being{
 	int status;
 	int status_ticks_left;
 	Blade_hostile blade;
-	SDL_FPoint walk_shift;
+	SDL_FPoint special_move_shift;
+	float special_rotation_shift;
 	unsigned int id;
 };
 struct Beings_array{

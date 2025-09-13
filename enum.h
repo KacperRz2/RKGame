@@ -19,6 +19,7 @@ enum texture_num{
     tx_door,
     tx_box,
     tx_barrier,
+    tx_stun,
     tx_map
 };
 
@@ -37,12 +38,13 @@ enum control{
 };
 
 enum being_status{
-    idle,
-    follow,
-    shoot,
-    strike,
-    walk,
-    dead
+    being_idle,
+    being_follow,
+    being_shoot,
+    being_strike,
+    being_walk,
+    being_dead,
+    being_stunned
 };
 
 enum menu_option{

@@ -8,6 +8,7 @@ void AddBeingToArray(Beings_array* const, const float, const float, Segment* con
 static void DestroyBeingInArray(Beings_array* const, const unsigned int);
 static void MoveBeing(Being* const, const float, const float);
 static void SetBeingPosition(Being* const, const float, const float);
+static void SetBeingPositionInNewSegment(Being* const, const float, const float, Segment* const);
 static void MoveBeingX(Being* const, const float);
 static void MoveBeingY(Being* const, const float);
 static void MoveBeingToSegment(Being* const, Segment* const);
@@ -34,5 +35,7 @@ static void HaltBeing(Being* const, const int);
 void UpdateBeings(Game_data* const);
 
 bool DamageBeing(Being* const, int);
+void StunBeing(Being* const, const float, const float, const int);
+static void UpdateBeingStunned(Being* const, World* const);
 
 #endif

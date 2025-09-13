@@ -2,6 +2,7 @@
 #define MACROS_H_
 
 #define SQRT2DIV2			        (1.4142135623730950488016887242097F * 0.5F)
+#define FULL_ANGLE			        (SDL_PI_F * 2.0F)
 #define pow2(x)                     ((x) * (x))
 #define half(x)                     ((x) * (0.5F))
 #define VIEWFINDER_CENTER	        (rend_data->viewfinder * 0.5F)
@@ -27,7 +28,7 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        17
+#define TEXTURE_FILES_NUM	        18
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -77,6 +78,10 @@
 #define PC_DODGE_FATIG              100
 #define PC_DODGE_FATIG_BLOCK_TIME   50
 #define PC_DODGE_VELOCITY           10.0F
+#define PC_PUSH_FATIG               100
+#define PC_PUSH_FATIG_BLOCK_TIME    50
+#define PC_PUSH_RELOAD              256
+#define PC_PUSH_REACH               (PLAYER_SIZE * 2.0F)
 #define PC_FAILURE_FATIG_BLOCK_TIME 2
 #define PC_FAILURE_VELOCITY         0.5F
 #define PC_FATIGUE_GAIN_INTERVAL    4U
@@ -100,7 +105,7 @@
 #define GUN_SIGHT_SPREAD_MIN        8.0F
 #define GUN_SIGHT_SPREAD_RANGE      (GUN_SIGHT_SPREAD_MIN * 4.0F)
 #define GUN_SIGHT_MIN_DISTANCE      PLAYER_SIZE
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x80U)
+#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x1U)
 #define TEST_BEING_SIZE             32
 #define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
 #define TEST_BEING_HP               100
@@ -113,5 +118,7 @@
 #define BOXES_NUM                   0x200U
 #define BOX_SIZE                    32.0F
 #define BOX_SLOTS                   8
+#define BLOCK_COST                  16
+#define DEFAULT_FLY_VELOCITY        0.25F
 
 #endif

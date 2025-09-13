@@ -39,7 +39,7 @@ extern inline void AddBeingToArray(Beings_array* const bs, const float x, const 
     b->type = &test_being;
     AddBeingToSegment(s, b);
     b->hit_points = b->type->hit_points;
-    b->status = idle;
+    b->status = being_idle;
     b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
 	b->blade.position.x = BLADE_BASE_X;
  	b->blade.position.y = BLADE_BASE_Y;
@@ -65,6 +65,12 @@ static inline void SetBeingPosition(Being* const b, const float x, const float y
     b->position.y = y;
 }
 
+static inline void SetBeingPositionInNewSegment(Being* const b, const float x, const float y, Segment* const s){
+    b->position.x = x;
+    b->position.y = y;
+    MoveBeingToSegment(b, s);
+}
+
 static inline void MoveBeingX(Being* const b, const float x){
     b->position.x += x;
 }
@@ -79,10 +85,10 @@ static inline void MoveBeingToSegment(Being* const b, Segment* const s){
 }
 
 static inline void StartBeingWalk(Being* const b, const int time, const float x_shift, const float y_shift){
-    b->status = walk;
+    b->status = being_walk;
     b->status_ticks_left = time;
-    b->walk_shift.x = x_shift;
-    b->walk_shift.y = y_shift;
+    b->special_move_shift.x = x_shift;
+    b->special_move_shift.y = y_shift;
 }
 
 static inline void StartBeingWalkWithRandTurn(Being* const b, const int time, const float x_shift, const float y_shift){
@@ -111,11 +117,11 @@ static inline bool CollideWithBeing(Being* const b, const float x, const float y
 static bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, float* const new_x, float* const new_y, const float x_shift, const float y_shift){
     for(unsigned int i = 0U; i < s->beings.num; ++i){
         Being* b2 = *(s->beings.array + i);
-        if(b2 == b || b2->status == walk) continue;
+        if(b2 == b || b2->status == being_walk) continue;
         if(CollideWithBeing(b2, *new_x, *new_y)){
             StartBeingWalkWithRandTurn45Deg(b, BEING_WALK_TICKS, x_shift, y_shift);
-            *new_x = b->position.x + b->walk_shift.x;
-            *new_y = b->position.y + b->walk_shift.y;
+            *new_x = b->position.x + b->special_move_shift.x;
+            *new_y = b->position.y + b->special_move_shift.y;
             return true;
         }
     }
@@ -123,43 +129,45 @@ static bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, 
 }
 
 static inline void TurnBeingWalk(Being* const b){
-    float tmp_x = b->walk_shift.x;
+    float tmp_x = b->special_move_shift.x;
     if((bool)SDL_rand(2)){
-        b->walk_shift.x = -b->walk_shift.y;
-        b->walk_shift.y = tmp_x;
+        b->special_move_shift.x = -b->special_move_shift.y;
+        b->special_move_shift.y = tmp_x;
     }else{
-        b->walk_shift.x = b->walk_shift.y;
-        b->walk_shift.y = -tmp_x;
+        b->special_move_shift.x = b->special_move_shift.y;
+        b->special_move_shift.y = -tmp_x;
     }
 }
 
 static inline void UpdateBeingWalk(Being* const b, World* const w){
     if(b->status_ticks_left == 0){
-        b->status = idle;
+        b->status = being_idle;
         return;
     }
-    float new_x = b->position.x + b->walk_shift.x;
-    float new_y = b->position.y + b->walk_shift.y;
+    float new_x = b->position.x + b->special_move_shift.x;
+    float new_y = b->position.y + b->special_move_shift.y;
     Segment* new_segment = GetSegment(w, new_x, new_y);
-
-    if(new_segment != b->segment && (new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS)){
-        TurnBeingWalk(b);
-        return;
+    if(new_segment != b->segment){
+        if(new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS){
+            TurnBeingWalk(b);
+            return;
+        }
+        SetBeingPositionInNewSegment(b, new_x, new_y, new_segment);
+    }else{
+        SetBeingPosition(b, new_x, new_y);
     }
-    SetBeingPosition(b, new_x, new_y);
-    MoveBeingToSegment(b, new_segment);
     --b->status_ticks_left;
 }
 
 static inline void UpdateBeingIdle(Being* const b, const float distance_squared){
     if(distance_squared < pow2(IDLE_BEING_ACTION_DISTANCE)){
         if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
-            b->status = strike;
+            b->status = being_strike;
             b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
             return;
         }
         if(distance_squared < pow2(BEING_SHOOT_DISTANCE)){
-            b->status = shoot;
+            b->status = being_shoot;
             b->status_ticks_left = BEING_RELOAD;
             return;
         }
@@ -168,14 +176,14 @@ static inline void UpdateBeingIdle(Being* const b, const float distance_squared)
         --b->status_ticks_left;
         return;
     }
-    b->status = follow;
+    b->status = being_follow;
     b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
 }
 
 static inline bool UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
     if(b->status_ticks_left == 0){
         b->status_ticks_left = BEING_RELOAD_TICKS;
-        b->status = follow;
+        b->status = being_follow;
         return false;
     }
     if(b->status_ticks_left == 4 && prs->num < MAX_PROJECTILES_NUM){
@@ -219,15 +227,14 @@ static inline void SetBeingPositionIfAllowed(Being* const b, float const x, floa
         SetBeingPosition(b, x, y);
         return;
     }
-    SetBeingPosition(b, x, y);
-    MoveBeingToSegment(b, new_segment);
+    SetBeingPositionInNewSegment(b, x, y, new_segment);
 }
 
 static inline void UpdateBeingStrike(Being* const b, Player* const p, float const distance, float const distance_x, float const distance_y, World* const w){
     static const Blade_hostile blade_base_frame = {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING};
     if(b->status_ticks_left == 0){
         b->blade = blade_base_frame;
-        b->status = follow;
+        b->status = being_follow;
         b->status_ticks_left = BEING_RELOAD_TICKS;
         return;
     }
@@ -274,7 +281,7 @@ static inline void UpdateBeingStrike(Being* const b, Player* const p, float cons
 
 static inline void UpdateBeingFollow(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
     if(b->status_ticks_left == 0){
-        b->status = idle;
+        b->status = being_idle;
         return;
     }
     if(distance < BEING_HALT_DISTANCE){
@@ -294,8 +301,8 @@ static inline void UpdateBeingFollow(Being* const b, float const distance, float
     bool collision = false;
     if(new_segment == NULL){
         StartBeingWalkWithRandTurn45Deg(b, BEING_WALK_TICKS, x_shift, y_shift);
-        new_x = b->position.x + b->walk_shift.x;
-        new_y = b->position.y + b->walk_shift.y;
+        new_x = b->position.x + b->special_move_shift.x;
+        new_y = b->position.y + b->special_move_shift.y;
         collision = true;
     }else if(distance < CHECK_COLLISION_DISTANCE){
         collision = ResolveBeingCollisionInNewSegment(b, new_segment, &new_x, &new_y, x_shift, y_shift);
@@ -317,8 +324,7 @@ static inline void UpdateBeingFollow(Being* const b, float const distance, float
         --b->status_ticks_left;
         return;
     }
-    SetBeingPosition(b, new_x, new_y);
-    MoveBeingToSegment(b, new_segment);
+    SetBeingPositionInNewSegment(b, new_x, new_y, new_segment);
     --b->status_ticks_left;
 }
 
@@ -337,13 +343,13 @@ static inline Status_frame GetHBladeLocation(Being* const b, float* const sine, 
 }
 
 static inline void HaltBeing(Being* const b, const int time){
-    b->status = idle;
+    b->status = being_idle;
     b->status_ticks_left = -time;
 }
 
 void UpdateBeings(Game_data* const g_d){
     for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
-        if(b->status == dead){
+        if(b->status == being_dead){
             if(b != (g_d->beings.array + g_d->beings.num - 1U)){
                 UpdateSegmentBeingPointer((g_d->beings.array + g_d->beings.num - 1U), b);
                 *b = *(g_d->beings.array + g_d->beings.num - 1U);
@@ -352,7 +358,11 @@ void UpdateBeings(Game_data* const g_d){
             --g_d->beings.num;
             continue;
         }
-        if(b->status == walk){
+        if(b->status == being_stunned){
+            UpdateBeingStunned(b, &g_d->world);
+            continue;
+        }
+        if(b->status == being_walk){
             UpdateBeingWalk(b, &g_d->world);
             continue;
         }
@@ -365,35 +375,70 @@ void UpdateBeings(Game_data* const g_d){
             float velocity_xy = distance / (PLAYER_VELOCITY * 1.875F);
             MovePlayer(g_d, distance_x / velocity_xy, distance_y / velocity_xy);
         }
-        if(b->status == idle){
+        if(b->status == being_idle){
             UpdateBeingIdle(b, distance_squared);
             continue;
         }
-        if(!(b->status == strike && ((b->status_ticks_left > 0 && b->status_ticks_left < BEING_ATTACK_STEPS / 2) || (b->status_ticks_left < 0 && b->status_ticks_left >= -(BEING_ATTACK_STEPS - 1))))){
+        if(!(b->status == being_strike && ((b->status_ticks_left > 0 && b->status_ticks_left < BEING_ATTACK_STEPS / 2) || (b->status_ticks_left < 0 && b->status_ticks_left >= -(BEING_ATTACK_STEPS - 1))))){
             b->direction = SDL_atan2f(-distance_y, -distance_x) - SDL_PI_F * 0.5F;
         }
-        if(b->status == shoot && UpdateBeingShoot(b, &g_d->h_projectiles)){
+        if(b->status == being_shoot && UpdateBeingShoot(b, &g_d->h_projectiles)){
             continue;
         }
         if(distance == 0.0F){
             distance = SDL_sqrtf(distance_squared);
         }
-        if(b->status == strike){
+        if(b->status == being_strike){
             UpdateBeingStrike(b, &g_d->pc, distance, distance_x, distance_y, &g_d->world);
             continue;
         }
-        if(b->status == follow){
+        if(b->status == being_follow){
             UpdateBeingFollow(b, distance, distance_x, distance_y, &g_d->world);
         }
     }
 }
 
-extern inline bool DamageBeing(Being* const b, int damage){
+extern inline bool DamageBeing(Being* const b, const int damage){
     b->hit_points -= damage;
     if(b->hit_points < 1){
-        b->status = dead;
+        b->status = being_dead;
         RemoveBeingFromSegment(b);
         return true;
     }
     return false;
+}
+
+extern inline void StunBeing(Being* const b, const float shift_x, const float shift_y, const int duration){
+    if(b->status == being_strike){
+        const Blade_hostile blade_base_frame = {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING};
+        b->blade = blade_base_frame;
+    }
+    b->status = being_stunned;
+    b->status_ticks_left = duration;
+    b->special_move_shift.x = shift_x;
+    b->special_move_shift.y = shift_y;
+    b->special_rotation_shift = (bool)SDL_rand(2) ? FULL_ANGLE / b->status_ticks_left : -FULL_ANGLE / b->status_ticks_left;
+}
+
+static inline void UpdateBeingStunned(Being* const b, World* const w){
+    if(b->status_ticks_left == 0){
+        b->status = being_idle;
+        return;
+    }
+    if(b->special_rotation_shift){
+        b->direction += b->special_rotation_shift;
+        float new_x = b->position.x + b->special_move_shift.x;
+        float new_y = b->position.y + b->special_move_shift.y;
+        Segment* new_segment = GetSegment(w, new_x, new_y);
+        if(new_segment != b->segment){
+            if (new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS){
+                b->special_rotation_shift = 0.0F;
+            }else{
+                SetBeingPositionInNewSegment(b, new_x, new_y, new_segment);
+            }
+        }else{
+            SetBeingPosition(b, new_x, new_y);
+        }
+    }
+    --b->status_ticks_left;
 }

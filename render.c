@@ -26,7 +26,8 @@ int GraphicsInitiation(Render_data* const data){
 		"imgC.bmp",
 		"imgD.bmp",
 		"imgE.bmp",
-		"imgF.bmp"
+		"imgF.bmp",
+		"img10.bmp"
 	};
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
@@ -88,12 +89,6 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 }
 
 static void RenderBlade(Render_data* const rend_data, Blade* const blade){
-	// const SDL_FRect rect = {
-	// 	VIEWFINDER_CENTER - half(PLAYER_SIZE),
-	// 	VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,
-	// 	(float)PLAYER_SIZE,
-	// 	(float)PLAYER_SIZE
-	// };
 	static SDL_FRect rect_blade = {
 		0.0F,
 		0.0F,
@@ -106,7 +101,6 @@ static void RenderBlade(Render_data* const rend_data, Blade* const blade){
 	};
 	rect_blade.x = (VIEWFINDER_CENTER - half(BLADE_SIZE)) + blade->position.x;
 	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * BLADE_HANDLER_POSITION + PLAYER_REND_Y_SHIFT) - blade->position.y;
-	// SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect);
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
 }
 
@@ -165,7 +159,7 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 				b->type->size
 			};
 			float being_direction = b->direction - g_d->pc.direction;
-			if(b->status == follow || b->status == strike){
+			if(b->status == being_follow || b->status == being_strike){
 				float sine = SineSafe(being_direction);
 				float cosine = CosiSafe(being_direction);
 				rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - half(BLADE_SIZE);
@@ -173,6 +167,9 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 				SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being_blade), NULL, &rect_blade, (double)RadToDeg(b->blade.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
 			}
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
+			if(b->status == being_stunned){
+				SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_stun), NULL, &rect, -(double)b->status_ticks_left, NULL, SDL_FLIP_NONE);
+			}
 		}
 	}
 }
