@@ -305,7 +305,6 @@ void StartLevel(Game_data* const g_d){
 	g_d->beings.num = 0U;
 	SDL_FPoint start_position = GetStartPosition(&g_d->world);
 	CreatePlayer(&g_d->pc, start_position.x, start_position.y);
-	// AddBeingToArray(&g_d->beings, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 8.0F, GetSegment(&g_d->world, WORLD_W / 2.0F, WORLD_H - SEGMENT_SIZE * 8.0F));//test being
 	Uint64 start_time = SDL_GetTicks();
 	while (g_d->beings.num < MAX_START_BEINGS_NUM){//test beings
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
@@ -313,7 +312,7 @@ void StartLevel(Game_data* const g_d){
 		if(SDL_fabsf(g_d->pc.position.x - x) > 1000.0F && SDL_fabsf(g_d->pc.position.y - y) > 1000.0F){//not too close
 			Segment* s = GetSegment(&g_d->world, x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-				AddBeingToArray(&g_d->beings, x, y, s);
+				AddBeingToArray(&g_d->beings, (unsigned int)SDL_rand(2), x, y, s);
 			}
 		}
 		if(SDL_GetTicks() - start_time > 1500U) break;

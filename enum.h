@@ -21,6 +21,8 @@ enum texture_num{
     tx_barrier,
     tx_stun,
     tx_scroll,
+    tx_being1,
+    tx_weapon,
     tx_map
 };
 
@@ -77,6 +79,17 @@ enum scroll_type{
 
 enum render_flags{
     rend_casting = 1 << 0
+};
+
+enum being_type{
+    being_0,
+    being_1,
+    being_2,
+    being_3,
+    being_4,
+    being_5,
+    being_6,
+    being_7
 };
 
 #endif

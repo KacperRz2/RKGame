@@ -7,6 +7,7 @@
 #include <Player.h>
 #include <World.h>
 
+const void (*effect[])(Game_data* const) = SCR_EFFECTS;
 const int costs[] = SCR_COSTS;
 
 extern inline int ScrollCost(const unsigned int scroll_id){
@@ -14,7 +15,7 @@ extern inline int ScrollCost(const unsigned int scroll_id){
 }
 
 extern inline void UseScroll(Game_data* const g_d){
-    (g_d->pc.scrolls + g_d->pc.selected_scroll)->effect(g_d);
+    (*(effect + g_d->pc.selected_scroll))(g_d);
 }
 
 void effect0(Game_data* const g_d){

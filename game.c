@@ -136,15 +136,15 @@ extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const
 	Box* bx = (bxs->array + new_box_indx);
 	bx->location.x = position_x;
 	bx->location.y = position_y;
-	AddToBox(bx, 0, box_coins, (void*)32);
-	AddToBox(bx, 1, box_key, (void*)1);
-	AddToBox(bx, 2, box_mp, (void*)PC_MAGIC);
+	AddToBox(bx, 0, box_coins, 32U);
+	AddToBox(bx, 1, box_key, 1U);
+	AddToBox(bx, 2, box_mp, (unsigned int)PC_MAGIC);
 	for(unsigned int i = 3U; i < BOX_SLOTS; ++i){
-		AddToBox(bx, i, box_mp, (void*)0);
+		AddToBox(bx, i, box_mp, 0U);
 	}
 }
 
-static inline void AddToBox(Box* const bx, const unsigned int slot, const int type, void* const value){
+static inline void AddToBox(Box* const bx, const unsigned int slot, const int type, unsigned int const value){
 	(bx->elements + slot)->type = type;
 	(bx->elements + slot)->value = value;
 }
@@ -198,11 +198,11 @@ static inline void LootBox(Game_data* const g_d, const unsigned int box_indx){
 	while(1){
 		element_type = elem->type;
 		if(element_type == box_coins){
-			g_d->pc.coins += (int)((intptr_t)elem->value);
+			g_d->pc.coins += (int)elem->value;
 		}else if(element_type == box_key){
-			g_d->keys += (int)((intptr_t)elem->value);
+			g_d->keys += (int)elem->value;
 		}else if(element_type == box_mp){
-			g_d->pc.magic_points += (int)((intptr_t)elem->value);
+			g_d->pc.magic_points += (int)elem->value;
 			break;
 		}
 		++elem;

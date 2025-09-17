@@ -6,6 +6,10 @@
 #include <enum.h>
 #include <World.h>
 #include <Scroll.h>
+#include <Being.h>
+
+const unsigned int beings_textures[] = BEINGS_TEXTURES;
+const unsigned int beings_weapon_textures[] = BEINGS_WEAPON_TEXTURES;
 
 int GraphicsInitiation(Render_data* const data){
 	SDL_Surface* surface = NULL;
@@ -78,10 +82,7 @@ static void RenderBlade(Render_data* const rend_data, Blade* const blade){
 		BLADE_SIZE,
 		BLADE_SIZE
 	};
-	static const SDL_FPoint blade_rotation_point = {
-		half(BLADE_SIZE),
-		BLADE_SIZE * BLADE_HANDLER_POSITION
-	};
+	static const SDL_FPoint blade_rotation_point = WEAPON_ROTATION_POINT;
 	rect_blade.x = (VIEWFINDER_CENTER - half(BLADE_SIZE)) + blade->position.x;
 	rect_blade.y = (VIEWFINDER_CENTER - BLADE_SIZE * BLADE_HANDLER_POSITION + PLAYER_REND_Y_SHIFT) - blade->position.y;
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(blade->direction), &blade_rotation_point, SDL_FLIP_NONE);
@@ -128,28 +129,23 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 		BLADE_SIZE,
 		BLADE_SIZE
 	};
-	static const SDL_FPoint blade_rotation_point = {
-		half(BLADE_SIZE),
-		BLADE_SIZE * BLADE_HANDLER_POSITION
-	};
+	static const SDL_FPoint blade_rotation_point = WEAPON_ROTATION_POINT;
     for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, &g_d->pc, &point)){
 			SDL_FRect rect = {
-				point.x - half(b->type->size),
-				point.y - half(b->type->size),
-				b->type->size,
-				b->type->size
+				point.x - half(BeingSize(b)),
+				point.y - half(BeingSize(b)),
+				BeingSize(b),
+				BeingSize(b)
 			};
 			float being_direction = b->direction - g_d->pc.direction;
-			if(b->status == being_follow || b->status == being_strike){
-				float sine = SineSafe(being_direction);
-				float cosine = CosiSafe(being_direction);
-				rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - half(BLADE_SIZE);
-				rect_blade.y = point.y + (b->blade.position.x * sine - b->blade.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
-				SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being_blade), NULL, &rect_blade, (double)RadToDeg(b->blade.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
-			}
-			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_being), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
+			float sine = SineSafe(being_direction);
+			float cosine = CosiSafe(being_direction);
+			rect_blade.x = point.x + (b->blade.position.x * cosine + b->blade.position.y * sine) - half(BLADE_SIZE);
+			rect_blade.y = point.y + (b->blade.position.x * sine - b->blade.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_weapon_textures + b->type_id)), NULL, &rect_blade, (double)RadToDeg(b->blade.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_textures + b->type_id)), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
 			if(b->status == being_stunned){
 				SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_stun), NULL, &rect, -(double)b->status_ticks_left, NULL, SDL_FLIP_NONE);
 			}
@@ -232,7 +228,7 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 	SDL_RenderDebugTextFormat(rend, 10, 230, "needed: %d", g_d->needed_keys);
 	SDL_RenderDebugTextFormat(rend, 10, 240, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
 	SDL_RenderDebugTextFormat(rend, 10, 250, "selected scroll: %d", g_d->pc.selected_scroll);
-	SDL_RenderDebugTextFormat(rend, 10, 260, "selected scroll num: %d", (g_d->pc.scrolls + g_d->pc.selected_scroll)->num);
+	SDL_RenderDebugTextFormat(rend, 10, 260, "selected scroll num: %d", *(g_d->pc.scrolls + g_d->pc.selected_scroll));
 	SDL_RenderDebugTextFormat(rend, 10, 270, "selected scroll cost: %d", ScrollCost(g_d->pc.selected_scroll));
 
 }

@@ -10,25 +10,16 @@
 #include <Scroll.h>
 
 static void InitScrolls(Player* const p){
-	p->scrolls->num = 99U;
-	p->scrolls->effect = effect0;
-	(p->scrolls + 1)->num = 99U;
-	(p->scrolls + 1)->effect = effect1;
-	(p->scrolls + 2)->num = 0U;
-	(p->scrolls + 2)->effect = effect2;
-	(p->scrolls + 3)->num = 0U;
-	(p->scrolls + 3)->effect = effect3;
-	(p->scrolls + 4)->num = 0U;
-	(p->scrolls + 4)->effect = effect4;
-	(p->scrolls + 5)->num = 0U;
-	(p->scrolls + 5)->effect = effect5;
-	(p->scrolls + 6)->num = 0U;
-	(p->scrolls + 6)->effect = effect6;
-	(p->scrolls + scroll_empty)->num = 0U;
-	(p->scrolls + scroll_empty)->effect = NULL;
-	*(p->scrolls_quick_access) = scroll_0;
-	*(p->scrolls_quick_access + 1) = scroll_1;
-	for(unsigned int i = 2U; i < QUICK_SCROLLS; ++i){
+	*p->scrolls = 99U;
+	*(p->scrolls + 1) = 99U;
+	for(unsigned int i = 2U; i < (unsigned int)scroll_empty; ++i){
+		*(p->scrolls + i) = 0U;
+	}
+	*(p->scrolls + scroll_empty) = 0U;
+	*(p->scrolls_quick_access) = scroll_empty;
+	*(p->scrolls_quick_access + 1) = scroll_0;
+	*(p->scrolls_quick_access + 2) = scroll_1;
+	for(unsigned int i = 3U; i < QUICK_SCROLLS; ++i){
 		*(p->scrolls_quick_access + i) = scroll_empty;
 	}
 }
@@ -220,7 +211,7 @@ static inline Status_frame GetBladeLocation(Player* const p, float* const sine, 
 
 static inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being* const b, SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
-		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(b->type->size) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(b->type->size)){
+		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(BeingSize(b)) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(BeingSize(b))){
 			for(unsigned int j = bl->hits; j > 0U; --j){
 				if(*(bl->hit_targets + (j - 1U)) == b->id){
 					return false;
@@ -435,7 +426,7 @@ static void UpdatePlayerCast(Game_data* const g_d){
 		const int cost = ScrollCost(g_d->pc.selected_scroll);
 		if(g_d->pc.magic_points >= cost){
 			g_d->pc.magic_points -= cost;
-			--(g_d->pc.scrolls + g_d->pc.selected_scroll)->num;
+			--(*(g_d->pc.scrolls + g_d->pc.selected_scroll));
 			UseScroll(g_d);
 			cast_reload = PC_CAST_RELOAD;
 		}

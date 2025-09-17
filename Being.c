@@ -8,7 +8,27 @@
 #include <Projectile.h>
 #include <enum.h>
 
-extern const Being_type test_being;
+const Being_type being_types[] = BEING_TYPES;
+
+static inline void UpdateBeing(Being* const b, Game_data* const g_d){
+    (being_types + b->type_id)->update(b, g_d);
+}
+
+extern inline float BeingSize(Being* const b){
+    return (being_types + b->type_id)->size;
+}
+
+extern inline float BeingVelocity(Being* const b){
+    return (being_types + b->type_id)->velocity;
+}
+
+extern inline int BeingMaxHitPoints(Being* const b){
+    return (being_types + b->type_id)->hit_points;
+}
+
+extern inline int BeingDamage(Being* const b){
+    return (being_types + b->type_id)->damage;
+}
 
 static inline void AddBeingToSegment(Segment* const s, Being* const b){
     b->segment = s;
@@ -30,15 +50,15 @@ void DestroyBeings(Beings_array* const bs){
     bs->num = 0U;
 }
 
-extern inline void AddBeingToArray(Beings_array* const bs, const float x, const float y, Segment* const s){
+extern inline void AddBeingToArray(Beings_array* const bs, const unsigned int type_id, const float x, const float y, Segment* const s){
     static int being_id = 0U;
     Being* b = (bs->array + bs->num);
     b->position.x = x;
     b->position.y = y;
     b->direction = 0.0F;
-    b->type = &test_being;
+    b->type_id = type_id;
     AddBeingToSegment(s, b);
-    b->hit_points = b->type->hit_points;
+    b->hit_points = BeingMaxHitPoints(b);
     b->status = being_idle;
     b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
 	b->blade.position.x = BLADE_BASE_X;
@@ -107,8 +127,8 @@ static inline void StartBeingWalkWithRandTurn45Deg(Being* const b, const int tim
     }
 }
 
-static inline bool CollideWithBeing(Being* const b, const float x, const float y){
-    if(pow2(x - b->position.x) + pow2(y - b->position.y) < (float)pow2(b->type->size)){
+static inline bool BeingCollideWithBeing(Being* const b, const float x, const float y, const float being_size){
+    if(pow2(x - b->position.x) + pow2(y - b->position.y) < (float)pow2(half(BeingSize(b) + being_size))){
         return true;
     }
     return false;
@@ -118,7 +138,7 @@ static bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, 
     for(unsigned int i = 0U; i < s->beings.num; ++i){
         Being* b2 = *(s->beings.array + i);
         if(b2 == b || b2->status == being_walk) continue;
-        if(CollideWithBeing(b2, *new_x, *new_y)){
+        if(BeingCollideWithBeing(b2, *new_x, *new_y, BeingSize(b))){
             StartBeingWalkWithRandTurn45Deg(b, BEING_WALK_TICKS, x_shift, y_shift);
             *new_x = b->position.x + b->special_move_shift.x;
             *new_y = b->position.y + b->special_move_shift.y;
@@ -159,42 +179,20 @@ static inline void UpdateBeingWalk(Being* const b, World* const w){
     --b->status_ticks_left;
 }
 
-static inline void UpdateBeingIdle(Being* const b, const float distance_squared){
-    if(distance_squared < pow2(IDLE_BEING_ACTION_DISTANCE)){
-        if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
-            b->status = being_strike;
-            b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
-            return;
-        }
-        if(distance_squared < pow2(BEING_SHOOT_DISTANCE)){
-            b->status = being_shoot;
-            b->status_ticks_left = BEING_RELOAD;
-            return;
-        }
-    }
-    if(b->status_ticks_left > 0){
-        --b->status_ticks_left;
-        return;
-    }
-    b->status = being_follow;
-    b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
-}
-
-static inline bool UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
+static inline void UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
     if(b->status_ticks_left == 0){
         b->status_ticks_left = BEING_RELOAD_TICKS;
-        b->status = being_follow;
-        return false;
+        b->status = being_idle;
+        return;
     }
     if(b->status_ticks_left == 4 && prs->num < MAX_PROJECTILES_NUM){
-        AddHProjectileToArray(prs, &b->position, b->direction, PROJECTILE_VELOCITY, b->type->damage_far);
+        AddHProjectileToArray(prs, &b->position, b->direction, PROJECTILE_VELOCITY, BeingDamage(b));
     }
     --b->status_ticks_left;
-    return true;
 }
 
 static inline void MoveStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
-    float velocity_xy = distance / b->type->velocity;
+    float velocity_xy = distance / BeingVelocity(b);
     float x_shift = distance_x / velocity_xy;
     float y_shift = distance_y / velocity_xy;
     float new_x = b->position.x + x_shift;
@@ -203,7 +201,7 @@ static inline void MoveStrikingBeing(Being* const b, float const distance, float
 }
 
 static inline void MoveBackStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
-    float velocity_xy = distance / b->type->velocity;
+    float velocity_xy = distance / BeingVelocity(b);
     float x_shift = distance_x / velocity_xy;
     float y_shift = distance_y / velocity_xy;
     float new_x = b->position.x - x_shift;
@@ -219,7 +217,7 @@ static inline void SetBeingPositionIfAllowed(Being* const b, float const x, floa
     for(unsigned int i = 0U; i < new_segment->beings.num; ++i){
         Being* b2 = *(new_segment->beings.array + i);
         if(b2 == b) continue;
-        if(CollideWithBeing(b2, x, y)){
+        if(BeingCollideWithBeing(b2, x, y, BeingSize(b))){
             return;
         }
     }
@@ -256,9 +254,9 @@ static inline void UpdateBeingStrike(Being* const b, Player* const p, float cons
             SDL_FPoint dangerous_point = {blade_location.position.x + bl_sine * blade_length, blade_location.position.y - bl_cosine * blade_length};
             if(PointInPlayer(dangerous_point.x, dangerous_point.y, p)){
                 if(p->control_flags & block && (sine(p->direction) * SineSafe(b->direction)) + (-cosi(p->direction) * -CosiSafe(b->direction)) <= 0){
-                    HitBarrier(p, b->type->damage_close);
+                    HitBarrier(p, BeingDamage(b));
                 }else{
-                    p->hit_points -= b->type->damage_close;
+                    p->hit_points -= BeingDamage(b);
                 }
             }
             b->status_ticks_left = -(BEING_ATTACK_STEPS - 1);
@@ -288,7 +286,7 @@ static inline void UpdateBeingFollow(Being* const b, float const distance, float
         --b->status_ticks_left;
         return;
     }
-    float velocity_xy = distance / b->type->velocity;
+    float velocity_xy = distance / BeingVelocity(b);
     float x_shift = distance_x / velocity_xy;
     float y_shift = distance_y / velocity_xy;
     float new_x = b->position.x + x_shift;
@@ -358,47 +356,7 @@ void UpdateBeings(Game_data* const g_d){
             --g_d->beings.num;
             continue;
         }
-        if(b->status == being_walk){
-            UpdateBeingWalk(b, &g_d->world);
-            continue;
-        }
-        if(b->status == being_fly){
-            UpdateBeingFly(b, &g_d->world);
-            continue;
-        }
-        float distance_x = g_d->pc.position.x - b->position.x;
-        float distance_y = g_d->pc.position.y - b->position.y;
-        float distance_squared = distance_x * distance_x + distance_y * distance_y;
-        float distance = 0.0F;
-        if(distance_squared < pow2(half(PLAYER_SIZE) + half(b->type->size))){
-            distance = SDL_sqrtf(distance_squared);
-            float velocity_xy = distance / (PLAYER_VELOCITY * 1.875F);
-            MovePlayer(g_d, distance_x / velocity_xy, distance_y / velocity_xy);
-        }
-        if(b->status == being_stunned){
-            UpdateBeingStunned(b, &g_d->world);
-            continue;
-        }
-        if(b->status == being_idle){
-            UpdateBeingIdle(b, distance_squared);
-            continue;
-        }
-        if(!(b->status == being_strike && ((b->status_ticks_left > 0 && b->status_ticks_left < BEING_ATTACK_STEPS / 2) || (b->status_ticks_left < 0 && b->status_ticks_left >= -(BEING_ATTACK_STEPS - 1))))){
-            b->direction = SDL_atan2f(-distance_y, -distance_x) - SDL_PI_F * 0.5F;
-        }
-        if(b->status == being_shoot && UpdateBeingShoot(b, &g_d->h_projectiles)){
-            continue;
-        }
-        if(distance == 0.0F){
-            distance = SDL_sqrtf(distance_squared);
-        }
-        if(b->status == being_strike){
-            UpdateBeingStrike(b, &g_d->pc, distance, distance_x, distance_y, &g_d->world);
-            continue;
-        }
-        if(b->status == being_follow){
-            UpdateBeingFollow(b, distance, distance_x, distance_y, &g_d->world);
-        }
+        (being_types + b->type_id)->update(b, g_d);
     }
 }
 
@@ -418,10 +376,6 @@ extern inline void ResetBeingBlade(Being* const b){
 }
 
 extern inline void StunBeing(Being* const b, const int duration){
-    // if(b->status == being_strike){
-    //     const Blade_hostile blade_base_frame = {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING};
-    //     b->blade = blade_base_frame;
-    // }
     b->status = being_stunned;
     b->status_ticks_left = duration;
 }
@@ -464,4 +418,119 @@ static inline void UpdateBeingFly(Being* const b, World* const w){
         SetBeingPosition(b, new_x, new_y);
     }
     --b->status_ticks_left;
+}
+
+static inline void UpdateBeing0(Being* const b, Game_data* const g_d){
+    if(b->status == being_walk){
+        UpdateBeingWalk(b, &g_d->world);
+        return;
+    }
+    if(b->status == being_fly){
+        UpdateBeingFly(b, &g_d->world);
+        return;
+    }
+    float distance_x = g_d->pc.position.x - b->position.x;
+    float distance_y = g_d->pc.position.y - b->position.y;
+    float distance_squared = distance_x * distance_x + distance_y * distance_y;
+    float distance = 0.0F;
+    if(distance_squared < pow2(half(PLAYER_SIZE) + half(BeingSize(b)))){
+        distance = SDL_sqrtf(distance_squared);
+        float velocity_xy = distance / (PLAYER_VELOCITY * 1.875F);
+        MovePlayer(g_d, distance_x / velocity_xy, distance_y / velocity_xy);
+    }
+    if(b->status == being_stunned){
+        UpdateBeingStunned(b, &g_d->world);
+        return;
+    }
+    if(b->status == being_idle){
+        if(distance_squared < pow2(IDLE_BEING_ACTION_DISTANCE)){
+            if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
+                b->status = being_strike;
+                b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
+                return;
+            }
+        }
+        if(b->status_ticks_left > 0){
+            --b->status_ticks_left;
+            return;
+        }
+        b->status = being_follow;
+        b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
+        return;
+    }
+    if(!(b->status == being_strike && ((b->status_ticks_left > 0 && b->status_ticks_left < BEING_ATTACK_STEPS / 2) || (b->status_ticks_left < 0 && b->status_ticks_left >= -(BEING_ATTACK_STEPS - 1))))){
+        b->direction = SDL_atan2f(-distance_y, -distance_x) - SDL_PI_F * 0.5F;
+    }
+    if(distance == 0.0F){
+        distance = SDL_sqrtf(distance_squared);
+    }
+    if(b->status == being_strike){
+        UpdateBeingStrike(b, &g_d->pc, distance, distance_x, distance_y, &g_d->world);
+        return;
+    }
+    if(b->status == being_follow){
+        UpdateBeingFollow(b, distance, distance_x, distance_y, &g_d->world);
+    }
+}
+
+static void UpdateBeing1(Being* const b, Game_data* const g_d){
+    if(b->status == being_walk){
+        UpdateBeingWalk(b, &g_d->world);
+        return;
+    }
+    if(b->status == being_fly){
+        UpdateBeingFly(b, &g_d->world);
+        return;
+    }
+    float distance_x = g_d->pc.position.x - b->position.x;
+    float distance_y = g_d->pc.position.y - b->position.y;
+    float distance_squared = distance_x * distance_x + distance_y * distance_y;
+    float distance = 0.0F;
+    if(distance_squared < pow2(half(PLAYER_SIZE) + half(BeingSize(b)))){
+        distance = SDL_sqrtf(distance_squared);
+        float velocity_xy = distance / (PLAYER_VELOCITY * 1.875F);
+        MovePlayer(g_d, distance_x / velocity_xy, distance_y / velocity_xy);
+    }
+    if(b->status == being_stunned){
+        UpdateBeingStunned(b, &g_d->world);
+        return;
+    }
+    if(b->status == being_idle){
+        if(distance_squared < pow2(IDLE_BEING_ACTION_DISTANCE)){
+            if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
+                b->status = being_strike;
+                b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
+                return;
+            }
+            if(distance_squared < pow2(BEING_SHOOT_DISTANCE)){
+                b->status = being_shoot;
+                b->status_ticks_left = BEING_RELOAD;
+                return;
+            }
+        }
+        if(b->status_ticks_left > 0){
+            --b->status_ticks_left;
+            return;
+        }
+        b->status = being_follow;
+        b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
+        return;
+    }
+    if(!(b->status == being_strike && ((b->status_ticks_left > 0 && b->status_ticks_left < BEING_ATTACK_STEPS / 2) || (b->status_ticks_left < 0 && b->status_ticks_left >= -(BEING_ATTACK_STEPS - 1))))){
+        b->direction = SDL_atan2f(-distance_y, -distance_x) - SDL_PI_F * 0.5F;
+    }
+    if(b->status == being_shoot){
+        UpdateBeingShoot(b, &g_d->h_projectiles);
+        return;
+    }
+    if(distance == 0.0F){
+        distance = SDL_sqrtf(distance_squared);
+    }
+    if(b->status == being_strike){
+        UpdateBeingStrike(b, &g_d->pc, distance, distance_x, distance_y, &g_d->world);
+        return;
+    }
+    if(b->status == being_follow){
+        UpdateBeingFollow(b, distance, distance_x, distance_y, &g_d->world);
+    }
 }

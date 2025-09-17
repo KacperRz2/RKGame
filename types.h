@@ -20,10 +20,6 @@ typedef struct Projectiles_h_array Projectiles_h_array;
 //World
 typedef struct Segment Segment;
 typedef struct World World;
-//Scroll
-typedef struct Scroll Scroll;
-// typedef struct Scroll_type Scroll_type;
-// typedef struct Scrolls_array Scrolls_array;
 //Player
 typedef struct Player Player;
 //Game
@@ -67,13 +63,12 @@ struct Being_type{
 	float size;
     float velocity;
     int hit_points;
-	int damage_close;
-	int damage_far;
+	int damage;
+	void (*update)(Being* const, Game_data* const);
 };
 struct Blade_hostile{
 	SDL_FPoint position;
 	float direction;
-	// int attack_tiks_left;
 };
 struct Being{
     SDL_FPoint position;
@@ -81,7 +76,7 @@ struct Being{
     Segment* segment;
 	unsigned int indx;
     int hit_points;
-	const Being_type* type;
+	unsigned int type_id;
 	int status;
 	int status_ticks_left;
 	Blade_hostile blade;
@@ -132,17 +127,6 @@ struct World{
 	SDL_FPoint portalB;
 	SDL_FPoint door;
 };
-//Scroll
-// struct Scroll_type{
-// };
-struct Scroll{
-	void (*effect)(Game_data* const);
-	unsigned int num;
-};
-// struct Scrolls_array{
-// 	Scroll* array;
-// 	int num;
-// };
 //Player
 struct Player{
 	Uint32 control_flags;
@@ -160,13 +144,13 @@ struct Player{
 	float armour;
 	int coins;
 	unsigned int selected_scroll;
-	Scroll scrolls[SCROLLS_NUM];
+	unsigned int scrolls[SCROLLS_NUM];
 	unsigned int scrolls_quick_access[QUICK_SCROLLS];
 };
 //Game
 struct Box_element{
 	int type;
-	void* value;
+	unsigned int value;
 };
 struct Box{
 	SDL_FPoint location;

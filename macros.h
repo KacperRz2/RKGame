@@ -28,7 +28,7 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        19
+#define TEXTURE_FILES_NUM	        21
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -125,6 +125,19 @@
 #define QUICK_SCROLLS               9U
 #define SCROLLS_NUM                 8U
 #define SCROLL_SIZE                 32.0F
+#define BEING_TYPES_NUM             2U
+
+#define KEY_MOVE_FORWARD            SDL_SCANCODE_W
+#define KEY_MOVE_BACK               SDL_SCANCODE_S
+#define KEY_MOVE_RIGHT              SDL_SCANCODE_D
+#define KEY_MOVE_LEFT               SDL_SCANCODE_A
+#define KEY_DODGE                   SDL_SCANCODE_SPACE
+#define KEY_RUN                     SDL_SCANCODE_LALT
+#define KEY_ACTION                  SDL_SCANCODE_E
+#define KEY_SWITCH_RANGE            SDL_SCANCODE_Q
+#define KEY_TMP                     SDL_SCANCODE_H
+#define BUTTON_ATTACK               SDL_BUTTON_LEFT
+#define BUTTON_BLOCK                SDL_BUTTON_RIGHT
 
 #define SCR_COSTS                   {\
                                         8U,\
@@ -135,6 +148,40 @@
                                         8U,\
                                         8U,\
                                         0U\
+                                    }
+#define SCR_EFFECTS                 {\
+                                        effect0,\
+                                        effect1,\
+                                        effect2,\
+                                        effect3,\
+                                        effect4,\
+                                        effect5,\
+                                        effect6,\
+                                        NULL\
+                                    }
+#define BEING_TYPES                 {\
+                                        {\
+                                            TEST_BEING_SIZE,\
+                                            PLAYER_VELOCITY * 2.5F,\
+                                            TEST_BEING_HP,\
+                                            2,\
+                                            UpdateBeing0\
+                                        },\
+                                        {\
+                                            48,\
+                                            PLAYER_VELOCITY * 1.5F,\
+                                            TEST_BEING_HP * 2.0F,\
+                                            3,\
+                                            UpdateBeing1\
+                                        }\
+                                    }
+#define BEINGS_TEXTURES             {\
+                                        tx_being,\
+                                        tx_being1\
+                                    }
+#define BEINGS_WEAPON_TEXTURES      {\
+                                        tx_being_blade,\
+                                        tx_weapon\
                                     }
 #define PC_BLADE_FRAMES0	        {\
                                         {{16.0F, -8.0F}, SDL_PI_F * 0.55F},\
@@ -175,7 +222,9 @@
                                         "imgE.bmp",\
                                         "imgF.bmp",\
                                         "img10.bmp",\
-                                        "img11.bmp"\
+                                        "img11.bmp",\
+                                        "img12.bmp",\
+                                        "img13.bmp"\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\
@@ -194,6 +243,10 @@
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F) + PLAYER_REND_Y_SHIFT,\
                                         (float)PLAYER_SIZE * 2.0F,\
                                         (float)PLAYER_SIZE * 2.0F\
+                                    }
+#define WEAPON_ROTATION_POINT       {\
+                                        half(BLADE_SIZE),\
+                                        BLADE_SIZE * BLADE_HANDLER_POSITION\
                                     }
 #define WORLD_BASE              {\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
