@@ -69,7 +69,12 @@ void UpdateProjectiles(Game_data* const g_d, Segment* const player_seg){
 						continue;
 					}
 				}else{
-					StunBeing(b, pr->shift_per_tick.x * 0.125, pr->shift_per_tick.y * 0.125, BEING_DEFAULT_LEFT_TICKS);
+					if(b->status == being_strike){
+						ResetBeingBlade(b);
+					}
+					if(b->status != being_fly){
+						StunBeing(b, BEING_DEFAULT_LEFT_TICKS);
+					}
 					if(pr->hits < pr->penetration){
 						*(pr->hit_targets + pr->hits++) = b->id;
 						continue;

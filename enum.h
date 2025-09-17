@@ -20,6 +20,7 @@ enum texture_num{
     tx_box,
     tx_barrier,
     tx_stun,
+    tx_scroll,
     tx_map
 };
 
@@ -34,7 +35,8 @@ enum control{
     attack = 1 << 7,
     block = 1 << 8,
     action = 1 << 9,
-    range_mode = 1 << 10
+    range_mode = 1 << 10,
+    cast = 1 << 11
 };
 
 enum being_status{
@@ -44,7 +46,8 @@ enum being_status{
     being_strike,
     being_walk,
     being_dead,
-    being_stunned
+    being_stunned,
+    being_fly
 };
 
 enum menu_option{
@@ -59,6 +62,21 @@ enum box_content_type{
     box_scroll,
     box_key,
     box_map
+};
+
+enum scroll_type{
+    scroll_0,
+    scroll_1,
+    scroll_2,
+    scroll_3,
+    scroll_4,
+    scroll_5,
+    scroll_6,
+    scroll_empty
+};
+
+enum render_flags{
+    rend_casting = 1 << 0
 };
 
 #endif

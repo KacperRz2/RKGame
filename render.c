@@ -5,30 +5,12 @@
 #include <function.h>
 #include <enum.h>
 #include <World.h>
+#include <Scroll.h>
 
 int GraphicsInitiation(Render_data* const data){
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
-	const char* const texture_files[TEXTURE_FILES_NUM] = {
-		"img0.bmp",
-		"img1.bmp",
-		"img2.bmp",
-		"being.bmp",
-		"img3.bmp",
-		"img4.bmp",
-		"img5.bmp",
-		"img6.bmp",
-		"img7.bmp",
-		"img8.bmp",
-		"img9.bmp",
-		"imgA.bmp",
-		"imgB.bmp",
-		"imgC.bmp",
-		"imgD.bmp",
-		"imgE.bmp",
-		"imgF.bmp",
-		"img10.bmp"
-	};
+	const char* const texture_files[TEXTURE_FILES_NUM] = TEXTURE_FILES_NAMES;
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
 	if(!SDL_Init(SDL_INIT_VIDEO)){
@@ -86,6 +68,7 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 	rend_data->visible_rect.y = 0.0F;
 	rend_data->visible_rect.w = rend_data->viewfinder;
 	rend_data->visible_rect.h = rend_data->viewfinder;
+	rend_data->render_flags = 0U;
 }
 
 static void RenderBlade(Render_data* const rend_data, Blade* const blade){
@@ -247,7 +230,11 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 	SDL_RenderDebugTextFormat(rend, 10, 210, "boxes: %d", g_d->boxes.num);
 	SDL_RenderDebugTextFormat(rend, 10, 220, "keys: %d", g_d->keys);
 	SDL_RenderDebugTextFormat(rend, 10, 230, "needed: %d", g_d->needed_keys);
-	SDL_RenderDebugTextFormat(rend, 10, 260, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
+	SDL_RenderDebugTextFormat(rend, 10, 240, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
+	SDL_RenderDebugTextFormat(rend, 10, 250, "selected scroll: %d", g_d->pc.selected_scroll);
+	SDL_RenderDebugTextFormat(rend, 10, 260, "selected scroll num: %d", (g_d->pc.scrolls + g_d->pc.selected_scroll)->num);
+	SDL_RenderDebugTextFormat(rend, 10, 270, "selected scroll cost: %d", ScrollCost(g_d->pc.selected_scroll));
+
 }
 
 static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
@@ -325,6 +312,8 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	RenderProjectiles(rend_data, g_d);
 	if(!(g_d->pc.control_flags & range_mode)){
 		RenderBlade(rend_data, &g_d->pc.blade);
+	}else{
+		RenderScroll(rend_data);
 	}
 	RenderBeings(rend_data, g_d);
 	RenderHProjectiles(rend_data, g_d);
@@ -463,22 +452,28 @@ void DrawMap(Render_data* const rend_data, World* const w){
 	SDL_DestroySurface(surface);
 }
 
-static void RenderPlayer(Render_data* const rend_data){
-	const SDL_FRect rect = {
-		VIEWFINDER_CENTER - half(PLAYER_SIZE),
-		VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,
-		(float)PLAYER_SIZE,
-		(float)PLAYER_SIZE
-	};
+static inline void RenderPlayer(Render_data* const rend_data){
+	const SDL_FRect rect = PC_RECT;
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect);
 }
 
-static void RenderBarrier(Render_data* const rend_data){
-	const SDL_FRect rect = {
-		VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F),
-		VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F) + PLAYER_REND_Y_SHIFT,
-		(float)PLAYER_SIZE * 2.0F,
-		(float)PLAYER_SIZE * 2.0F
-	};
+static inline void RenderBarrier(Render_data* const rend_data){
+	const SDL_FRect rect = PC_SHIELD_RECT;
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_barrier), NULL, &rect);
+}
+
+static inline void RenderScroll(Render_data* const rend_data){
+	const SDL_FRect rect = PC_SCROLL_RECT;
+	static SDL_FRect src_rect = {
+		0.0F,
+		0.0F,
+		128.0F,
+		128.0F
+	};
+	if(rend_data->render_flags & rend_casting){
+		src_rect.x = 128.0F;
+	}else{
+		src_rect.x = 0.0F;
+	}
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_scroll), &src_rect, &rect);
 }

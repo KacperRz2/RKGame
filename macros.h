@@ -28,7 +28,7 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        18
+#define TEXTURE_FILES_NUM	        19
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -61,6 +61,7 @@
 #define BEING_ATTACK_DISTANCE       140.0F
 #define BEING_SHOOT_DISTANCE        700.0F
 #define BEING_RELOAD_TICKS          128
+#define BEING_STUN_DURATION         256
 #define PROJECTILE_VELOCITY         4.0F
 #define BEING_HALT_DISTANCE         70.0F
 #define BEING_MIN_DISTANCE          64.0F
@@ -82,6 +83,7 @@
 #define PC_PUSH_FATIG_BLOCK_TIME    50
 #define PC_PUSH_RELOAD              256
 #define PC_PUSH_REACH               (PLAYER_SIZE * 2.0F)
+#define PC_CAST_RELOAD              512
 #define PC_FAILURE_FATIG_BLOCK_TIME 2
 #define PC_FAILURE_VELOCITY         0.5F
 #define PC_FATIGUE_GAIN_INTERVAL    4U
@@ -119,6 +121,122 @@
 #define BOX_SIZE                    32.0F
 #define BOX_SLOTS                   8
 #define BLOCK_COST                  16
-#define DEFAULT_FLY_VELOCITY        0.25F
+#define DEFAULT_FLY_VELOCITY        0.5F
+#define QUICK_SCROLLS               9U
+#define SCROLLS_NUM                 8U
+#define SCROLL_SIZE                 32.0F
+
+#define SCR_COSTS                   {\
+                                        8U,\
+                                        2U,\
+                                        8U,\
+                                        8U,\
+                                        8U,\
+                                        8U,\
+                                        8U,\
+                                        0U\
+                                    }
+#define PC_BLADE_FRAMES0	        {\
+                                        {{16.0F, -8.0F}, SDL_PI_F * 0.55F},\
+                                        {{6.0F, 8.0F}, SDL_PI_F * 0.25F},\
+                                        {{-4.0F, 10.0F}, 0.0F},\
+                                        {{-4.0F, 10.0F}, SDL_PI_F * -0.416F},\
+                                        {{-14.0F, 0.0F}, SDL_PI_F * -0.55F}\
+                                    }
+#define PC_BLADE_FRAMES1	        {\
+                                        {{-14.0F, 0.0F}, SDL_PI_F * -0.65F},\
+                                        {{-4.0F, 10.0F}, SDL_PI_F * -0.38F},\
+                                        {{6.0F, 8.0F}, SDL_PI_F * -0.138F},\
+                                        {{16.0F, -8.0F}, SDL_PI_F * 0.45F},\
+                                        {{16.0F, -8.0F}, SDL_PI_F * 0.55F}\
+                                    }
+#define PC_BLADE_FRAMES2	        {\
+                                        {{16.0F, -8.0F}, SDL_PI_F * 0.45F},\
+                                        {{16.0F, 0.0}, 0.0F},\
+                                        {{-1.0F, 24.0F}, 0.0F},\
+                                        {{0.0F, 25.0F}, 0.0F}\
+                                    }
+#define TEXTURE_FILES_NAMES         {\
+                                        "img0.bmp",\
+                                        "img1.bmp",\
+                                        "img2.bmp",\
+                                        "being.bmp",\
+                                        "img3.bmp",\
+                                        "img4.bmp",\
+                                        "img5.bmp",\
+                                        "img6.bmp",\
+                                        "img7.bmp",\
+                                        "img8.bmp",\
+                                        "img9.bmp",\
+                                        "imgA.bmp",\
+                                        "imgB.bmp",\
+                                        "imgC.bmp",\
+                                        "imgD.bmp",\
+                                        "imgE.bmp",\
+                                        "imgF.bmp",\
+                                        "img10.bmp",\
+                                        "img11.bmp"\
+                                    }
+#define PC_RECT                     {\
+                                        VIEWFINDER_CENTER - half(PLAYER_SIZE),\
+                                        VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,\
+                                        (float)PLAYER_SIZE,\
+                                        (float)PLAYER_SIZE\
+                                    }
+#define PC_SCROLL_RECT              {\
+                                        VIEWFINDER_CENTER,\
+                                        VIEWFINDER_CENTER - SCROLL_SIZE + PLAYER_REND_Y_SHIFT,\
+                                        SCROLL_SIZE,\
+                                        SCROLL_SIZE\
+                                    }
+#define PC_SHIELD_RECT              {\
+                                        VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F),\
+                                        VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F) + PLAYER_REND_Y_SHIFT,\
+                                        (float)PLAYER_SIZE * 2.0F,\
+                                        (float)PLAYER_SIZE * 2.0F\
+                                    }
+#define WORLD_BASE              {\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0,\
+                                    0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0,\
+                                    0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0,\
+                                    1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1,\
+                                    0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0,\
+                                    0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0,\
+                                    0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                }
+#define WORLD_SMALL_BASE        {\
+                                    0, 0, 1, 1, 1, 0, 0,\
+                                    0, 1, 1, 1, 1, 1, 0,\
+                                    1, 1, 1, 1, 1, 1, 1,\
+                                    1, 1, 1, 2, 1, 1, 1,\
+                                    1, 1, 1, 1, 1, 1, 1,\
+                                    0, 1, 1, 1, 1, 1, 0,\
+                                    0, 0, 1, 1, 1, 0, 0,\
+                                }
+#define BEING_BLD_SHIFT_PREPATE {{(20.0F - 16.0F) / BEING_ATTACK_STEPS, (-16.0F - -8.0F) / BEING_ATTACK_STEPS}, (0.5F - 0.0F) / BEING_ATTACK_STEPS}
+#define BEING_BLD_SHIFT_ATTACK  {{(0.0F - 20.0F) / BEING_ATTACK_STEPS, (24.0F - -16.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.5F) / BEING_ATTACK_STEPS}
+#define BEING_BLD_SHIFT_RESET   {{(BLADE_BASE_X - 0.0F) / BEING_ATTACK_STEPS, (BLADE_BASE_Y - 24.0F) / BEING_ATTACK_STEPS}, (BLADE_BASE_DIRECTION_BEING - 0.0F) / BEING_ATTACK_STEPS}
 
 #endif

@@ -23,6 +23,9 @@ static void UpdatePlayerFire(Game_data* const);
 static void UpdatePlayerPush(Game_data* const);
 void HaltPlayer(Player* const);
 void HitBarrier(Player* const, const int);
-static float GetDirectionToPush(SDL_FPoint* const, SDL_FPoint* const);
+float GetDirectionToPush(SDL_FPoint* const, SDL_FPoint* const);
+static void UpdatePlayerCast(Game_data* const);
+void HealPlayer(Player* const p, const int);
+static void UpdatePlayerHitPoints(Player* const);
 
 #endif

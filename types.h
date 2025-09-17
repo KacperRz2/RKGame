@@ -20,6 +20,10 @@ typedef struct Projectiles_h_array Projectiles_h_array;
 //World
 typedef struct Segment Segment;
 typedef struct World World;
+//Scroll
+typedef struct Scroll Scroll;
+// typedef struct Scroll_type Scroll_type;
+// typedef struct Scrolls_array Scrolls_array;
 //Player
 typedef struct Player Player;
 //Game
@@ -56,6 +60,7 @@ struct Render_data{
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	SDL_Texture* textures[TEXTURES_NUM];
+	Uint32 render_flags;
 };
 //Being
 struct Being_type{
@@ -127,6 +132,17 @@ struct World{
 	SDL_FPoint portalB;
 	SDL_FPoint door;
 };
+//Scroll
+// struct Scroll_type{
+// };
+struct Scroll{
+	void (*effect)(Game_data* const);
+	unsigned int num;
+};
+// struct Scrolls_array{
+// 	Scroll* array;
+// 	int num;
+// };
 //Player
 struct Player{
 	Uint32 control_flags;
@@ -143,17 +159,20 @@ struct Player{
 	int fatigue_block_time;
 	float armour;
 	int coins;
+	unsigned int selected_scroll;
+	Scroll scrolls[SCROLLS_NUM];
+	unsigned int scrolls_quick_access[QUICK_SCROLLS];
 };
 //Game
-struct Box_element {
+struct Box_element{
 	int type;
 	void* value;
 };
-struct Box {
+struct Box{
 	SDL_FPoint location;
 	Box_element elements[BOX_SLOTS];
 };
-struct Boxes {
+struct Boxes{
 	Box* array;
 	unsigned int num;
 };

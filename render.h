@@ -23,5 +23,6 @@ static void RenderStaticThing(Render_data* const, const float, const float, Play
 void DrawMap(Render_data* const, World* const);
 static void RenderPlayer(Render_data* const);
 static void RenderBarrier(Render_data* const);
+static void RenderScroll(Render_data* const);
 
 #endif

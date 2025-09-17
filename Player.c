@@ -7,6 +7,31 @@
 #include <World.h>
 #include <Being.h>
 #include <enum.h>
+#include <Scroll.h>
+
+static void InitScrolls(Player* const p){
+	p->scrolls->num = 99U;
+	p->scrolls->effect = effect0;
+	(p->scrolls + 1)->num = 99U;
+	(p->scrolls + 1)->effect = effect1;
+	(p->scrolls + 2)->num = 0U;
+	(p->scrolls + 2)->effect = effect2;
+	(p->scrolls + 3)->num = 0U;
+	(p->scrolls + 3)->effect = effect3;
+	(p->scrolls + 4)->num = 0U;
+	(p->scrolls + 4)->effect = effect4;
+	(p->scrolls + 5)->num = 0U;
+	(p->scrolls + 5)->effect = effect5;
+	(p->scrolls + 6)->num = 0U;
+	(p->scrolls + 6)->effect = effect6;
+	(p->scrolls + scroll_empty)->num = 0U;
+	(p->scrolls + scroll_empty)->effect = NULL;
+	*(p->scrolls_quick_access) = scroll_0;
+	*(p->scrolls_quick_access + 1) = scroll_1;
+	for(unsigned int i = 2U; i < QUICK_SCROLLS; ++i){
+		*(p->scrolls_quick_access + i) = scroll_empty;
+	}
+}
 
 void CreatePlayer(Player* const p, const float x, const float y){
 	p->blade.position.x = BLADE_BASE_X;
@@ -28,6 +53,8 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->fatigue_block_time = 0;
 	p->armour = PC_ARMOUR;
 	p->coins = PC_START_COINS;
+	p->selected_scroll = scroll_empty;
+	InitScrolls(p);
 }
 
 extern inline void SetPlayerPosition(Player* const p, const float x, const float y){
@@ -146,6 +173,7 @@ static void UpdatePlayerPoints(Player* const p){
 void UpdatePlayer(Game_data* const g_d){
 	UpdatePlayerDirection(&g_d->pc);
 	UpdatePlayerMove(g_d);
+	UpdatePlayerCast(g_d);
 	UpdatePlayerPush(g_d);
 	UpdatePlayerFire(g_d);
 	UpdatePlayerBlade(g_d);
@@ -234,7 +262,7 @@ static bool UnleashDestruction(Game_data* const g_d){
 				}
 			}else{
 				float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
-				StunBeing(b, SineSafe(angle) * bl->damage / 32, -CosiSafe(angle) * bl->damage / 32, BEING_DEFAULT_LEFT_TICKS * 2);
+				CatapultBeing(b, SineSafe(angle) * bl->damage / 32, -CosiSafe(angle) * bl->damage / 32, BEING_DEFAULT_LEFT_TICKS * 2);
 				if(bl->hits < bl->penetration){
 					*(bl->hit_targets + bl->hits++) = b->id;
 					continue;
@@ -247,26 +275,9 @@ static bool UnleashDestruction(Game_data* const g_d){
 }
 
 static void UpdatePlayerBlade(Game_data* const g_d){
-	static const Status_frame blade_key_frames_0[] = {
-		{{16.0F, -8.0F}, SDL_PI_F * 0.55F},
-		{{6.0F, 8.0F}, SDL_PI_F * 0.25F},
-		{{-4.0F, 10.0F}, 0.0F},
-		{{-4.0F, 10.0F}, SDL_PI_F * -0.416F},
-		{{-14.0F, 0.0F}, SDL_PI_F * -0.55F}
-	};
-	static const Status_frame blade_key_frames_1[] = {
-		{{-14.0F, 0.0F}, SDL_PI_F * -0.65F},
-		{{-4.0F, 10.0F}, SDL_PI_F * -0.38F},
-		{{6.0F, 8.0F}, SDL_PI_F * -0.138F},
-		{{16.0F, -8.0F}, SDL_PI_F * 0.45F},
-		{{16.0F, -8.0F}, SDL_PI_F * 0.55F}
-	};
-	static const Status_frame blade_key_frames_2[] = {
-		{{16.0F, -8.0F}, SDL_PI_F * 0.45F},
-		{{16.0F, 0.0}, 0.0F},
-		{{-1.0F, 24.0F}, 0.0F},
-		{{0.0F, 25.0F}, 0.0F}
-	};
+	static const Status_frame blade_key_frames_0[] = PC_BLADE_FRAMES0;
+	static const Status_frame blade_key_frames_1[] = PC_BLADE_FRAMES1;
+	static const Status_frame blade_key_frames_2[] = PC_BLADE_FRAMES2;
 	static const Status_frame* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
 
@@ -363,7 +374,7 @@ static void UpdatePlayerFire(Game_data* const g_d){
 	static int shoot_reload = 0;
 	if(shoot_reload > 0){
 		--shoot_reload;
-	}else if((g_d->pc.control_flags & (range_mode | attack | block)) == (range_mode | attack) && g_d->projectiles.num < MAX_PROJECTILES_NUM){
+	}else if(g_d->pc.selected_scroll == scroll_empty && (g_d->pc.control_flags & (range_mode | attack | block)) == (range_mode | attack) && g_d->projectiles.num < MAX_PROJECTILES_NUM){
 		AddProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, TEST_DAMAGE, TEST_PENETRATION);
 		shoot_reload = PC_SHOOT_RELOAD;
 	}
@@ -391,12 +402,11 @@ static void UpdatePlayerPush(Game_data* const g_d){
 					}
 					float difference = SDL_fabsf(g_d->pc.direction - angle);
 					if(difference <= SDL_PI_F * 0.5F || difference >= SDL_PI_F * 1.5F){
-						StunBeing(b, sine(angle) * DEFAULT_FLY_VELOCITY, -cosi(angle) * DEFAULT_FLY_VELOCITY, BEING_DEFAULT_LEFT_TICKS * 16);
+						CatapultBeing(b, sine(angle) * DEFAULT_FLY_VELOCITY, -cosi(angle) * DEFAULT_FLY_VELOCITY, BEING_DEFAULT_LEFT_TICKS * 4);
 					}
 				}
 			}
 		}}
-
 	}
 }
 
@@ -412,6 +422,33 @@ extern inline void HitBarrier(Player* const p, const int damage){
 	}
 }
 
-static inline float GetDirectionToPush(SDL_FPoint* const pushing, SDL_FPoint* const pushed){
+extern inline float GetDirectionToPush(SDL_FPoint* const pushing, SDL_FPoint* const pushed){
     return SDL_atan2f(pushed->y - pushing->y, pushed->x - pushing->x) + SDL_PI_F * 0.5F;
+}
+
+static void UpdatePlayerCast(Game_data* const g_d){
+	static int cast_reload = 0;
+	if(cast_reload > 0){
+		--cast_reload;
+	}else if(g_d->pc.control_flags & cast){
+		g_d->pc.control_flags &= ~(cast);
+		const int cost = ScrollCost(g_d->pc.selected_scroll);
+		if(g_d->pc.magic_points >= cost){
+			g_d->pc.magic_points -= cost;
+			--(g_d->pc.scrolls + g_d->pc.selected_scroll)->num;
+			UseScroll(g_d);
+			cast_reload = PC_CAST_RELOAD;
+		}
+	}
+}
+
+extern inline void HealPlayer(Player* const p, const int points){
+	p->hit_points += points;
+	UpdatePlayerHitPoints(p);
+}
+
+static inline void UpdatePlayerHitPoints(Player* const p){
+	if(p->hit_points > p->max_h_p){
+		p->hit_points = p->max_h_p;
+	}
 }
