@@ -25,10 +25,8 @@ static void InitScrolls(Player* const p){
 }
 
 void CreatePlayer(Player* const p, const float x, const float y){
-	p->blade.position.x = BLADE_BASE_X;
- 	p->blade.position.y = BLADE_BASE_Y;
-	p->blade.direction = BLADE_BASE_DIRECTION_PC;
-	p->blade.damage = BLADE_DAMAGE;
+	p->blade.placement = (Placement)PC_BLADE_BASE_PLCMNT;
+	p->blade.impact = (Impact)PC_BLADE_IMPACT;
 	p->blade.penetration = BLADE_PENETRATION;
 	p->blade.hits = 0;
 	SetPlayerPosition(p, x, y);
@@ -42,15 +40,15 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->max_fatigue = PC_FATIGUE;
 	p->max_h_p = PC_HP;
 	p->fatigue_block_time = 0;
-	p->armour = PC_ARMOUR;
+	p->armour = (Armour)PC_ARMOUR;
 	p->coins = PC_START_COINS;
 	p->selected_scroll = scroll_empty;
 	InitScrolls(p);
+    p->effects_num = 0U;
 }
 
 extern inline void SetPlayerPosition(Player* const p, const float x, const float y){
-	p->position.x = x;
-	p->position.y = y;
+	p->position = (SDL_FPoint){x, y};
 }
 
 extern inline void MovePlayer(Game_data* const g_d, const float x, const float y){
@@ -171,45 +169,45 @@ void UpdatePlayer(Game_data* const g_d){
 	UpdatePlayerPoints(&g_d->pc);
 }
 
-static inline void ShiftBlade(Blade* const bl, Status_frame* const shift){
-	bl->position.x += shift->position.x;
-	bl->position.y += shift->position.y;
-	bl->direction += shift->direction;
+static inline void ShiftBlade(Blade* const bl, Placement* const shift){
+	bl->placement.position.x += shift->position.x;
+	bl->placement.position.y += shift->position.y;
+	bl->placement.direction += shift->direction;
 }
 
-static inline void SetBladePosition(Blade* const bl, const Status_frame* const position){
-	bl->position.x = position->position.x;
-	bl->position.y = position->position.y;
-	bl->direction = position->direction;
+static inline void SetBladePosition(Blade* const bl, const Placement* const position){
+	bl->placement = *position;
 }
 
-static inline void SetShiftToBase(Blade* const bl, Status_frame* const step_shift, const unsigned int steps){
-	step_shift->position.x = (BLADE_BASE_X - bl->position.x) / steps;
-	step_shift->position.y = (BLADE_BASE_Y - bl->position.y) / steps;
-	step_shift->direction = (BLADE_BASE_DIRECTION_PC - bl->direction) / steps;
+static inline void SetShiftToBase(Blade* const bl, Placement* const step_shift, const unsigned int steps){
+	*step_shift = (Placement){
+		{(BLADE_BASE_X - bl->placement.position.x) / steps, (BLADE_BASE_Y - bl->placement.position.y) / steps},
+		(BLADE_BASE_DIRECTION_PC - bl->placement.direction) / steps
+	};
 }
 
 static inline void SetBladePositionToBase(Blade* const bl){
-	bl->position.x = BLADE_BASE_X;
-	bl->position.y = BLADE_BASE_Y;
-	bl->direction = BLADE_BASE_DIRECTION_PC;
+	bl->placement = (Placement)PC_BLADE_BASE_PLCMNT;
 }
 
-static inline void SetShiftToPosition(Blade* const bl, Status_frame* const step_shift, const Status_frame* const frame, const unsigned int steps){
-	step_shift->position.x = (frame->position.x - bl->position.x) / steps;
-	step_shift->position.y = (frame->position.y - bl->position.y) / steps;
-	step_shift->direction = (frame->direction - bl->direction) / steps;
+static inline void SetShiftToPosition(Blade* const bl, Placement* const step_shift, const Placement* const frame, const unsigned int steps){
+	*step_shift = (Placement){
+		{(frame->position.x - bl->placement.position.x) / steps, (frame->position.y - bl->placement.position.y) / steps},
+		(frame->direction - bl->placement.direction) / steps
+	};
 }
 
-static inline Status_frame GetBladeLocation(Player* const p, float* const sine, float* const cosine){
-	float direct = p->direction + p->blade.direction;
+static inline Placement GetBladeLocation(Player* const p, float* const sine, float* const cosine){
+	float direct = p->direction + p->blade.placement.direction;
 	*sine = SineSafe(direct);
 	*cosine = CosiSafe(direct);
-	Status_frame ret = {{p->position.x + *sine * p->blade.position.x, p->position.y - *cosine * p->blade.position.y}, direct};
-	return ret;
+	return (Placement){
+		{p->position.x + *sine * p->blade.placement.position.x, p->position.y - *cosine * p->blade.placement.position.y},
+		direct
+	};
 }
 
-static inline bool BladeHitsBeing(Blade* const bl, Status_frame* const location, Being* const b, SDL_FPoint* const dangerous_points){
+static inline bool BladeHitsBeing(Blade* const bl, Placement* const location, Being* const b, SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
 		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(BeingSize(b)) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(BeingSize(b))){
 			for(unsigned int j = bl->hits; j > 0U; --j){
@@ -227,7 +225,7 @@ static bool UnleashDestruction(Game_data* const g_d){
 	static const float length_part = BLADE_SIZE * 0.85F / (float)PC_BLADE_CHECKPOINTS;
 	float sine_blade_direction;
 	float cosine_blade_direction;
-	Status_frame blade_true_location = GetBladeLocation(&g_d->pc, &sine_blade_direction, &cosine_blade_direction);
+	Placement blade_true_location = GetBladeLocation(&g_d->pc, &sine_blade_direction, &cosine_blade_direction);
 	Segment* s = GetSegment(&g_d->world, blade_true_location.position.x, blade_true_location.position.y);
 	if(s == NULL){
 		return true;
@@ -246,14 +244,14 @@ static bool UnleashDestruction(Game_data* const g_d){
 		for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
 			Being* b = *(neighbour->beings.array + i);
 			if(!BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) continue;
-			if(DamageBeing(b, bl->damage)){
+			if(DamageBeing(b, bl->impact.damage)){
 				if(bl->hits < --bl->penetration){
 					--i;
 					continue;
 				}
 			}else{
 				float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
-				CatapultBeing(b, SineSafe(angle) * bl->damage / 32, -CosiSafe(angle) * bl->damage / 32, BEING_DEFAULT_LEFT_TICKS * 2);
+				CatapultBeing(b, SineSafe(angle) * bl->impact.damage / 256, -CosiSafe(angle) * bl->impact.damage / 256, BEING_DEFAULT_LEFT_TICKS * 2);
 				if(bl->hits < bl->penetration){
 					*(bl->hit_targets + bl->hits++) = b->id;
 					continue;
@@ -266,13 +264,13 @@ static bool UnleashDestruction(Game_data* const g_d){
 }
 
 static void UpdatePlayerBlade(Game_data* const g_d){
-	static const Status_frame blade_key_frames_0[] = PC_BLADE_FRAMES0;
-	static const Status_frame blade_key_frames_1[] = PC_BLADE_FRAMES1;
-	static const Status_frame blade_key_frames_2[] = PC_BLADE_FRAMES2;
-	static const Status_frame* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
+	static const Placement blade_key_frames_0[] = PC_BLADE_FRAMES0;
+	static const Placement blade_key_frames_1[] = PC_BLADE_FRAMES1;
+	static const Placement blade_key_frames_2[] = PC_BLADE_FRAMES2;
+	static const Placement* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
 
-	static Status_frame step_shift = {{0.0F, 0.0F}, 0.0};
+	static Placement step_shift = {{0.0F, 0.0F}, 0.0};
 	static int key = 0;
 	static int steps = 0;
 	static int step = 0;
@@ -310,7 +308,7 @@ static void UpdatePlayerBlade(Game_data* const g_d){
 				abide = true;
 				idle_ticks = 0U;
 				g_d->pc.blade.hits = 0U;
-				g_d->pc.blade.damage = (int)(PC_BLADE_DAMAGE_BASE * (1.0F - charge));
+				g_d->pc.blade.impact.damage = (int)(PC_BLADE_DAMAGE_BASE * (1.0F - charge));
 				g_d->pc.blade.penetration = (unsigned int)((float)BLADE_PENETRATION * (1.0F - charge));
 				charge = PC_BLADE_CHARGE_BASE;
 				SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain), steps = PC_BLADE_FIRST_MOVE_STEPS);
@@ -342,7 +340,7 @@ static void UpdatePlayerBlade(Game_data* const g_d){
 		if(!freehand && key > 1 && (freehand = UnleashDestruction(g_d))){
 			abide = false;
 			g_d->pc.blade.hits = 0U;
-			g_d->pc.blade.direction = chain == 1 ? g_d->pc.blade.direction - PC_BLADE_BOUNCE_ANGLE : g_d->pc.blade.direction + PC_BLADE_BOUNCE_ANGLE;
+			g_d->pc.blade.placement.direction = chain == 1 ? g_d->pc.blade.placement.direction - PC_BLADE_BOUNCE_ANGLE : g_d->pc.blade.placement.direction + PC_BLADE_BOUNCE_ANGLE;
 			SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain_next), steps = PC_BLADE_AFTER_BLOCK_STEPS);
 			step = 0;
 		}
@@ -407,6 +405,7 @@ extern inline void HaltPlayer(Player* const p){
 
 extern inline void HitBarrier(Player* const p, const int damage){
 	p->fatigue_points -= damage * BLOCK_COST;
+	p->fatigue_block_time += PC_BLOCK_FATIG_BLOCK_TIME;
 	if(p->fatigue_points < 0){
 		p->control_flags &= ~(block);
 		p->fatigue_points = 0;

@@ -2,13 +2,14 @@
 #define TYPES_H_
 
 //other
-typedef struct Walk Walk;
 typedef struct Blade Blade;
-typedef struct Status_frame Status_frame;
+typedef struct Placement Placement;
+typedef struct Impact Impact;
 typedef struct Render_data Render_data;
 typedef struct Lasting_effect Lasting_effect;
+typedef struct Armour Armour;
 //Being
-typedef struct Blade_hostile Blade_hostile;
+typedef struct Weapon Weapon;
 typedef struct Being_type Being_type;
 typedef struct Being Being;
 typedef struct Beings_array Beings_array;
@@ -28,21 +29,22 @@ typedef struct Box Box;
 typedef struct Boxes Boxes;
 
 //other
-struct Walk{
-	int time_left;
-	SDL_FPoint shift;
-};
-struct Blade{
+struct Placement{
 	SDL_FPoint position;
 	float direction;
+};
+struct Impact{
 	int damage;
+	float penetration;
+	int magic;
+	float stun;
+};
+struct Blade{
+	Placement placement;
+	Impact impact;
 	unsigned int hit_targets[MAX_HITS];
 	Uint8 penetration;
 	Uint8 hits;
-};
-struct Status_frame{
-	SDL_FPoint position;
-	float direction;
 };
 struct Render_data{
 	float viewfinder;
@@ -61,31 +63,41 @@ struct Lasting_effect{
 	unsigned int id;
 	int ticks_left;
 };
+struct Armour{
+	int absorption;
+	float multipl;
+	float antimagic;
+	float stability;
+};
 //Being
 struct Being_type{
 	float size;
     float velocity;
     int hit_points;
-	int damage;
+	Armour armour;
+	Impact impact;
 	void (*update)(Being* const, Game_data* const);
 };
-struct Blade_hostile{
-	SDL_FPoint position;
-	float direction;
+struct Weapon{
+	Placement placement;
+	Impact impact;
 };
 struct Being{
     SDL_FPoint position;
 	float direction;
     Segment* segment;
 	unsigned int indx;
+    float velocity;
     int hit_points;
 	unsigned int type_id;
 	int status;
 	int status_ticks_left;
-	Blade_hostile blade;
+	Armour armour;
+	Weapon weapon;
 	SDL_FPoint special_move_shift;
 	float special_rotation_shift;
 	unsigned int id;
+	unsigned int effects_num;
 	Lasting_effect effects[MAX_BEING_EFFECTS];
 };
 struct Beings_array{
@@ -104,12 +116,12 @@ struct Projectile{
 	union data{
 		struct penetrating{
 			unsigned int hit_targets[MAX_HITS];
-			int damage;
+			Impact impact;
 			Uint8 penetration;
 			Uint8 hits;
 		}penetrating;
 		struct basic{
-			int damage;
+			Impact impact;
 		}basic;
 		struct special{
 			unsigned int effect_id;
@@ -148,11 +160,12 @@ struct Player{
 	int max_h_p;
 	int max_fatigue;
 	int fatigue_block_time;
-	float armour;
+	Armour armour;
 	int coins;
 	unsigned int selected_scroll;
 	unsigned int scrolls[SCROLLS_NUM];
 	unsigned int scrolls_quick_access[QUICK_SCROLLS];
+	unsigned int effects_num;
 	Lasting_effect effects[MAX_PC_EFFECTS];
 };
 //Game
@@ -176,6 +189,8 @@ struct Game_data{
 	Boxes boxes;
 	unsigned int keys;
 	unsigned int needed_keys;
+	int enemy_morale;
+	unsigned int effects_num;
 	Lasting_effect effects[MAX_GAME_EFFECTS];
 };
 

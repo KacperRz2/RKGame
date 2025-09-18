@@ -35,20 +35,18 @@ extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SD
 	Projectile* pr = (prs->array + prs->num++);
 	pr->type_id = projectile_penetrat;
 	pr->position = *position;
-	pr->shift_per_tick.x = SineSafe(direction) * velocity;
-	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
-	pr->data.penetrating.damage = damage;
+	pr->shift_per_tick = (SDL_FPoint){SineSafe(direction) * velocity, -CosiSafe(direction) * velocity};
+	pr->data.penetrating.impact = (Impact){damage, 1.0F, 0, 1.0F};
 	pr->data.penetrating.penetration = penetration;
 	pr->data.penetrating.hits = 0;
 }
 
-extern inline void AddHostileProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const int damage){
+extern inline void AddHProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const Impact* const impact){
 	Projectile* pr = (prs->array + prs->num++);
 	pr->type_id = projectile_hostile;
 	pr->position = *position;
-	pr->shift_per_tick.x = SineSafe(direction) * velocity;
-	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
-	pr->data.basic.damage = damage;
+	pr->shift_per_tick = (SDL_FPoint){SineSafe(direction) * velocity, -CosiSafe(direction) * velocity};
+	pr->data.basic.impact = *impact;
 }
 
 static inline void DestroyProjectileInArray(Projectiles_array* const prs, const unsigned int indx){
@@ -85,7 +83,7 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 			for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
 				Being* b = *(neighbour->beings.array + j);
 				if(!ProjectileHitsBeing(pr, b)) continue;
-				if(DamageBeing(b, pr->data.penetrating.damage)){
+				if(DamageBeing(b, pr->data.penetrating.impact.damage)){
 					if(pr->data.penetrating.hits < --pr->data.penetrating.penetration){
 						--j;
 						continue;
@@ -123,9 +121,9 @@ static inline bool ProjectileHitsPlayerOrLost(Projectile* const pr, Player* cons
 	float distance_squated = pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y);
 	if(distance_squated < pow2(half(PLAYER_SIZE))){
 		if(p->control_flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
-			HitBarrier(p, pr->data.basic.damage);
+			HitBarrier(p, pr->data.basic.impact.damage);
 		}else{
-			DamagePlayer(p, pr->data.basic.damage);
+			DamagePlayer(p, pr->data.basic.impact.damage);
 		}
 		return true;
 	}
@@ -133,13 +131,4 @@ static inline bool ProjectileHitsPlayerOrLost(Projectile* const pr, Player* cons
 		return true;
 	}
 	return false;
-}
-
-extern inline void AddHProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const int damage){
-	Projectile* pr = (prs->array + prs->num++);
-	pr->type_id = projectile_hostile;
-	pr->position = *position;
-	pr->shift_per_tick.x = SineSafe(direction) * velocity;
-	pr->shift_per_tick.y = -CosiSafe(direction) * velocity;
-	pr->data.basic.damage = damage;
 }

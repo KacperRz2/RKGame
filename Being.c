@@ -18,18 +18,6 @@ extern inline float BeingSize(Being* const b){
     return (being_types + b->type_id)->size;
 }
 
-extern inline float BeingVelocity(Being* const b){
-    return (being_types + b->type_id)->velocity;
-}
-
-extern inline int BeingMaxHitPoints(Being* const b){
-    return (being_types + b->type_id)->hit_points;
-}
-
-extern inline int BeingDamage(Being* const b){
-    return (being_types + b->type_id)->damage;
-}
-
 static inline void AddBeingToSegment(Segment* const s, Being* const b){
     b->segment = s;
     *(s->beings.array + s->beings.num) = b;
@@ -53,18 +41,18 @@ void DestroyBeings(Beings_array* const bs){
 extern inline void AddBeingToArray(Beings_array* const bs, const unsigned int type_id, const float x, const float y, Segment* const s){
     static int being_id = 0U;
     Being* b = (bs->array + bs->num);
-    b->position.x = x;
-    b->position.y = y;
+    b->position = (SDL_FPoint){x, y};
     b->direction = 0.0F;
     b->type_id = type_id;
     AddBeingToSegment(s, b);
-    b->hit_points = BeingMaxHitPoints(b);
+    b->velocity = (being_types + b->type_id)->velocity;
+    b->armour = (being_types + b->type_id)->armour;
+    b->hit_points = (being_types + b->type_id)->hit_points;
     b->status = being_idle;
     b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
-	b->blade.position.x = BLADE_BASE_X;
- 	b->blade.position.y = BLADE_BASE_Y;
-    b->blade.direction = BLADE_BASE_DIRECTION_BEING;
+    b->weapon = (Weapon){BEING_WEAPON_BASE_PLCMNT, (being_types + b->type_id)->impact};
     b->id = being_id++;
+    b->effects_num = 0U;
     ++bs->num;
 }
 
@@ -81,13 +69,11 @@ static inline void MoveBeing(Being* const b, const float x, const float y){
 }
 
 static inline void SetBeingPosition(Being* const b, const float x, const float y){
-    b->position.x = x;
-    b->position.y = y;
+    b->position = (SDL_FPoint){x, y};
 }
 
 static inline void SetBeingPositionInNewSegment(Being* const b, const float x, const float y, Segment* const s){
-    b->position.x = x;
-    b->position.y = y;
+    b->position = (SDL_FPoint){x, y};
     MoveBeingToSegment(b, s);
 }
 
@@ -107,8 +93,7 @@ static inline void MoveBeingToSegment(Being* const b, Segment* const s){
 static inline void StartBeingWalk(Being* const b, const int time, const float x_shift, const float y_shift){
     b->status = being_walk;
     b->status_ticks_left = time;
-    b->special_move_shift.x = x_shift;
-    b->special_move_shift.y = y_shift;
+    b->special_move_shift = (SDL_FPoint){x_shift, y_shift};
 }
 
 static inline void StartBeingWalkWithRandTurn(Being* const b, const int time, const float x_shift, const float y_shift){
@@ -151,11 +136,9 @@ static bool ResolveBeingCollisionInNewSegment(Being* const b, Segment* const s, 
 static inline void TurnBeingWalk(Being* const b){
     float tmp_x = b->special_move_shift.x;
     if((bool)SDL_rand(2)){
-        b->special_move_shift.x = -b->special_move_shift.y;
-        b->special_move_shift.y = tmp_x;
+        b->special_move_shift = (SDL_FPoint){-b->special_move_shift.y, tmp_x};
     }else{
-        b->special_move_shift.x = b->special_move_shift.y;
-        b->special_move_shift.y = -tmp_x;
+        b->special_move_shift = (SDL_FPoint){b->special_move_shift.y, -tmp_x};
     }
 }
 
@@ -186,13 +169,13 @@ static inline void UpdateBeingShoot(Being* const b, Projectiles_array* const prs
         return;
     }
     if(b->status_ticks_left == 4 && prs->num < MAX_PROJECTILES_NUM){
-        AddHProjectileToArray(prs, &b->position, b->direction, PROJECTILE_VELOCITY, BeingDamage(b));
+        AddHProjectileToArray(prs, &b->position, b->direction, PROJECTILE_VELOCITY, &b->weapon.impact);
     }
     --b->status_ticks_left;
 }
 
 static inline void MoveStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
-    float velocity_xy = distance / BeingVelocity(b);
+    float velocity_xy = distance / b->velocity;
     float x_shift = distance_x / velocity_xy;
     float y_shift = distance_y / velocity_xy;
     float new_x = b->position.x + x_shift;
@@ -201,7 +184,7 @@ static inline void MoveStrikingBeing(Being* const b, float const distance, float
 }
 
 static inline void MoveBackStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, World* const w){
-    float velocity_xy = distance / BeingVelocity(b);
+    float velocity_xy = distance / b->velocity;
     float x_shift = distance_x / velocity_xy;
     float y_shift = distance_y / velocity_xy;
     float new_x = b->position.x - x_shift;
@@ -229,16 +212,12 @@ static inline void SetBeingPositionIfAllowed(Being* const b, float const x, floa
 }
 
 static inline void UpdateBeingStrike(Being* const b, Player* const p, float const distance, float const distance_x, float const distance_y, World* const w){
-    static const Blade_hostile blade_base_frame = {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING};
     if(b->status_ticks_left == 0){
-        b->blade = blade_base_frame;
+        b->weapon.placement = (Placement)BEING_WEAPON_BASE_PLCMNT;
         b->status = being_follow;
         b->status_ticks_left = BEING_RELOAD_TICKS;
         return;
     }
-    static const Status_frame shift_prepare = BEING_BLD_SHIFT_PREPATE;
-    static const Status_frame shift_attack = BEING_BLD_SHIFT_ATTACK;
-    static const Status_frame shift_reset = BEING_BLD_SHIFT_RESET;
     static const float blade_length = BLADE_SIZE * 0.85F;
     if(distance >= BEING_HALT_DISTANCE){
         MoveStrikingBeing(b, distance, distance_x, distance_y, w);
@@ -246,17 +225,17 @@ static inline void UpdateBeingStrike(Being* const b, Player* const p, float cons
         MoveBackStrikingBeing(b, distance, distance_x, distance_y, w);
     }
     if(b->status_ticks_left > 0){
-        ShiftHBlade(&b->blade, &shift_attack);
+        ShiftHBlade(&b->weapon, &(Placement)BEING_BLD_SHIFT_ATTACK);
         if(b->status_ticks_left == 1){
             float bl_sine;
             float bl_cosine;
-            Status_frame blade_location = GetHBladeLocation(b, &bl_sine, &bl_cosine);
+            Placement blade_location = GetHBladeLocation(b, &bl_sine, &bl_cosine);
             SDL_FPoint dangerous_point = {blade_location.position.x + bl_sine * blade_length, blade_location.position.y - bl_cosine * blade_length};
             if(PointInPlayer(dangerous_point.x, dangerous_point.y, p)){
                 if(p->control_flags & block && (sine(p->direction) * SineSafe(b->direction)) + (-cosi(p->direction) * -CosiSafe(b->direction)) <= 0){
-                    HitBarrier(p, BeingDamage(b));
+                    HitBarrier(p, b->weapon.impact.damage);
                 }else{
-                    p->hit_points -= BeingDamage(b);
+                    p->hit_points -= b->weapon.impact.damage;
                 }
             }
             b->status_ticks_left = -(BEING_ATTACK_STEPS - 1);
@@ -266,13 +245,13 @@ static inline void UpdateBeingStrike(Being* const b, Player* const p, float cons
         return;
     }
     if(b->status_ticks_left < -BEING_ATTACK_STEPS){
-        ShiftHBlade(&b->blade, &shift_prepare);
+        ShiftHBlade(&b->weapon, &(Placement)BEING_BLD_SHIFT_PREPATE);
     }else if(b->status_ticks_left == -BEING_ATTACK_STEPS){
-        ShiftHBlade(&b->blade, &shift_prepare);
+        ShiftHBlade(&b->weapon, &(Placement)BEING_BLD_SHIFT_PREPATE);
         b->status_ticks_left = BEING_ATTACK_STEPS;
         return;
     }else{
-        ShiftHBlade(&b->blade, &shift_reset);
+        ShiftHBlade(&b->weapon, &(Placement)BEING_BLD_SHIFT_RESET);
     }
     ++b->status_ticks_left;
 }
@@ -286,7 +265,7 @@ static inline void UpdateBeingFollow(Being* const b, float const distance, float
         --b->status_ticks_left;
         return;
     }
-    float velocity_xy = distance / BeingVelocity(b);
+    float velocity_xy = distance / b->velocity;
     float x_shift = distance_x / velocity_xy;
     float y_shift = distance_y / velocity_xy;
     float new_x = b->position.x + x_shift;
@@ -326,17 +305,17 @@ static inline void UpdateBeingFollow(Being* const b, float const distance, float
     --b->status_ticks_left;
 }
 
-static inline void ShiftHBlade(Blade_hostile* const bl, const Status_frame* const shift){
-	bl->position.x += shift->position.x;
-	bl->position.y += shift->position.y;
-	bl->direction += shift->direction;
+static inline void ShiftHBlade(Weapon* const bl, const Placement* const shift){
+	bl->placement.position.x += shift->position.x;
+	bl->placement.position.y += shift->position.y;
+	bl->placement.direction += shift->direction;
 }
 
-static inline Status_frame GetHBladeLocation(Being* const b, float* const sine, float* const cosine){
-	float direct = b->direction + b->blade.direction;
+static inline Placement GetHBladeLocation(Being* const b, float* const sine, float* const cosine){
+	float direct = b->direction + b->weapon.placement.direction;
 	*sine = SineSafe(direct);
 	*cosine = CosiSafe(direct);
-	Status_frame ret = {{b->position.x + *sine * b->blade.position.x, b->position.y - *cosine * b->blade.position.y}, direct};
+	Placement ret = {{b->position.x + *sine * b->weapon.placement.position.x, b->position.y - *cosine * b->weapon.placement.position.y}, direct};
 	return ret;
 }
 
@@ -371,8 +350,7 @@ extern inline bool DamageBeing(Being* const b, const int damage){
 }
 
 extern inline void ResetBeingBlade(Being* const b){
-    const Blade_hostile blade_base_frame = {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING};
-    b->blade = blade_base_frame;
+    b->weapon.placement = (Placement)BEING_WEAPON_BASE_PLCMNT;
 }
 
 extern inline void StunBeing(Being* const b, const int duration){
@@ -386,8 +364,7 @@ extern inline void CatapultBeing(Being* const b, const float shift_x, const floa
     }
     b->status = being_fly;
     b->status_ticks_left = duration;
-    b->special_move_shift.x = shift_x;
-    b->special_move_shift.y = shift_y;
+    b->special_move_shift = (SDL_FPoint){shift_x, shift_y};
     b->special_rotation_shift = (bool)SDL_rand(2) ? FULL_ANGLE / b->status_ticks_left : -FULL_ANGLE / b->status_ticks_left;
 }
 

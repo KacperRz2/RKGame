@@ -70,11 +70,10 @@
 #define WINDOW_START_W              1600
 #define WINDOW_START_H              900
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       3000
+#define PC_HP                       30000
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    0x10
 #define PC_M_MAGIC                  0x10000000
-#define PC_ARMOUR                   0.875F
 #define MOVING_BACK_VELO_MODI       0.93F
 #define PC_DODGE_FATIG              100
 #define PC_DODGE_FATIG_BLOCK_TIME   50
@@ -87,12 +86,12 @@
 #define PC_FAILURE_FATIG_BLOCK_TIME 2
 #define PC_FAILURE_VELOCITY         0.5F
 #define PC_FATIGUE_GAIN_INTERVAL    4U
-#define TEST_DAMAGE                 10
+#define TEST_DAMAGE                 100
 #define TEST_PENETRATION            3U
 #define PC_BLADE_CHECKPOINTS        2U
 #define PC_BLADE_CHARGE_BASE        0xF.Fp-4F
 #define PC_BLADE_CHARGE_MODIFIER    0xF.F8p-4F
-#define PC_BLADE_DAMAGE_BASE        120.0F
+#define PC_BLADE_DAMAGE_BASE        1200.0F
 #define PC_BLADE_MAX_IDLE_TICKS     192U
 #define PC_BLADE_FIRST_MOVE_STEPS   128
 #define PC_BLADE_RETURN_STEPS       384
@@ -108,9 +107,7 @@
 #define GUN_SIGHT_SPREAD_RANGE      (GUN_SIGHT_SPREAD_MIN * 4.0F)
 #define GUN_SIGHT_MIN_DISTANCE      PLAYER_SIZE
 #define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x1U)
-#define TEST_BEING_SIZE             32
 #define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
-#define TEST_BEING_HP               100
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
 #define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
@@ -121,6 +118,7 @@
 #define BOX_SIZE                    32.0F
 #define BOX_SLOTS                   8
 #define BLOCK_COST                  16
+#define PC_BLOCK_FATIG_BLOCK_TIME   50
 #define DEFAULT_FLY_VELOCITY        0.5F
 #define QUICK_SCROLLS               9U
 #define SCROLLS_NUM                 8U
@@ -129,6 +127,7 @@
 #define MAX_BEING_EFFECTS           8
 #define MAX_PC_EFFECTS              8
 #define MAX_GAME_EFFECTS            8
+#define SCROLL_TX_SIZE              128.0F
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -164,17 +163,19 @@
                                     }
 #define BEING_TYPES                 {\
                                         {\
-                                            TEST_BEING_SIZE,\
+                                            32,\
                                             PLAYER_VELOCITY * 2.5F,\
-                                            TEST_BEING_HP,\
-                                            2,\
+                                            1000,\
+                                            {0, 1.0F, 1.0F, 1.5F},\
+                                            {20, 0.0F, 0, 0.0F},\
                                             UpdateBeing0\
                                         },\
                                         {\
                                             48,\
                                             PLAYER_VELOCITY * 1.5F,\
-                                            TEST_BEING_HP * 2.0F,\
-                                            3,\
+                                            2000,\
+                                            {10, 0.75F, 0.25F, 0.5F},\
+                                            {20, 0.5F, 10, 0.0F},\
                                             UpdateBeing1\
                                         }\
                                     }
@@ -183,6 +184,10 @@
                                         UpdateHostileProjectile,\
                                         UpdateSpecialProjectile\
                                     }
+#define BEING_WEAPON_BASE_PLCMNT    {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING}
+#define PC_BLADE_BASE_PLCMNT        {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_PC}
+#define PC_BLADE_IMPACT             {500, 0.0F, 0, 0.0F}
+#define PC_ARMOUR                   {0, 0.875F, 0.0F, 0.25F}
 #define BEINGS_TEXTURES             {\
                                         tx_being,\
                                         tx_being1\

@@ -3,9 +3,6 @@
 
 static void UpdateBeing(Being* const, Game_data* const);
 float BeingSize(Being* const);
-float BeingVelocity(Being* const);
-int BeingMaxHitPoints(Being* const);
-int BeingDamage(Being* const);
 
 static void AddBeingToSegment(Segment* const, Being* const);
 static void RemoveBeingFromSegment(Being* const);
@@ -33,8 +30,8 @@ static void SetBeingPositionIfAllowed(Being* const, float const, float const, Wo
 static void UpdateBeingStrike(Being* const, Player* const, float const, float const, float const, World* const);
 static void UpdateBeingFollow(Being* const, float const, float const, float const, World* const);
 
-static void ShiftHBlade(Blade_hostile* const, const Status_frame* const);
-static Status_frame GetHBladeLocation(Being* const, float* const, float* const);
+static void ShiftHBlade(Weapon* const, const Placement* const);
+static Placement GetHBladeLocation(Being* const, float* const, float* const);
 static void HaltBeing(Being* const, const int);
 
 void UpdateBeings(Game_data* const);

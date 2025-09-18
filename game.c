@@ -89,6 +89,7 @@ static void SetGameData(Game_data* const g_d){
 	g_d->projectiles.num = 0U;
 	g_d->keys = 0U;
 	g_d->needed_keys = KEYS_NUM;
+	g_d->effects_num = 0U;
 }
 
 static void ClearGameData(Game_data* const g_d){
