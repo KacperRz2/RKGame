@@ -6,6 +6,8 @@ typedef struct Walk Walk;
 typedef struct Blade Blade;
 typedef struct Status_frame Status_frame;
 typedef struct Render_data Render_data;
+typedef struct Lasting_effect Lasting_effect;
+// typedef struct Effects_array Effects_array;
 //Being
 typedef struct Blade_hostile Blade_hostile;
 typedef struct Being_type Being_type;
@@ -58,6 +60,14 @@ struct Render_data{
 	SDL_Texture* textures[TEXTURES_NUM];
 	Uint32 render_flags;
 };
+struct Lasting_effect{
+	unsigned int id;
+	int ticks_left;
+};
+// struct Effects_array{
+// 	Lasting_effect array;
+// 	int ticks_left;
+// };
 //Being
 struct Being_type{
 	float size;
@@ -83,6 +93,7 @@ struct Being{
 	SDL_FPoint special_move_shift;
 	float special_rotation_shift;
 	unsigned int id;
+	Lasting_effect effects[MAX_BEING_EFFECTS];
 };
 struct Beings_array{
 	Being* array;
@@ -146,6 +157,7 @@ struct Player{
 	unsigned int selected_scroll;
 	unsigned int scrolls[SCROLLS_NUM];
 	unsigned int scrolls_quick_access[QUICK_SCROLLS];
+	Lasting_effect effects[MAX_PC_EFFECTS];
 };
 //Game
 struct Box_element{
@@ -169,6 +181,7 @@ struct Game_data{
 	Boxes boxes;
 	unsigned int keys;
 	unsigned int needed_keys;
+	Lasting_effect effects[MAX_GAME_EFFECTS];
 };
 
 #endif

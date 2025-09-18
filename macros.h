@@ -126,6 +126,9 @@
 #define SCROLLS_NUM                 8U
 #define SCROLL_SIZE                 32.0F
 #define BEING_TYPES_NUM             2U
+#define MAX_BEING_EFFECTS           8
+#define MAX_PC_EFFECTS              8
+#define MAX_GAME_EFFECTS            8
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -157,7 +160,7 @@
                                         effect4,\
                                         effect5,\
                                         effect6,\
-                                        NULL\
+                                        EffectEmpty\
                                     }
 #define BEING_TYPES                 {\
                                         {\

@@ -92,4 +92,22 @@ enum being_type{
     being_7
 };
 
+enum being_effect{
+    being_effect_0,
+    being_effect_1,
+    being_no_effect
+};
+
+enum pc_effect{
+    pc_effect_0,
+    pc_effect_1,
+    pc_no_effect
+};
+
+enum game_effect{
+    game_effect_0,
+    game_effect_1,
+    game_no_effect
+};
+
 #endif

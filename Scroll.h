@@ -11,5 +11,6 @@ void effect4(Game_data* const);
 void effect5(Game_data* const);
 void effect6(Game_data* const);
 // void effect7(Game_data* const);
+void EffectEmpty(Game_data* const);
 
 #endif

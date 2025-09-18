@@ -59,3 +59,5 @@ void effect6(Game_data* const g_d){
 // void effect7(Game_data* const g_d){
     
 // }
+
+void EffectEmpty(Game_data* const g_d){}

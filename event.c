@@ -25,15 +25,15 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->control_flags |= action; break;
 			case KEY_SWITCH_RANGE:
 				p->control_flags ^= range_mode;
-				p->control_flags &= ~(attack);
-				rend_data->render_flags &= ~(rend_casting);
+				// p->control_flags &= ~(attack);
+				// rend_data->render_flags &= ~(rend_casting);
 				break;
 			case KEY_TMP:
 				p->control_flags ^= tmp0; break;
 			case SDL_SCANCODE_1:
 				p->control_flags &= ~(range_mode);
-				p->control_flags &= ~(attack);
-				rend_data->render_flags &= ~(rend_casting);
+				// p->control_flags &= ~(attack);
+				// rend_data->render_flags &= ~(rend_casting);
 				break;
 			case SDL_SCANCODE_2:
 			case SDL_SCANCODE_3:
@@ -46,8 +46,8 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 			case SDL_SCANCODE_0:
 				p->control_flags |= range_mode;
 				p->selected_scroll = *(p->scrolls_quick_access + (int)e->key.scancode - 31);
-				p->control_flags &= ~(attack);
-				rend_data->render_flags &= ~(rend_casting);
+				// p->control_flags &= ~(attack);
+				// rend_data->render_flags &= ~(rend_casting);
 				break;
 			default: break;
 			}
@@ -74,14 +74,15 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
 			switch (e->button.button){
 				case BUTTON_ATTACK:
-					if(!(p->control_flags & range_mode)){
-						p->control_flags |= attack;
-					}else if(*(p->scrolls + p->selected_scroll) == 0U){
-						p->control_flags |= attack;
-						rend_data->render_flags |= rend_casting;
-					}else{
-						rend_data->render_flags |= rend_casting;
-					}
+					p->control_flags |= attack;
+					// if(p->control_flags & range_mode){
+					rend_data->render_flags |= rend_casting;
+					// }
+					// }else if(*(p->scrolls + p->selected_scroll) == 0U){
+					// 	p->control_flags |= attack;
+					// }else{
+					// 	rend_data->render_flags |= rend_casting;
+					// }
 					break;
 				case BUTTON_BLOCK:
 					p->control_flags |= block; break;
@@ -90,15 +91,18 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			switch (e->button.button){
 				case BUTTON_ATTACK:
-					if(!(p->control_flags & range_mode)){
-						p->control_flags &= ~(attack);
-					}else if(*(p->scrolls + p->selected_scroll) == 0U){
-						p->control_flags &= ~(attack);
-						rend_data->render_flags &= ~(rend_casting);
-					}else{
+					p->control_flags &= ~(attack);
+					rend_data->render_flags &= ~(rend_casting);
+					if((p->control_flags & range_mode) && *(p->scrolls + p->selected_scroll) != scroll_empty){
 						p->control_flags |= cast;
-						rend_data->render_flags &= ~(rend_casting);
 					}
+					// if(!(p->control_flags & range_mode)){
+					// }else if(*(p->scrolls + p->selected_scroll) == 0U){
+					// 	p->control_flags &= ~(attack);
+					// }else{
+					// 	p->control_flags |= cast;
+					// 	rend_data->render_flags &= ~(rend_casting);
+					// }
 					break;
 				case BUTTON_BLOCK:
 					p->control_flags &= ~(block); break;
