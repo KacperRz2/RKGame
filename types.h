@@ -7,7 +7,6 @@ typedef struct Blade Blade;
 typedef struct Status_frame Status_frame;
 typedef struct Render_data Render_data;
 typedef struct Lasting_effect Lasting_effect;
-// typedef struct Effects_array Effects_array;
 //Being
 typedef struct Blade_hostile Blade_hostile;
 typedef struct Being_type Being_type;
@@ -17,8 +16,6 @@ typedef struct Segment_beings Segment_beings;
 //Projectile
 typedef struct Projectile Projectile;
 typedef struct Projectiles_array Projectiles_array;
-typedef struct Projectile_hostile Projectile_hostile;
-typedef struct Projectiles_h_array Projectiles_h_array;
 //World
 typedef struct Segment Segment;
 typedef struct World World;
@@ -39,9 +36,9 @@ struct Blade{
 	SDL_FPoint position;
 	float direction;
 	int damage;
-	unsigned int penetration;
 	unsigned int hit_targets[MAX_HITS];
-	unsigned int hits;
+	Uint8 penetration;
+	Uint8 hits;
 };
 struct Status_frame{
 	SDL_FPoint position;
@@ -64,10 +61,6 @@ struct Lasting_effect{
 	unsigned int id;
 	int ticks_left;
 };
-// struct Effects_array{
-// 	Lasting_effect array;
-// 	int ticks_left;
-// };
 //Being
 struct Being_type{
 	float size;
@@ -107,22 +100,24 @@ struct Segment_beings{
 struct Projectile{
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
-	int damage;
-	unsigned int penetration;
-	unsigned int hit_targets[MAX_HITS];
-	unsigned int hits;
-};
-struct Projectile_hostile{
-	SDL_FPoint position;
-	SDL_FPoint shift_per_tick;
-	int damage;
+	unsigned int type_id;
+	union data{
+		struct penetrating{
+			unsigned int hit_targets[MAX_HITS];
+			int damage;
+			Uint8 penetration;
+			Uint8 hits;
+		}penetrating;
+		struct basic{
+			int damage;
+		}basic;
+		struct special{
+			unsigned int effect_id;
+		}special;
+	}data;
 };
 struct Projectiles_array{
 	Projectile* array;
-	unsigned int num;
-};
-struct Projectiles_h_array{
-	Projectile_hostile* array;
 	unsigned int num;
 };
 //World
@@ -143,6 +138,7 @@ struct Player{
 	Uint32 control_flags;
 	SDL_FPoint position;
 	Blade blade;
+	Segment* segment;
 	float direction;
 	float velocity;
 	float max_velocity;
@@ -176,7 +172,6 @@ struct Game_data{
 	Player pc;
 	Beings_array beings;
 	Projectiles_array projectiles;
-	Projectiles_h_array h_projectiles;
 	World world;
 	Boxes boxes;
 	unsigned int keys;

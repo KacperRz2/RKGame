@@ -39,16 +39,15 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
         timer = SDL_GetTicksNS();
 		quit = EventsService(e, &game_data.pc, rend_data);
 		UpdatePlayer(&game_data);
-		Segment* player_seg = GetSegment(&game_data.world, game_data.pc.position.x, game_data.pc.position.y);
-		UpdateProjectiles(&game_data, player_seg);
-		UpdateHProjectiles(&game_data);
+		game_data.pc.segment = GetSegment(&game_data.world, game_data.pc.position.x, game_data.pc.position.y);
+		UpdateProjectiles(&game_data);
 		if(ticks_to_update_beings == 0U){
 			if(!(game_data.pc.control_flags & tmp0)){
 				UpdateBeings(&game_data);
 			}
 			ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 		}else{
-			RareEventsService(&game_data, player_seg);
+			RareEventsService(&game_data);
 			--ticks_to_update_beings;
 		}
 		if(game_data.pc.hit_points < 1){
@@ -59,7 +58,7 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 		if(now > prev_frame_time + FRAME_TIME){
 			prev_frame_time = now;
             RenderGame(rend_data, &game_data);
-			RenderTextInfo(rend_data->renderer, tps, &game_data, player_seg);
+			RenderTextInfo(rend_data->renderer, tps, &game_data);
 			SDL_RenderPresent(rend_data->renderer);
 		}
 
@@ -85,11 +84,9 @@ static void SetGameData(Game_data* const g_d){
 	g_d->boxes.num = 0U;
 	CreateWorld(g_d, WORLD_W, WORLD_H);
 	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
-	g_d->h_projectiles.array = (Projectile_hostile*)SDL_malloc(sizeof(Projectile_hostile) * MAX_PROJECTILES_NUM);
 	g_d->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
-	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL || g_d->h_projectiles.array == NULL){SDL_Quit(); exit(1);}
+	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL){SDL_Quit(); exit(1);}
 	g_d->projectiles.num = 0U;
-	g_d->h_projectiles.num = 0U;
 	g_d->keys = 0U;
 	g_d->needed_keys = KEYS_NUM;
 }
@@ -97,12 +94,11 @@ static void SetGameData(Game_data* const g_d){
 static void ClearGameData(Game_data* const g_d){
 	DestroyBoxes(&g_d->boxes);
 	DestroyBeings(&g_d->beings);
-    DestroyHProjectiles(&g_d->h_projectiles);
     DestroyProjectiles(&g_d->projectiles);
 	DestroyWorld(&g_d->world);
 }
 
-static void RareEventsService(Game_data* const g_d, Segment* const player_seg){
+static void RareEventsService(Game_data* const g_d){
 	static int check_queue = 0;
 	if(check_queue == 0 && SDL_fabsf(g_d->pc.position.x - g_d->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.portalA.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
 		SetPlayerPosition(&g_d->pc, g_d->world.portalB.x, g_d->world.portalB.y);

@@ -10,6 +10,7 @@
 
 const unsigned int beings_textures[] = BEINGS_TEXTURES;
 const unsigned int beings_weapon_textures[] = BEINGS_WEAPON_TEXTURES;
+const unsigned int projectile_textures[] = PROJECTILE_TEXTURES;
 
 int GraphicsInitiation(Render_data* const data){
 	SDL_Surface* surface = NULL;
@@ -100,24 +101,7 @@ static void RenderProjectiles(Render_data* const rend_data, Game_data* const g_d
 		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, &g_d->pc, &point)){
 			rect.x = point.x - half(BULLET_SIZE);
 			rect.y = point.y - half(BULLET_SIZE);
-			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_projectile), NULL, &rect);
-		}
-	}
-}
-
-static void RenderHProjectiles(Render_data* const rend_data, Game_data* const g_d){
-	static SDL_FRect rect = { 
-		0.0F,
-		0.0F,
-		BULLET_SIZE,
-		BULLET_SIZE
-	};
-	for(Projectile_hostile* pr = g_d->h_projectiles.array; pr != (g_d->h_projectiles.array + g_d->h_projectiles.num); ++pr){
-		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, &g_d->pc, &point)){
-			rect.x = point.x - half(BULLET_SIZE);
-			rect.y = point.y - half(BULLET_SIZE);
-			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_h_projectile), NULL, &rect);
+			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + *(projectile_textures + pr->type_id)), NULL, &rect);
 		}
 	}
 }
@@ -209,7 +193,7 @@ static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const fl
 	return false;
 }
 
-void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const g_d, Segment* const player_seg){
+void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const g_d){
 	SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
 	SDL_RenderDebugTextFormat(rend, 10, 10, "Fatigue: %d", g_d->pc.fatigue_points);
 	SDL_RenderDebugTextFormat(rend, 10, 20, "Position: %.2f %.2f", g_d->pc.position.x, g_d->pc.position.y);
@@ -220,13 +204,12 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 
 	SDL_RenderDebugTextFormat(rend, 10, 160, "beings: %d", g_d->beings.num);
 	SDL_RenderDebugTextFormat(rend, 10, 170, "projectiles: %d", g_d->projectiles.num);
-	SDL_RenderDebugTextFormat(rend, 10, 180, "projectiles: %d", g_d->h_projectiles.num);
 	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", g_d->pc.hit_points);
 	SDL_RenderDebugTextFormat(rend, 10, 200, "coins: %d", g_d->pc.coins);
 	SDL_RenderDebugTextFormat(rend, 10, 210, "boxes: %d", g_d->boxes.num);
 	SDL_RenderDebugTextFormat(rend, 10, 220, "keys: %d", g_d->keys);
 	SDL_RenderDebugTextFormat(rend, 10, 230, "needed: %d", g_d->needed_keys);
-	SDL_RenderDebugTextFormat(rend, 10, 240, "player: x: %d y: %d", player_seg->indx.x, player_seg->indx.y);
+	SDL_RenderDebugTextFormat(rend, 10, 240, "player: x: %d y: %d", g_d->pc.segment->indx.x, g_d->pc.segment->indx.y);
 	SDL_RenderDebugTextFormat(rend, 10, 250, "selected scroll: %d", g_d->pc.selected_scroll);
 	SDL_RenderDebugTextFormat(rend, 10, 260, "selected scroll num: %d", *(g_d->pc.scrolls + g_d->pc.selected_scroll));
 	SDL_RenderDebugTextFormat(rend, 10, 270, "selected scroll cost: %d", ScrollCost(g_d->pc.selected_scroll));
@@ -305,19 +288,18 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	RenderTerrain(rend_data, g_d);
 	RenderStaticThings(rend_data, g_d);
-	RenderProjectiles(rend_data, g_d);
 	if(!(g_d->pc.control_flags & range_mode)){
 		RenderBlade(rend_data, &g_d->pc.blade);
 	}else{
 		RenderScroll(rend_data);
 	}
 	RenderBeings(rend_data, g_d);
-	RenderHProjectiles(rend_data, g_d);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
+	RenderProjectiles(rend_data, g_d);
 	RenderPlayer(rend_data);
 	if(g_d->pc.control_flags & block){
 		RenderBarrier(rend_data);
 	}
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
 	RenderGunSight(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	RenderMap(rend_data, &g_d->pc);

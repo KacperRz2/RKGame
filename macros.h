@@ -36,7 +36,7 @@
 #define SIGHT_BACK_SQUARED	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT))
 #define FRAME_TIME			        0x400000ULL
 #define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
-#define MAX_PROJECTILES_NUM	        0x800U
+#define MAX_PROJECTILES_NUM	        0x1000U
 #define MAX_SEGM_BEINGS		        16
 #define MAX_BEINGS_NUM		        0x8000U
 #define ANGLE_PARTS		            512
@@ -178,6 +178,11 @@
                                             UpdateBeing1\
                                         }\
                                     }
+#define PROJECTILES_UPDATE_FUNC     {\
+                                        UpdatePCProjectile,\
+                                        UpdateHostileProjectile,\
+                                        UpdateSpecialProjectile\
+                                    }
 #define BEINGS_TEXTURES             {\
                                         tx_being,\
                                         tx_being1\
@@ -185,6 +190,11 @@
 #define BEINGS_WEAPON_TEXTURES      {\
                                         tx_being_blade,\
                                         tx_weapon\
+                                    }
+#define PROJECTILE_TEXTURES         {\
+                                        tx_projectile,\
+                                        tx_h_projectile,\
+                                        tx_h_projectile\
                                     }
 #define PC_BLADE_FRAMES0	        {\
                                         {{16.0F, -8.0F}, SDL_PI_F * 0.55F},\

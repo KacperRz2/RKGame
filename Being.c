@@ -179,7 +179,7 @@ static inline void UpdateBeingWalk(Being* const b, World* const w){
     --b->status_ticks_left;
 }
 
-static inline void UpdateBeingShoot(Being* const b, Projectiles_h_array* const prs){
+static inline void UpdateBeingShoot(Being* const b, Projectiles_array* const prs){
     if(b->status_ticks_left == 0){
         b->status_ticks_left = BEING_RELOAD_TICKS;
         b->status = being_idle;
@@ -520,7 +520,7 @@ static void UpdateBeing1(Being* const b, Game_data* const g_d){
         b->direction = SDL_atan2f(-distance_y, -distance_x) - SDL_PI_F * 0.5F;
     }
     if(b->status == being_shoot){
-        UpdateBeingShoot(b, &g_d->h_projectiles);
+        UpdateBeingShoot(b, &g_d->projectiles);
         return;
     }
     if(distance == 0.0F){

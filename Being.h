@@ -26,7 +26,7 @@ static bool ResolveBeingCollisionInNewSegment(Being* const, Segment* const, floa
 static void TurnBeingWalk(Being* const);
 
 static void UpdateBeingWalk(Being* const, World* const);
-static void UpdateBeingShoot(Being* const, Projectiles_h_array* const);
+static void UpdateBeingShoot(Being* const, Projectiles_array* const);
 static void MoveStrikingBeing(Being* const, float const, float const, float const, World* const);
 static void MoveBackStrikingBeing(Being* const, float const, float const, float const, World* const);
 static void SetBeingPositionIfAllowed(Being* const, float const, float const, World* const);

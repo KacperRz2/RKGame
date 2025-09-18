@@ -110,4 +110,10 @@ enum game_effect{
     game_no_effect
 };
 
+enum projectile_type{
+    projectile_penetrat,
+    projectile_hostile,
+    projectile_special
+};
+
 #endif
