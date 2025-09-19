@@ -18,7 +18,7 @@ static bool BladeHitsBeing(Blade* const, Placement* const, Being* const, SDL_FPo
 static bool UnleashDestruction(Game_data* const);
 static void UpdatePlayerBlade(Game_data* const);
 bool PointInPlayer(const float, const float, Player* const);
-void DamagePlayer(Player* const, const int);
+void DamagePlayer(Player* const, const Impact* const);
 static void UpdatePlayerFire(Game_data* const);
 static void UpdatePlayerPush(Game_data* const);
 void HaltPlayer(Player* const);

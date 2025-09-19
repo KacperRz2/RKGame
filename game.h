@@ -13,5 +13,7 @@ static void DestroyBoxes(Boxes* const);
 static int GetNearbyBoxIndx(Game_data* const);
 static void LootBox(Game_data* const, const unsigned int);
 static void DestroyBoxInArray(Boxes* const, unsigned int);
+int CalculateDamage(const Impact* const, const Armour* const);
+float CalculateStunPower(const Impact* const, const Armour* const);
 
 #endif

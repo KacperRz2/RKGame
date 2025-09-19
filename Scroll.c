@@ -26,8 +26,9 @@ void effect0(Game_data* const g_d){
         if(neighbour == NULL) continue;
         for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
             Being* b = *(neighbour->beings.array + i);
-            float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
-            CatapultBeing(b, SineSafe(angle) * DEFAULT_FLY_VELOCITY, -CosiSafe(angle) * DEFAULT_FLY_VELOCITY, BEING_DEFAULT_LEFT_TICKS * 8);
+            const float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
+            const float stun = DEFAULT_FLY_VELOCITY * b->armour.unstability;
+            CatapultBeing(b, SineSafe(angle) * stun, -CosiSafe(angle) * stun, BEING_DEFAULT_LEFT_TICKS * 8);
         }
     }}
 }

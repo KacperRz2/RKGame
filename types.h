@@ -34,9 +34,9 @@ struct Placement{
 	float direction;
 };
 struct Impact{
-	int damage;
-	float penetration;
-	int magic;
+	float damage;
+	float armour_reduction;
+	float magic;
 	float stun;
 };
 struct Blade{
@@ -64,10 +64,10 @@ struct Lasting_effect{
 	int ticks_left;
 };
 struct Armour{
-	int absorption;
+	float absorption;
 	float multipl;
-	float antimagic;
-	float stability;
+	float magic_multipl;
+	float unstability;
 };
 //Being
 struct Being_type{
@@ -150,6 +150,8 @@ struct Player{
 	Uint32 control_flags;
 	SDL_FPoint position;
 	Blade blade;
+	Impact blade_attack;
+	Impact range_attack;
 	Segment* segment;
 	float direction;
 	float velocity;

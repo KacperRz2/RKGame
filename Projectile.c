@@ -7,6 +7,7 @@
 #include <Player.h>
 #include <function.h>
 #include <enum.h>
+#include <game.h>
 
 const bool (*update[])(Projectile* const, Game_data* const) = PROJECTILES_UPDATE_FUNC;
 
@@ -31,12 +32,12 @@ static inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
 	return false;
 }
 
-extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const int damage, const unsigned int penetration){
+extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const Impact* const impact, const unsigned int penetration){
 	Projectile* pr = (prs->array + prs->num++);
 	pr->type_id = projectile_penetrat;
 	pr->position = *position;
 	pr->shift_per_tick = (SDL_FPoint){SineSafe(direction) * velocity, -CosiSafe(direction) * velocity};
-	pr->data.penetrating.impact = (Impact){damage, 1.0F, 0, 1.0F};
+	pr->data.penetrating.impact = *impact;
 	pr->data.penetrating.penetration = penetration;
 	pr->data.penetrating.hits = 0;
 }
@@ -83,7 +84,7 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 			for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
 				Being* b = *(neighbour->beings.array + j);
 				if(!ProjectileHitsBeing(pr, b)) continue;
-				if(DamageBeing(b, pr->data.penetrating.impact.damage)){
+				if(DamageBeing(b, &pr->data.penetrating.impact)){
 					if(pr->data.penetrating.hits < --pr->data.penetrating.penetration){
 						--j;
 						continue;
@@ -93,7 +94,7 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 						ResetBeingBlade(b);
 					}
 					if(b->status != being_fly){
-						StunBeing(b, BEING_DEFAULT_LEFT_TICKS);
+						StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.penetrating.impact, &b->armour)));
 					}
 					if(pr->data.penetrating.hits < pr->data.penetrating.penetration){
 						*(pr->data.penetrating.hit_targets + pr->data.penetrating.hits++) = b->id;
@@ -121,9 +122,9 @@ static inline bool ProjectileHitsPlayerOrLost(Projectile* const pr, Player* cons
 	float distance_squated = pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y);
 	if(distance_squated < pow2(half(PLAYER_SIZE))){
 		if(p->control_flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
-			HitBarrier(p, pr->data.basic.impact.damage);
+			HitBarrier(p, (int)pr->data.basic.impact.damage);
 		}else{
-			DamagePlayer(p, pr->data.basic.impact.damage);
+			DamagePlayer(p, &pr->data.basic.impact);
 		}
 		return true;
 	}

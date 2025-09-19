@@ -36,7 +36,7 @@ static void HaltBeing(Being* const, const int);
 
 void UpdateBeings(Game_data* const);
 
-bool DamageBeing(Being* const, int);
+bool DamageBeing(Being* const, const Impact* const);
 void ResetBeingBlade(Being* const);
 void StunBeing(Being* const, const int);
 void CatapultBeing(Being* const, const float, const float, const int);

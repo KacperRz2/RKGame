@@ -3,7 +3,7 @@
 
 void DestroyProjectiles(Projectiles_array* const);
 static bool ProjectileHitsBeing(Projectile* const, Being* const);
-void AddPCProjectileToArray(Projectiles_array* const, const SDL_FPoint* const, const float, const float, const int, const unsigned int);
+void AddPCProjectileToArray(Projectiles_array* const, const SDL_FPoint* const, const float, const float, const Impact* const, const unsigned int);
 void AddHProjectileToArray(Projectiles_array* const, const SDL_FPoint* const, const float, const float, const Impact* const);
 static void DestroyProjectileInArray(Projectiles_array* const, const unsigned int);
 static void MoveProjectile(Projectile* const);

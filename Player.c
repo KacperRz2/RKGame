@@ -8,6 +8,7 @@
 #include <Being.h>
 #include <enum.h>
 #include <Scroll.h>
+#include <game.h>
 
 static void InitScrolls(Player* const p){
 	*p->scrolls = 99U;
@@ -26,9 +27,11 @@ static void InitScrolls(Player* const p){
 
 void CreatePlayer(Player* const p, const float x, const float y){
 	p->blade.placement = (Placement)PC_BLADE_BASE_PLCMNT;
-	p->blade.impact = (Impact)PC_BLADE_IMPACT;
+	p->blade.impact = (Impact){};
 	p->blade.penetration = BLADE_PENETRATION;
 	p->blade.hits = 0;
+	p->blade_attack = (Impact)PC_BLADE_IMPACT;
+	p->range_attack = (Impact)PC_RANGE_IMPACT;
 	SetPlayerPosition(p, x, y);
 	p->control_flags = 0x00000000U;
 	p->direction = 0.0F;
@@ -244,14 +247,15 @@ static bool UnleashDestruction(Game_data* const g_d){
 		for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
 			Being* b = *(neighbour->beings.array + i);
 			if(!BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) continue;
-			if(DamageBeing(b, bl->impact.damage)){
+			if(DamageBeing(b, &bl->impact)){
 				if(bl->hits < --bl->penetration){
 					--i;
 					continue;
 				}
 			}else{
-				float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
-				CatapultBeing(b, SineSafe(angle) * bl->impact.damage / 256, -CosiSafe(angle) * bl->impact.damage / 256, BEING_DEFAULT_LEFT_TICKS * 2);
+				const float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
+				const float stun_power = CalculateStunPower(&bl->impact, &b->armour);
+				CatapultBeing(b, SineSafe(angle) * stun_power, -CosiSafe(angle) * stun_power, BEING_DEFAULT_LEFT_TICKS * 2);
 				if(bl->hits < bl->penetration){
 					*(bl->hit_targets + bl->hits++) = b->id;
 					continue;
@@ -269,7 +273,7 @@ static void UpdatePlayerBlade(Game_data* const g_d){
 	static const Placement blade_key_frames_2[] = PC_BLADE_FRAMES2;
 	static const Placement* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
-
+	static const float extra_penetration[] = PC_BLADE_PENETRATIONS;
 	static Placement step_shift = {{0.0F, 0.0F}, 0.0};
 	static int key = 0;
 	static int steps = 0;
@@ -308,8 +312,14 @@ static void UpdatePlayerBlade(Game_data* const g_d){
 				abide = true;
 				idle_ticks = 0U;
 				g_d->pc.blade.hits = 0U;
-				g_d->pc.blade.impact.damage = (int)(PC_BLADE_DAMAGE_BASE * (1.0F - charge));
-				g_d->pc.blade.penetration = (unsigned int)((float)BLADE_PENETRATION * (1.0F - charge));
+				const float multip = 1.0F - charge;
+				g_d->pc.blade.impact = (Impact){
+					g_d->pc.blade_attack.damage * multip,
+					g_d->pc.blade_attack.armour_reduction * multip + *(extra_penetration + chain),
+					g_d->pc.blade_attack.magic * multip,
+					g_d->pc.blade_attack.stun * multip
+				};
+				g_d->pc.blade.penetration = (unsigned int)((float)BLADE_PENETRATION * multip);
 				charge = PC_BLADE_CHARGE_BASE;
 				SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain), steps = PC_BLADE_FIRST_MOVE_STEPS);
 				chain_next = (chain_next + 1U) % SDL_arraysize(sizes);
@@ -355,8 +365,8 @@ extern inline bool PointInPlayer(const float x, const float y, Player* const pl)
 	return false;
 }
 
-extern inline void DamagePlayer(Player* const p, const int damage){
-	p->hit_points -= damage;
+extern inline void DamagePlayer(Player* const p, const Impact* impact){
+	p->hit_points -= CalculateDamage(impact, &p->armour);
 }
 
 static void UpdatePlayerFire(Game_data* const g_d){
@@ -364,7 +374,7 @@ static void UpdatePlayerFire(Game_data* const g_d){
 	if(shoot_reload > 0){
 		--shoot_reload;
 	}else if(g_d->pc.selected_scroll == scroll_empty && (g_d->pc.control_flags & (range_mode | attack | block)) == (range_mode | attack) && g_d->projectiles.num < MAX_PROJECTILES_NUM){
-		AddPCProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, TEST_DAMAGE, TEST_PENETRATION);
+		AddPCProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &g_d->pc.range_attack, TEST_PENETRATION);
 		shoot_reload = PC_SHOOT_RELOAD;
 	}
 }

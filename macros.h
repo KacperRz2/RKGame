@@ -91,7 +91,6 @@
 #define PC_BLADE_CHECKPOINTS        2U
 #define PC_BLADE_CHARGE_BASE        0xF.Fp-4F
 #define PC_BLADE_CHARGE_MODIFIER    0xF.F8p-4F
-#define PC_BLADE_DAMAGE_BASE        1200.0F
 #define PC_BLADE_MAX_IDLE_TICKS     192U
 #define PC_BLADE_FIRST_MOVE_STEPS   128
 #define PC_BLADE_RETURN_STEPS       384
@@ -166,19 +165,23 @@
                                             32,\
                                             PLAYER_VELOCITY * 2.5F,\
                                             1000,\
-                                            {0, 1.0F, 1.0F, 1.5F},\
-                                            {20, 0.0F, 0, 0.0F},\
+                                            {0.0F, 1.0F, 1.0F, 1.5F},\
+                                            {20.0F, 0.0F, 0.0F, 0.0F},\
                                             UpdateBeing0\
                                         },\
                                         {\
                                             48,\
                                             PLAYER_VELOCITY * 1.5F,\
                                             2000,\
-                                            {10, 0.75F, 0.25F, 0.5F},\
-                                            {20, 0.5F, 10, 0.0F},\
+                                            {10.0F, 0.75F, 0.25F, 0.5F},\
+                                            {20.0F, 0.5F, 10.0F, 0.0F},\
                                             UpdateBeing1\
                                         }\
                                     }
+#define PC_BLADE_IMPACT             {1200.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
+#define PC_RANGE_IMPACT             {10.0F, 0.5F, 350.0F, 1.0F}
+#define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
+#define PC_ARMOUR                   {5.0F, 0.875F, 1.0F, 0.25F}
 #define PROJECTILES_UPDATE_FUNC     {\
                                         UpdatePCProjectile,\
                                         UpdateHostileProjectile,\
@@ -186,8 +189,6 @@
                                     }
 #define BEING_WEAPON_BASE_PLCMNT    {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING}
 #define PC_BLADE_BASE_PLCMNT        {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_PC}
-#define PC_BLADE_IMPACT             {500, 0.0F, 0, 0.0F}
-#define PC_ARMOUR                   {0, 0.875F, 0.0F, 0.25F}
 #define BEINGS_TEXTURES             {\
                                         tx_being,\
                                         tx_being1\

@@ -7,6 +7,7 @@
 #include <Player.h>
 #include <Projectile.h>
 #include <enum.h>
+#include <game.h>
 
 const Being_type being_types[] = BEING_TYPES;
 
@@ -233,9 +234,9 @@ static inline void UpdateBeingStrike(Being* const b, Player* const p, float cons
             SDL_FPoint dangerous_point = {blade_location.position.x + bl_sine * blade_length, blade_location.position.y - bl_cosine * blade_length};
             if(PointInPlayer(dangerous_point.x, dangerous_point.y, p)){
                 if(p->control_flags & block && (sine(p->direction) * SineSafe(b->direction)) + (-cosi(p->direction) * -CosiSafe(b->direction)) <= 0){
-                    HitBarrier(p, b->weapon.impact.damage);
+                    HitBarrier(p, (int)b->weapon.impact.damage);
                 }else{
-                    p->hit_points -= b->weapon.impact.damage;
+                    DamagePlayer(p, &b->weapon.impact);
                 }
             }
             b->status_ticks_left = -(BEING_ATTACK_STEPS - 1);
@@ -339,8 +340,8 @@ void UpdateBeings(Game_data* const g_d){
     }
 }
 
-extern inline bool DamageBeing(Being* const b, const int damage){
-    b->hit_points -= damage;
+extern inline bool DamageBeing(Being* const b, const Impact* const impact){
+    b->hit_points -= CalculateDamage(impact, &b->armour);
     if(b->hit_points < 1){
         b->status = being_dead;
         RemoveBeingFromSegment(b);
@@ -378,7 +379,7 @@ static inline void UpdateBeingStunned(Being* const b, World* const w){
 
 static inline void UpdateBeingFly(Being* const b, World* const w){
     if(b->status_ticks_left == 0){
-        StunBeing(b, BEING_STUN_DURATION);
+        StunBeing(b, BEING_STUN_DURATION * b->armour.unstability);
         return;
     }
     b->direction += b->special_rotation_shift;

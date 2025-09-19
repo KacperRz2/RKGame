@@ -214,3 +214,23 @@ static inline void DestroyBoxInArray(Boxes* const bxs, unsigned int indx){
 	}
 	--bxs->num;
 }
+
+extern inline int CalculateDamage(const Impact* const impact, const Armour* const armour){
+	const float magic_damage = impact->magic * armour->magic_multipl;
+	const float damage_multipl = armour->multipl + impact->armour_reduction;
+	float damage = impact->damage;
+	if(damage_multipl < 1.0F){
+		damage *= damage_multipl;
+	}
+	if(impact->armour_reduction < 1.0F){
+		damage -= armour->absorption * (1.0F - impact->armour_reduction);
+	}
+	if(damage < 0.0F){
+		return (int)magic_damage;
+	}
+	return (int)(damage + magic_damage);
+}
+
+extern inline float CalculateStunPower(const Impact* const impact, const Armour* const armour){
+	return impact->stun * armour->unstability;
+}
