@@ -26,7 +26,8 @@
 #define TICK_TIME_MS		        (TICK_TIME / 1000000ULL)
 #define ACCELERATION		        6.25e-2F
 #define PLAYER_VELOCITY		        0x0.Ap+0F
-#define RUN_VELOCITY		        (PLAYER_VELOCITY * 128.0F)
+#define RUN_MULTIPL		            2.0F
+#define BLOCK_VELOCITY_MULTIP		0.5F
 #define ROTATION_SPEED		        3.90625e-3F
 #define TEXTURE_FILES_NUM	        21
 #define TEXTURE_TARGET_NUM	        0
@@ -67,8 +68,8 @@
 #define BEING_MIN_DISTANCE          64.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define UPDATE_BEINGS_INTERVAL      1U
-#define WINDOW_START_W              1600
-#define WINDOW_START_H              900
+#define WINDOW_START_W              1920
+#define WINDOW_START_H              1080
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
 #define PC_HP                       30000
 #define PC_FATIGUE                  1000
@@ -78,14 +79,15 @@
 #define PC_DODGE_FATIG              100
 #define PC_DODGE_FATIG_BLOCK_TIME   50
 #define PC_DODGE_VELOCITY           10.0F
+#define PC_DODGE_RELOAD             128
 #define PC_PUSH_FATIG               100
 #define PC_PUSH_FATIG_BLOCK_TIME    50
 #define PC_PUSH_RELOAD              256
-#define PC_PUSH_REACH               (PLAYER_SIZE * 2.0F)
+#define PC_PUSH_REACH               (PLAYER_SIZE * 3.0F)
 #define PC_CAST_RELOAD              512
 #define PC_FAILURE_FATIG_BLOCK_TIME 2
 #define PC_FAILURE_VELOCITY         0.5F
-#define PC_FATIGUE_GAIN_INTERVAL    4U
+#define PC_FATIGUE_GAIN_INTERVAL    3
 #define TEST_DAMAGE                 100
 #define TEST_PENETRATION            3U
 #define PC_BLADE_CHECKPOINTS        2U
@@ -166,7 +168,7 @@
                                             PLAYER_VELOCITY * 2.5F,\
                                             1000,\
                                             {0.0F, 1.0F, 1.0F, 1.5F},\
-                                            {20.0F, 0.0F, 0.0F, 0.0F},\
+                                            {20.0F, 0.0F, 0.0F, 0.5F},\
                                             UpdateBeing0\
                                         },\
                                         {\
@@ -174,7 +176,7 @@
                                             PLAYER_VELOCITY * 1.5F,\
                                             2000,\
                                             {10.0F, 0.75F, 0.25F, 0.5F},\
-                                            {20.0F, 0.5F, 10.0F, 0.0F},\
+                                            {20.0F, 0.5F, 10.0F, 0.25F},\
                                             UpdateBeing1\
                                         }\
                                     }

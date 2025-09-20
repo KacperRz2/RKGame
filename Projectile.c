@@ -122,7 +122,7 @@ static inline bool ProjectileHitsPlayerOrLost(Projectile* const pr, Player* cons
 	float distance_squated = pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y);
 	if(distance_squated < pow2(half(PLAYER_SIZE))){
 		if(p->control_flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
-			HitBarrier(p, (int)pr->data.basic.impact.damage);
+			HitBarrier(p, &pr->data.basic.impact);
 		}else{
 			DamagePlayer(p, &pr->data.basic.impact);
 		}

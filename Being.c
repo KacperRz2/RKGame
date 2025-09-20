@@ -234,7 +234,7 @@ static inline void UpdateBeingStrike(Being* const b, Player* const p, float cons
             SDL_FPoint dangerous_point = {blade_location.position.x + bl_sine * blade_length, blade_location.position.y - bl_cosine * blade_length};
             if(PointInPlayer(dangerous_point.x, dangerous_point.y, p)){
                 if(p->control_flags & block && (sine(p->direction) * SineSafe(b->direction)) + (-cosi(p->direction) * -CosiSafe(b->direction)) <= 0){
-                    HitBarrier(p, (int)b->weapon.impact.damage);
+                    HitBarrier(p, &b->weapon.impact);
                 }else{
                     DamagePlayer(p, &b->weapon.impact);
                 }

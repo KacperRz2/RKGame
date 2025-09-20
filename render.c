@@ -209,6 +209,7 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 
 	SDL_RenderDebugTextFormat(rend, 10, 160, "beings: %d", g_d->beings.num);
 	SDL_RenderDebugTextFormat(rend, 10, 170, "projectiles: %d", g_d->projectiles.num);
+	SDL_RenderDebugTextFormat(rend, 10, 180, "blade charge: %f", 1.0F - g_d->pc.blade.charge);
 	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", g_d->pc.hit_points);
 	SDL_RenderDebugTextFormat(rend, 10, 200, "coins: %d", g_d->pc.coins);
 	SDL_RenderDebugTextFormat(rend, 10, 210, "boxes: %d", g_d->boxes.num);

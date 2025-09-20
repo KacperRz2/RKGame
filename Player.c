@@ -30,11 +30,22 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->blade.impact = (Impact){};
 	p->blade.penetration = BLADE_PENETRATION;
 	p->blade.hits = 0;
+	p->blade.step_shift = (Placement){{0.0F, 0.0F}, 0.0};
+	p->blade.key = 0;
+	p->blade.steps = 0;
+	p->blade.step = 0;
+	p->blade.chain = 0U;
+	p->blade.chain_next = 0U;
+	p->blade.abide = false;
+	p->blade.freehand = false;
+	p->blade.idle_ticks = 0U;
+	p->blade.charge = PC_BLADE_CHARGE_BASE;
 	p->blade_attack = (Impact)PC_BLADE_IMPACT;
 	p->range_attack = (Impact)PC_RANGE_IMPACT;
 	SetPlayerPosition(p, x, y);
 	p->control_flags = 0x00000000U;
 	p->direction = 0.0F;
+	p->move_direction = 0.0F;
 	p->velocity = 0.0F;
 	p->max_velocity = PLAYER_VELOCITY;
 	p->hit_points = PC_HP;
@@ -42,7 +53,7 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->magic_points = PC_MAGIC;
 	p->max_fatigue = PC_FATIGUE;
 	p->max_h_p = PC_HP;
-	p->fatigue_block_time = 0;
+	p->block_times = (Block_times){0, 0, 0, 0, 0};
 	p->armour = (Armour)PC_ARMOUR;
 	p->coins = PC_START_COINS;
 	p->selected_scroll = scroll_empty;
@@ -69,71 +80,69 @@ extern inline void MovePlayer(Game_data* const g_d, const float x, const float y
 
 static void UpdatePlayerMove(Game_data* const g_d){
 	static const Uint32 tmp = forward | back | right | left;
-	static float move_direction = 0.0F;
-	if(g_d->pc.velocity > g_d->pc.max_velocity){
+	const bool runs = ((g_d->pc.control_flags & (run | forward | back)) == (run | forward));
+	if(g_d->pc.velocity > g_d->pc.max_velocity * RUN_MULTIPL || (!runs && g_d->pc.velocity > g_d->pc.max_velocity) || ((g_d->pc.control_flags & block) && g_d->pc.velocity > g_d->pc.max_velocity * BLOCK_VELOCITY_MULTIP)){
 		g_d->pc.velocity *= DECELERATION;
 	}else if((g_d->pc.control_flags & tmp) == forward || (g_d->pc.control_flags & tmp) == (tmp & ~(back))){
 		g_d->pc.velocity += ACCELERATION;
-		move_direction = g_d->pc.direction;
+		g_d->pc.move_direction = g_d->pc.direction;
 	}else if((g_d->pc.control_flags & tmp) == back){
 		g_d->pc.velocity = (g_d->pc.velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		move_direction = g_d->pc.direction + SDL_PI_F;
+		g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F;
 	}else if((g_d->pc.control_flags & tmp) == right){
 		g_d->pc.velocity += ACCELERATION;
-		move_direction = g_d->pc.direction + SDL_PI_F * 0.5F;
+		g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F * 0.5F;
 	}else if((g_d->pc.control_flags & tmp) == left){
 		g_d->pc.velocity += ACCELERATION;
-		move_direction = g_d->pc.direction + SDL_PI_F * 1.5F;
+		g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F * 1.5F;
 	}else if((g_d->pc.control_flags & tmp) == (forward | right)){
 		g_d->pc.velocity += ACCELERATION;
-		move_direction = g_d->pc.direction + SDL_PI_F * 0.25F;
+		g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F * 0.25F;
 	}else if((g_d->pc.control_flags & tmp) == (forward | left)){
 		g_d->pc.velocity += ACCELERATION;
-		move_direction = g_d->pc.direction + SDL_PI_F * 1.75F;
+		g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F * 1.75F;
 	}else if((g_d->pc.control_flags & tmp) == (back | right)){
 		g_d->pc.velocity = (g_d->pc.velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		move_direction = g_d->pc.direction + SDL_PI_F * 0.75F;
+		g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F * 0.75F;
 	}else if((g_d->pc.control_flags & tmp) == (back | left)){
 		g_d->pc.velocity = (g_d->pc.velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		move_direction = g_d->pc.direction + SDL_PI_F * 1.25F;
+		g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F * 1.25F;
 	}else{
 		g_d->pc.velocity *= DECELERATION;
 		if(g_d->pc.velocity < 0.05F) g_d->pc.velocity = 0.0F;
 	}
 	if(!(g_d->pc.control_flags & block)){
 		if(g_d->pc.control_flags & dodge && !(g_d->pc.control_flags & forward)){
-			if(g_d->pc.fatigue_points >= PC_DODGE_FATIG && g_d->pc.fatigue_block_time < 1){
+			if(g_d->pc.fatigue_points >= PC_DODGE_FATIG && g_d->pc.block_times.dodge < 1){
 				g_d->pc.fatigue_points -= PC_DODGE_FATIG;
-				g_d->pc.fatigue_block_time = PC_DODGE_FATIG_BLOCK_TIME;
+				BlockPlayerFatigue(&g_d->pc, PC_DODGE_FATIG_BLOCK_TIME);
+				g_d->pc.block_times.dodge = PC_DODGE_RELOAD;
 				if(!(g_d->pc.control_flags & tmp)){
-					move_direction = g_d->pc.direction + SDL_PI_F;
+					g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F;
 				}
 				g_d->pc.velocity = PC_DODGE_VELOCITY;
 			}else{
-				g_d->pc.fatigue_block_time += PC_FAILURE_FATIG_BLOCK_TIME;
+				BlockPlayerFatigue(&g_d->pc, PC_FAILURE_FATIG_BLOCK_TIME);
 				if(!(g_d->pc.control_flags & tmp)){
-					move_direction = g_d->pc.direction + SDL_PI_F;
+					g_d->pc.move_direction = g_d->pc.direction + SDL_PI_F;
 				}
 				g_d->pc.velocity = PC_FAILURE_VELOCITY;
 			}
 			g_d->pc.control_flags &= ~(dodge);
 		}
-		if((g_d->pc.control_flags & (run | forward | back)) == (run | forward)){
+		if(runs){
 			if(g_d->pc.fatigue_points <= 1){
-				g_d->pc.max_velocity = PLAYER_VELOCITY;
 				g_d->pc.control_flags &= ~(run);
 			}else{
-				g_d->pc.max_velocity = RUN_VELOCITY;
 				--(g_d->pc.fatigue_points);
 			}
-		}else{
-			g_d->pc.max_velocity = PLAYER_VELOCITY;
 		}
-	}else{
-		g_d->pc.max_velocity = half(PLAYER_VELOCITY);
+	}
+	if(g_d->pc.block_times.dodge > 0){
+		--g_d->pc.block_times.dodge;
 	}
 	if(g_d->pc.velocity > 0.0F){
-		MovePlayer(g_d, SDL_sinf(move_direction) * g_d->pc.velocity, -SDL_cosf(move_direction) * g_d->pc.velocity);
+		MovePlayer(g_d, SDL_sinf(g_d->pc.move_direction) * g_d->pc.velocity, -SDL_cosf(g_d->pc.move_direction) * g_d->pc.velocity);
 	}
 }
 
@@ -146,20 +155,18 @@ static void UpdatePlayerDirection(Player* const p){
 }
 
 static void UpdatePlayerPoints(Player* const p){
-	static unsigned int count = PC_FATIGUE_GAIN_INTERVAL;
-	if(count <= 1U){
-		if(p->fatigue_block_time > 0){
-			--(p->fatigue_block_time);
-		}else if(p->fatigue_points < p->max_fatigue){
+	if(p->block_times.fatigue < 1){
+		if(p->fatigue_points < p->max_fatigue){
 			++(p->fatigue_points);
 		}
 		if(p->control_flags & block){
-			count = PC_FATIGUE_GAIN_INTERVAL * 2;
+			BlockPlayerFatigue(p, PC_FATIGUE_GAIN_INTERVAL * 2);
 		}else{
-			count = PC_FATIGUE_GAIN_INTERVAL;
+			BlockPlayerFatigue(p, PC_FATIGUE_GAIN_INTERVAL);
 		}
+	}else{
+		--(p->block_times.fatigue);
 	}
-	--count;
 }
 
 void UpdatePlayer(Game_data* const g_d){
@@ -274,88 +281,78 @@ static void UpdatePlayerBlade(Game_data* const g_d){
 	static const Placement* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
 	static const float extra_penetration[] = PC_BLADE_PENETRATIONS;
-	static Placement step_shift = {{0.0F, 0.0F}, 0.0};
-	static int key = 0;
-	static int steps = 0;
-	static int step = 0;
-	static unsigned int chain = 0U;
-	static unsigned int chain_next = 0U;
-	static bool abide = false;
-	static bool freehand = false;
-	static unsigned int idle_ticks = 0U;
-	static float charge = PC_BLADE_CHARGE_BASE;
 	if(g_d->pc.control_flags & range_mode){
-		if(step <= steps){
+		if(g_d->pc.blade.step <= g_d->pc.blade.steps){
 			SetBladePositionToBase(&g_d->pc.blade);
-			abide = false;
-			freehand = false;
-			charge = PC_BLADE_CHARGE_BASE;
-			idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
-			step = steps + 1;
-			chain_next = 0U;
+			g_d->pc.blade.abide = false;
+			g_d->pc.blade.freehand = false;
+			g_d->pc.blade.charge = PC_BLADE_CHARGE_BASE;
+			g_d->pc.blade.idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
+			g_d->pc.blade.step = g_d->pc.blade.steps + 1;
+			g_d->pc.blade.chain_next = 0U;
 		}
 		return;
 	}
 	if(g_d->pc.control_flags & block){
-		abide = false;
-		charge = PC_BLADE_CHARGE_BASE;
-		idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
+		g_d->pc.blade.abide = false;
+		g_d->pc.blade.charge = PC_BLADE_CHARGE_BASE;
+		g_d->pc.blade.idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
 	}else if(g_d->pc.control_flags & attack){
-		charge *= PC_BLADE_CHARGE_MODIFIER;
+		g_d->pc.blade.charge *= PC_BLADE_CHARGE_MODIFIER;
 	} 
-	if(!abide){
-		if(charge != PC_BLADE_CHARGE_BASE){
+	if(!g_d->pc.blade.abide){
+		if(g_d->pc.blade.charge != PC_BLADE_CHARGE_BASE){
 			if(!(g_d->pc.control_flags & attack)){
-				chain = chain_next;
-				key = 0;
-				step = 0;
-				abide = true;
-				idle_ticks = 0U;
+				g_d->pc.blade.chain = g_d->pc.blade.chain_next;
+				g_d->pc.blade.key = 0;
+				g_d->pc.blade.step = 0;
+				g_d->pc.blade.abide = true;
+				g_d->pc.blade.idle_ticks = 0U;
 				g_d->pc.blade.hits = 0U;
-				const float multip = 1.0F - charge;
+				const float multip = 1.0F - g_d->pc.blade.charge;
 				g_d->pc.blade.impact = (Impact){
 					g_d->pc.blade_attack.damage * multip,
-					g_d->pc.blade_attack.armour_reduction * multip + *(extra_penetration + chain),
+					g_d->pc.blade_attack.armour_reduction * multip + *(extra_penetration + g_d->pc.blade.chain),
 					g_d->pc.blade_attack.magic * multip,
 					g_d->pc.blade_attack.stun * multip
 				};
 				g_d->pc.blade.penetration = (unsigned int)((float)BLADE_PENETRATION * multip);
-				charge = PC_BLADE_CHARGE_BASE;
-				SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain), steps = PC_BLADE_FIRST_MOVE_STEPS);
-				chain_next = (chain_next + 1U) % SDL_arraysize(sizes);
-				freehand = false;
+				g_d->pc.blade.charge = PC_BLADE_CHARGE_BASE;
+				SetShiftToPosition(&g_d->pc.blade, &g_d->pc.blade.step_shift, *(blade_moves + g_d->pc.blade.chain), g_d->pc.blade.steps = PC_BLADE_FIRST_MOVE_STEPS);
+				g_d->pc.blade.chain_next = (g_d->pc.blade.chain_next + 1U) % SDL_arraysize(sizes);
+				g_d->pc.blade.freehand = false;
 				return;
 			}
-		}else if(++idle_ticks > PC_BLADE_MAX_IDLE_TICKS){
-			chain_next = 0U;
-			SetShiftToBase(&g_d->pc.blade, &step_shift, steps = PC_BLADE_RETURN_STEPS);
-			step = 0;
-			freehand = true;
+		}else if(++g_d->pc.blade.idle_ticks > PC_BLADE_MAX_IDLE_TICKS){
+			g_d->pc.blade.chain_next = 0U;
+			SetShiftToBase(&g_d->pc.blade, &g_d->pc.blade.step_shift, g_d->pc.blade.steps = PC_BLADE_RETURN_STEPS);
+			g_d->pc.blade.step = 0;
+			g_d->pc.blade.freehand = true;
 		}
-		if(!freehand) return;
+		if(!g_d->pc.blade.freehand) return;
 	}
-	if(step == steps){
-		if(freehand){
-			freehand = false;
-		}else if(key > *(sizes + chain) - 2){
-			abide = false;
-			freehand = true;
-			SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain_next), steps = PC_BLADE_TO_NEXT_STEPS);
+	if(g_d->pc.blade.step == g_d->pc.blade.steps){
+		if(g_d->pc.blade.freehand){
+			g_d->pc.blade.freehand = false;
+		}else if(g_d->pc.blade.key > *(sizes + g_d->pc.blade.chain) - 2){
+			g_d->pc.blade.abide = false;
+			g_d->pc.blade.freehand = true;
+			SetShiftToPosition(&g_d->pc.blade, &g_d->pc.blade.step_shift, *(blade_moves + g_d->pc.blade.chain_next), g_d->pc.blade.steps = PC_BLADE_TO_NEXT_STEPS);
 		}else{
-			SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain) + ++key, steps = PC_BLADE_STRIKE_STEPS);
+			SetShiftToPosition(&g_d->pc.blade, &g_d->pc.blade.step_shift, *(blade_moves + g_d->pc.blade.chain) + ++g_d->pc.blade.key, g_d->pc.blade.steps = PC_BLADE_STRIKE_STEPS);
 		}
-		step = 0;
+		g_d->pc.blade.step = 0;
 	}else{
-		ShiftBlade(&g_d->pc.blade, &step_shift);
-		if(!freehand && key > 1 && (freehand = UnleashDestruction(g_d))){
-			abide = false;
+		ShiftBlade(&g_d->pc.blade, &g_d->pc.blade.step_shift);
+		if(!g_d->pc.blade.freehand && g_d->pc.blade.key > 1 && (g_d->pc.blade.freehand = UnleashDestruction(g_d))){
+			g_d->pc.blade.abide = false;
 			g_d->pc.blade.hits = 0U;
-			g_d->pc.blade.placement.direction = chain == 1 ? g_d->pc.blade.placement.direction - PC_BLADE_BOUNCE_ANGLE : g_d->pc.blade.placement.direction + PC_BLADE_BOUNCE_ANGLE;
-			SetShiftToPosition(&g_d->pc.blade, &step_shift, *(blade_moves + chain_next), steps = PC_BLADE_AFTER_BLOCK_STEPS);
-			step = 0;
+			g_d->pc.blade.placement.direction = g_d->pc.blade.chain == 1 ? g_d->pc.blade.placement.direction - PC_BLADE_BOUNCE_ANGLE : g_d->pc.blade.placement.direction + PC_BLADE_BOUNCE_ANGLE;
+			SetShiftToPosition(&g_d->pc.blade, &g_d->pc.blade.step_shift, *(blade_moves + g_d->pc.blade.chain_next), g_d->pc.blade.steps = PC_BLADE_AFTER_BLOCK_STEPS);
+			g_d->pc.blade.step = 0;
 		}
 	}
-	++step;
+	++g_d->pc.blade.step;
 }
 
 extern inline bool PointInPlayer(const float x, const float y, Player* const pl){
@@ -370,23 +367,21 @@ extern inline void DamagePlayer(Player* const p, const Impact* impact){
 }
 
 static void UpdatePlayerFire(Game_data* const g_d){
-	static int shoot_reload = 0;
-	if(shoot_reload > 0){
-		--shoot_reload;
+	if(g_d->pc.block_times.shoot > 0){
+		--g_d->pc.block_times.shoot;
 	}else if(g_d->pc.selected_scroll == scroll_empty && (g_d->pc.control_flags & (range_mode | attack | block)) == (range_mode | attack) && g_d->projectiles.num < MAX_PROJECTILES_NUM){
 		AddPCProjectileToArray(&g_d->projectiles, &g_d->pc.position, g_d->pc.direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &g_d->pc.range_attack, TEST_PENETRATION);
-		shoot_reload = PC_SHOOT_RELOAD;
+		g_d->pc.block_times.shoot = PC_SHOOT_RELOAD;
 	}
 }
 
 static void UpdatePlayerPush(Game_data* const g_d){
-	static int push_reload = 0;
-	if(push_reload > 0){
-		--push_reload;
+	if(g_d->pc.block_times.push > 0){
+		--g_d->pc.block_times.push;
 	}else if((g_d->pc.control_flags & (attack | block)) == (attack | block) && g_d->pc.fatigue_points >= PC_PUSH_FATIG){
 		g_d->pc.fatigue_points -= PC_PUSH_FATIG;
-		g_d->pc.fatigue_block_time += PC_PUSH_FATIG_BLOCK_TIME;
-		push_reload = PC_PUSH_RELOAD;
+		BlockPlayerFatigue(&g_d->pc, PC_PUSH_FATIG_BLOCK_TIME);
+		g_d->pc.block_times.push = PC_PUSH_RELOAD;
 		Segment* s = GetSegment(&g_d->world, g_d->pc.position.x, g_d->pc.position.y);
 		for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
 		for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
@@ -413,9 +408,9 @@ extern inline void HaltPlayer(Player* const p){
 	p->velocity = 0.0F;
 }
 
-extern inline void HitBarrier(Player* const p, const int damage){
-	p->fatigue_points -= damage * BLOCK_COST;
-	p->fatigue_block_time += PC_BLOCK_FATIG_BLOCK_TIME;
+extern inline void HitBarrier(Player* const p, const Impact* const impact){
+	p->fatigue_points -= (int)(impact->stun * BLOCK_COST);
+	BlockPlayerFatigue(p, PC_BLOCK_FATIG_BLOCK_TIME);
 	if(p->fatigue_points < 0){
 		p->control_flags &= ~(block);
 		p->fatigue_points = 0;
@@ -427,9 +422,8 @@ extern inline float GetDirectionToPush(SDL_FPoint* const pushing, SDL_FPoint* co
 }
 
 static void UpdatePlayerCast(Game_data* const g_d){
-	static int cast_reload = 0;
-	if(cast_reload > 0){
-		--cast_reload;
+	if(g_d->pc.block_times.cast > 0){
+		--g_d->pc.block_times.cast;
 	}else if(g_d->pc.control_flags & cast){
 		g_d->pc.control_flags &= ~(cast);
 		const int cost = ScrollCost(g_d->pc.selected_scroll);
@@ -437,7 +431,7 @@ static void UpdatePlayerCast(Game_data* const g_d){
 			g_d->pc.magic_points -= cost;
 			--(*(g_d->pc.scrolls + g_d->pc.selected_scroll));
 			UseScroll(g_d);
-			cast_reload = PC_CAST_RELOAD;
+			g_d->pc.block_times.cast = PC_CAST_RELOAD;
 		}
 	}
 }
@@ -450,5 +444,11 @@ extern inline void HealPlayer(Player* const p, const int points){
 static inline void UpdatePlayerHitPoints(Player* const p){
 	if(p->hit_points > p->max_h_p){
 		p->hit_points = p->max_h_p;
+	}
+}
+
+static inline void BlockPlayerFatigue(Player* const p, const int time){
+	if(p->block_times.fatigue < time){
+		p->block_times.fatigue = time;
 	}
 }

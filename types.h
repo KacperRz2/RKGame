@@ -21,6 +21,7 @@ typedef struct Projectiles_array Projectiles_array;
 typedef struct Segment Segment;
 typedef struct World World;
 //Player
+typedef struct Block_times Block_times;
 typedef struct Player Player;
 //Game
 typedef struct Game_data Game_data;
@@ -45,6 +46,16 @@ struct Blade{
 	unsigned int hit_targets[MAX_HITS];
 	Uint8 penetration;
 	Uint8 hits;
+	Placement step_shift;
+	int key;
+	int steps;
+	int step;
+	unsigned int chain;
+	unsigned int chain_next;
+	bool abide;
+	bool freehand;
+	unsigned int idle_ticks;
+	float charge;	
 };
 struct Render_data{
 	float viewfinder;
@@ -146,6 +157,13 @@ struct World{
 	SDL_FPoint door;
 };
 //Player
+struct Block_times{
+	int fatigue;
+	int shoot;
+	int push;
+	int dodge;
+	int cast;
+};
 struct Player{
 	Uint32 control_flags;
 	SDL_FPoint position;
@@ -154,6 +172,7 @@ struct Player{
 	Impact range_attack;
 	Segment* segment;
 	float direction;
+	float move_direction;
 	float velocity;
 	float max_velocity;
 	int hit_points;
@@ -161,7 +180,7 @@ struct Player{
 	int magic_points;
 	int max_h_p;
 	int max_fatigue;
-	int fatigue_block_time;
+	Block_times block_times;
 	Armour armour;
 	int coins;
 	unsigned int selected_scroll;
