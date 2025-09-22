@@ -3,7 +3,7 @@
 
 int GraphicsInitiation(Render_data* const);
 void SetRenderData(Render_data* const, const float, const float);
-static void RenderBlade(Render_data* const, Blade* const);
+static void RenderHumanPlayerBlade(Render_data* const, Blade* const);
 static void RenderProjectiles(Render_data* const, Game_data* const);
 static void RenderBeings(Render_data* const, Game_data* const);
 static void RenderMap(Render_data* const, Player* const);
@@ -20,8 +20,11 @@ static void RenderGunSight(Render_data* const);
 static void RenderStaticThings(Render_data* const, Game_data* const);
 static void RenderStaticThing(Render_data* const, const float, const float, Player* const, const float, const int);
 void DrawMap(Render_data* const, World* const);
-static void RenderPlayer(Render_data* const);
-static void RenderBarrier(Render_data* const);
-static void RenderScroll(Render_data* const);
+static void RenderHumanPlayer(Render_data* const);
+static void RenderHumanPlayerBarrier(Render_data* const, const Player* const);
+static void RenderHumanPlayerScroll(Render_data* const, const bool);
+static void	RenderPlayersBladesAndScrolls(Render_data* const, const float, Player**, SDL_FPoint*, const unsigned int);
+static void	RenderPlayers(Render_data* const, const float, Player**, SDL_FPoint*, const unsigned int);
+static void	RenderBarriers(Render_data* const, const float, Player**, SDL_FPoint*, const unsigned int);
 
 #endif

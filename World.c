@@ -246,6 +246,7 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 							(*(*(world->segments + c) + r))->indx.x = c;
 							(*(*(world->segments + c) + r))->indx.y = r;
 							(*(*(world->segments + c) + r))->beings.num = 0U;
+							(*(*(world->segments + c) + r))->ally_beings.num = 0U;
 						}else{
 							*(*(world->segments + c) + r) = NULL;
 						}
@@ -299,17 +300,22 @@ void StartLevel(Game_data* const g_d){
 	for(unsigned int r = 0U; r < SEGMENTS_Y; ++r){
 			if(*(*(g_d->world.segments + c) + r) != NULL){
 				(*(*(g_d->world.segments + c) + r))->beings.num = 0U;//reset segments
+				(*(*(g_d->world.segments + c) + r))->ally_beings.num = 0U;
 			}
 		}
 	}
 	g_d->beings.num = 0U;
 	SDL_FPoint start_position = GetStartPosition(&g_d->world);
-	CreatePlayer(&g_d->pc, start_position.x, start_position.y);
+	for(unsigned int i = 0U; i < MAX_PLAYERS_NUM; ++i){
+		CreatePlayer((g_d->champions.array + i), start_position.x, start_position.y);
+		(g_d->champions.array + i)->segment = GetSegment(&g_d->world, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y);
+		++g_d->champions.num;
+	}
 	Uint64 start_time = SDL_GetTicks();
 	while (g_d->beings.num < MAX_START_BEINGS_NUM){//test beings
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
-		if(SDL_fabsf(g_d->pc.position.x - x) > 1000.0F && SDL_fabsf(g_d->pc.position.y - y) > 1000.0F){//not too close
+		if(SDL_fabsf(start_position.x - x) > 1000.0F && SDL_fabsf(start_position.y - y) > 1000.0F){//not too close
 			Segment* s = GetSegment(&g_d->world, x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
 				AddBeingToArray(&g_d->beings, (unsigned int)SDL_rand(2), x, y, s);

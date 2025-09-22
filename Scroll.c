@@ -15,18 +15,18 @@ extern inline int ScrollCost(const unsigned int scroll_id){
 }
 
 extern inline void UseScroll(Game_data* const g_d){
-    (*(effect + g_d->pc.selected_scroll))(g_d);
+    (*(effect + (g_d->champions.array + g_d->human_indx)->selected_scroll))(g_d);
 }
 
 void effect0(Game_data* const g_d){
-    Segment* s = GetSegment(&g_d->world, g_d->pc.position.x, g_d->pc.position.y);
+    Segment* s = GetSegment(&g_d->world, (g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y);
     for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
     for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
         Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
         if(neighbour == NULL) continue;
         for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
             Being* b = *(neighbour->beings.array + i);
-            const float angle = GetDirectionToPush(&g_d->pc.position, &b->position);
+            const float angle = GetDirectionToPush(&(g_d->champions.array + g_d->human_indx)->position, &b->position);
             const float stun = DEFAULT_FLY_VELOCITY * b->armour.unstability;
             CatapultBeing(b, SineSafe(angle) * stun, -CosiSafe(angle) * stun, BEING_DEFAULT_LEFT_TICKS * 8);
         }
@@ -34,7 +34,7 @@ void effect0(Game_data* const g_d){
 }
 
 void effect1(Game_data* const g_d){
-    HealPlayer(&g_d->pc, PC_HP / 10);
+    HealPlayer(g_d->champions.array + g_d->human_indx, PC_HP / 10);
 }
 
 void effect2(Game_data* const g_d){

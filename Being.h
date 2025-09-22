@@ -42,6 +42,7 @@ void StunBeing(Being* const, const int);
 void CatapultBeing(Being* const, const float, const float, const int);
 static void UpdateBeingStunned(Being* const, World* const);
 static void UpdateBeingFly(Being* const, World* const);
+static Player* FindTargetForBeing(Being* const, Players* const);
 
 static void UpdateBeing0(Being* const, Game_data* const);
 static void UpdateBeing1(Being* const, Game_data* const);

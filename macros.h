@@ -40,6 +40,7 @@
 #define MAX_PROJECTILES_NUM	        0x1000U
 #define MAX_SEGM_BEINGS		        16
 #define MAX_BEINGS_NUM		        0x8000U
+#define MAX_PLAYERS_NUM		        0x4U
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BLADE_DAMAGE                50
@@ -129,6 +130,8 @@
 #define MAX_PC_EFFECTS              8
 #define MAX_GAME_EFFECTS            8
 #define SCROLL_TX_SIZE              128.0F
+#define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
+#define BARRIER_MAGNIFICATION       0.25F
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -258,6 +261,12 @@
                                         VIEWFINDER_CENTER - SCROLL_SIZE + PLAYER_REND_Y_SHIFT,\
                                         SCROLL_SIZE,\
                                         SCROLL_SIZE\
+                                    }
+#define SRC_SCROLL_RECT             {\
+                                        0.0F,\
+                                        0.0F,\
+                                        SCROLL_TX_SIZE,\
+                                        SCROLL_TX_SIZE\
                                     }
 #define PC_SHIELD_RECT              {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F),\

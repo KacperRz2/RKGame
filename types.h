@@ -23,6 +23,8 @@ typedef struct World World;
 //Player
 typedef struct Block_times Block_times;
 typedef struct Player Player;
+typedef struct Players Players;
+
 //Game
 typedef struct Game_data Game_data;
 typedef struct Box_element Box_element;
@@ -68,7 +70,7 @@ struct Render_data{
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	SDL_Texture* textures[TEXTURES_NUM];
-	Uint32 render_flags;
+	// Uint32 render_flags;
 };
 struct Lasting_effect{
 	unsigned int id;
@@ -101,6 +103,7 @@ struct Being{
     float velocity;
     int hit_points;
 	unsigned int type_id;
+	unsigned int target_indx;
 	int status;
 	int status_ticks_left;
 	Armour armour;
@@ -117,7 +120,7 @@ struct Beings_array{
 };
 struct Segment_beings{
 	Being* array[MAX_SEGM_BEINGS];
-    unsigned int num;
+    Uint8 num;
 };
 //Projectile
 struct Projectile{
@@ -146,6 +149,7 @@ struct Projectiles_array{
 //World
 struct Segment{
 	Segment_beings beings;
+	Segment_beings ally_beings;
 	SDL_Point indx;
 };
 struct World{
@@ -189,6 +193,10 @@ struct Player{
 	unsigned int effects_num;
 	Lasting_effect effects[MAX_PC_EFFECTS];
 };
+struct Players{
+	Player* array;
+	unsigned int num;
+};
 //Game
 struct Box_element{
 	int type;
@@ -203,11 +211,12 @@ struct Boxes{
 	unsigned int num;
 };
 struct Game_data{
-	Player pc;
+	Players champions;
 	Beings_array beings;
 	Projectiles_array projectiles;
 	World world;
 	Boxes boxes;
+	unsigned int human_indx;
 	unsigned int keys;
 	unsigned int needed_keys;
 	int enemy_morale;

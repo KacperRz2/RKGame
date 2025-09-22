@@ -24,8 +24,7 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 			case KEY_ACTION:
 				p->control_flags |= action; break;
 			case KEY_SWITCH_RANGE:
-				p->control_flags ^= range_mode;
-				break;
+				p->control_flags ^= range_mode; break;
 			case KEY_TMP:
 				p->control_flags ^= tmp0; break;
 			case SDL_SCANCODE_1:
@@ -69,7 +68,7 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 			switch (e->button.button){
 				case BUTTON_ATTACK:
 					p->control_flags |= attack;
-					rend_data->render_flags |= rend_casting;
+					// rend_data->render_flags |= rend_casting;
 					break;
 				case BUTTON_BLOCK:
 					p->control_flags |= block; break;
@@ -79,7 +78,7 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 			switch (e->button.button){
 				case BUTTON_ATTACK:
 					p->control_flags &= ~(attack);
-					rend_data->render_flags &= ~(rend_casting);
+					// rend_data->render_flags &= ~(rend_casting);
 					if((p->control_flags & range_mode) && p->selected_scroll != scroll_empty){
 						p->control_flags |= cast;
 					}

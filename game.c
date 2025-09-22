@@ -37,20 +37,23 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
     StartLevel(&game_data);
     while(!quit){
         timer = SDL_GetTicksNS();
-		quit = EventsService(e, &game_data.pc, rend_data);
-		UpdatePlayer(&game_data);
-		game_data.pc.segment = GetSegment(&game_data.world, game_data.pc.position.x, game_data.pc.position.y);
+		quit = EventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
+		//TEST
+		if((game_data.champions.array + game_data.human_indx)->control_flags & tmp0){
+			(game_data.champions.array + game_data.human_indx)->control_flags &= ~(tmp0);
+			game_data.human_indx = (game_data.human_indx + 1U) % game_data.champions.num;
+		}
+		//TEST
+		UpdatePlayers(&game_data);
 		UpdateProjectiles(&game_data);
 		if(ticks_to_update_beings == 0U){
-			if(!(game_data.pc.control_flags & tmp0)){
-				UpdateBeings(&game_data);
-			}
+			UpdateBeings(&game_data);
 			ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 		}else{
 			RareEventsService(&game_data);
 			--ticks_to_update_beings;
 		}
-		if(game_data.pc.hit_points < 1){
+		if((game_data.champions.array + game_data.human_indx)->hit_points < 1){
             break;
 		}
 
@@ -80,12 +83,15 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 }
 
 static void SetGameData(Game_data* const g_d){
+	g_d->champions.array = (Player*)SDL_malloc(sizeof(Player) * MAX_PLAYERS_NUM);
 	g_d->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
+	g_d->champions.num = 0U;
 	g_d->boxes.num = 0U;
 	CreateWorld(g_d, WORLD_W, WORLD_H);
+	g_d->human_indx = 0U;
 	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	g_d->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
-	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL){SDL_Quit(); exit(1);}
+	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL || g_d->champions.array == NULL || g_d->boxes.array == NULL){SDL_Quit(); exit(1);}
 	g_d->projectiles.num = 0U;
 	g_d->keys = 0U;
 	g_d->needed_keys = KEYS_NUM;
@@ -96,26 +102,28 @@ static void ClearGameData(Game_data* const g_d){
 	DestroyBoxes(&g_d->boxes);
 	DestroyBeings(&g_d->beings);
     DestroyProjectiles(&g_d->projectiles);
+	SDL_free(g_d->champions.array);
+	g_d->champions.num = 0U;
 	DestroyWorld(&g_d->world);
 }
 
 static void RareEventsService(Game_data* const g_d){
 	static int check_queue = 0;
-	if(check_queue == 0 && SDL_fabsf(g_d->pc.position.x - g_d->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.portalA.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
-		SetPlayerPosition(&g_d->pc, g_d->world.portalB.x, g_d->world.portalB.y);
-	 	g_d->pc.control_flags &= ~(action);
-	}else if(check_queue == 1 && SDL_fabsf(g_d->pc.position.x - g_d->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.portalB.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
-		SetPlayerPosition(&g_d->pc, g_d->world.portalA.x, g_d->world.portalA.y);
-	 	g_d->pc.control_flags &= ~(action);
-	}else if(check_queue == 2 && (g_d->pc.control_flags & action) && g_d->boxes.num > 0U){
+	if(check_queue == 0 && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - g_d->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - g_d->world.portalA.y) < half(DOOR_SIZE) && ((g_d->champions.array + g_d->human_indx)->control_flags & action)){
+		SetPlayerPosition(g_d->champions.array + g_d->human_indx, g_d->world.portalB.x, g_d->world.portalB.y);
+	 	(g_d->champions.array + g_d->human_indx)->control_flags &= ~(action);
+	}else if(check_queue == 1 && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - g_d->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - g_d->world.portalB.y) < half(DOOR_SIZE) && ((g_d->champions.array + g_d->human_indx)->control_flags & action)){
+		SetPlayerPosition(g_d->champions.array + g_d->human_indx, g_d->world.portalA.x, g_d->world.portalA.y);
+	 	(g_d->champions.array + g_d->human_indx)->control_flags &= ~(action);
+	}else if(check_queue == 2 && ((g_d->champions.array + g_d->human_indx)->control_flags & action) && g_d->boxes.num > 0U){
 		int box_indx = GetNearbyBoxIndx(g_d);
 		if(box_indx != -1){
 			LootBox(g_d, box_indx);
-	 		g_d->pc.control_flags &= ~(action);
+	 		(g_d->champions.array + g_d->human_indx)->control_flags &= ~(action);
 		}
-	}else if(check_queue == 3 && g_d->keys >= g_d->needed_keys && SDL_fabsf(g_d->pc.position.x - g_d->world.door.x) < half(DOOR_SIZE) && SDL_fabsf(g_d->pc.position.y - g_d->world.door.y) < half(DOOR_SIZE) && (g_d->pc.control_flags & action)){
-		g_d->pc.hit_points = 0;
-	 	g_d->pc.control_flags &= ~(action);
+	}else if(check_queue == 3 && g_d->keys >= g_d->needed_keys && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - g_d->world.door.x) < half(DOOR_SIZE) && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - g_d->world.door.y) < half(DOOR_SIZE) && ((g_d->champions.array + g_d->human_indx)->control_flags & action)){
+		(g_d->champions.array + g_d->human_indx)->hit_points = 0;
+	 	(g_d->champions.array + g_d->human_indx)->control_flags &= ~(action);
 	}
 	check_queue = (check_queue + 1) % 4;
 }
@@ -164,22 +172,22 @@ static int GetNearbyBoxIndx(Game_data* const g_d){
 	int new_center = (right - left) / 2 + left;
 	do{
 		center = new_center;
-		if(SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
+		if(SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
 			do{
-				if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+				if(SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
 					return center;
 				}
 				++center;
-			}while(center < g_d->boxes.num && SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
+			}while(center < g_d->boxes.num && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
 			center = new_center - 1;
-			do{
-				if(SDL_fabsf(g_d->pc.position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+			while(center >= 0 && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
+				if(SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
 					return center;
 				}
 				--center;
-			}while(center >= 0 && SDL_fabsf(g_d->pc.position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
+			};
 			return -1;
-		}else if(g_d->pc.position.x > (g_d->boxes.array + center)->location.x){
+		}else if((g_d->champions.array + g_d->human_indx)->position.x > (g_d->boxes.array + center)->location.x){
 			left = center;
 		}else{
 			right = center;
@@ -195,11 +203,11 @@ static inline void LootBox(Game_data* const g_d, const unsigned int box_indx){
 	while(1){
 		element_type = elem->type;
 		if(element_type == box_coins){
-			g_d->pc.coins += (int)elem->value;
+			(g_d->champions.array + g_d->human_indx)->coins += (int)elem->value;
 		}else if(element_type == box_key){
 			g_d->keys += (int)elem->value;
 		}else if(element_type == box_mp){
-			g_d->pc.magic_points += (int)elem->value;
+			(g_d->champions.array + g_d->human_indx)->magic_points += (int)elem->value;
 			break;
 		}
 		++elem;

@@ -73,7 +73,7 @@ void UpdateProjectiles(Game_data* const g_d){
 static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 		MoveProjectile(pr);
 		Segment* s = GetSegment(&g_d->world, pr->position.x, pr->position.y);
-		if(s == NULL || SDL_abs(g_d->pc.segment->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs(g_d->pc.segment->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
+		if(s == NULL || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
 			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
 			return false;
 		}
@@ -110,25 +110,47 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 
 static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const g_d){
 	MoveProjectile(pr);
-	if(ProjectileHitsPlayerOrLost(pr, &g_d->pc) || GetSegment(&g_d->world, pr->position.x, pr->position.y) == NULL){
+	Segment* s = GetSegment(&g_d->world, pr->position.x, pr->position.y);
+	if(s == NULL || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
 		*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
 		return false;
+	}
+	for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
+	for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
+		Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
+		if(neighbour == NULL) continue;
+		for(unsigned int j = 0U; j < neighbour->ally_beings.num; ++j){
+			Being* b = *(neighbour->ally_beings.array + j);
+			if(!ProjectileHitsBeing(pr, b)) continue;
+			if(!DamageBeing(b, &pr->data.basic.impact)){
+				if(b->status == being_strike){
+					ResetBeingBlade(b);
+				}
+				if(b->status != being_fly){
+					StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.basic.impact, &b->armour)));
+				}
+			}
+			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
+			return false;
+		}
+	}}
+	for(unsigned int i = 0U; i < g_d->champions.num; ++i){
+		if(ProjectileHitsPlayer(pr, g_d->champions.array + i)){
+			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
+			return false;
+		}
 	}
 	return true;
 }
 static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const g_d){}
 
-static inline bool ProjectileHitsPlayerOrLost(Projectile* const pr, Player* const p){
-	float distance_squated = pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y);
-	if(distance_squated < pow2(half(PLAYER_SIZE))){
+static inline bool ProjectileHitsPlayer(Projectile* const pr, Player* const p){
+	if(pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y) < pow2(half(PLAYER_SIZE))){
 		if(p->control_flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
 			HitBarrier(p, &pr->data.basic.impact);
 		}else{
 			DamagePlayer(p, &pr->data.basic.impact);
 		}
-		return true;
-	}
-	if(distance_squated > pow2(SEGMENT_SIZE * PROJECTILE_RAN_SEG)){
 		return true;
 	}
 	return false;

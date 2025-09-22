@@ -77,10 +77,10 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 		rend_data->viewfinder,
 		rend_data->viewfinder
 	};
-	rend_data->render_flags = 0U;
+	// rend_data->render_flags = 0U;
 }
 
-static void RenderBlade(Render_data* const rend_data, Blade* const blade){
+static void RenderHumanPlayerBlade(Render_data* const rend_data, Blade* const blade){
 	static SDL_FRect rect_blade = {
 		0.0F,
 		0.0F,
@@ -101,7 +101,7 @@ static void RenderProjectiles(Render_data* const rend_data, Game_data* const g_d
 	};
 	for(Projectile* pr = g_d->projectiles.array; pr != (g_d->projectiles.array + g_d->projectiles.num); ++pr){
 		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, &g_d->pc, &point)){
+		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, g_d->champions.array + g_d->human_indx, &point)){
 			rect.x = point.x - half(BULLET_SIZE);
 			rect.y = point.y - half(BULLET_SIZE);
 			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + *(projectile_textures + pr->type_id)), NULL, &rect);
@@ -119,16 +119,16 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 	static const SDL_FPoint blade_rotation_point = WEAPON_ROTATION_POINT;
     for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
 		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, &g_d->pc, &point)){
+		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, g_d->champions.array + g_d->human_indx, &point)){
 			const SDL_FRect rect = {
 				point.x - half(BeingSize(b)),
 				point.y - half(BeingSize(b)),
 				BeingSize(b),
 				BeingSize(b)
 			};
-			float being_direction = b->direction - g_d->pc.direction;
-			float sine = SineSafe(being_direction);
-			float cosine = CosiSafe(being_direction);
+			const float being_direction = b->direction - (g_d->champions.array + g_d->human_indx)->direction;
+			const float sine = SineSafe(being_direction);
+			const float cosine = CosiSafe(being_direction);
 			rect_blade.x = point.x + (b->weapon.placement.position.x * cosine + b->weapon.placement.position.y * sine) - half(BLADE_SIZE);
 			rect_blade.y = point.y + (b->weapon.placement.position.x * sine - b->weapon.placement.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_weapon_textures + b->type_id)), NULL, &rect_blade, (double)RadToDeg(b->weapon.placement.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
@@ -185,10 +185,10 @@ static void RenderMap(Render_data* const rend_data, Player* const p){
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 }
 
-static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const Player* const p, SDL_FPoint* const rend_point){
-	float dx = true_point_x - p->position.x;
+static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const Player* const human_player, SDL_FPoint* const rend_point){
+	float dx = true_point_x - human_player->position.x;
 	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
-	float dy = true_point_y - p->position.y;
+	float dy = true_point_y - human_player->position.y;
 	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
 	*rend_point = (SDL_FPoint){
 		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
@@ -200,25 +200,25 @@ static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const fl
 
 void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const g_d){
 	SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
-	SDL_RenderDebugTextFormat(rend, 10, 10, "Fatigue: %d", g_d->pc.fatigue_points);
-	SDL_RenderDebugTextFormat(rend, 10, 20, "Position: %.2f %.2f", g_d->pc.position.x, g_d->pc.position.y);
-	SDL_RenderDebugTextFormat(rend, 10, 30, "Direction: %.2f", g_d->pc.direction);
+	SDL_RenderDebugTextFormat(rend, 10, 10, "Fatigue: %d", (g_d->champions.array + g_d->human_indx)->fatigue_points);
+	SDL_RenderDebugTextFormat(rend, 10, 20, "Position: %.2f %.2f", (g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y);
+	SDL_RenderDebugTextFormat(rend, 10, 30, "Direction: %.2f", (g_d->champions.array + g_d->human_indx)->direction);
 
 	SDL_RenderDebugTextFormat(rend, 10, 140, "Ticks per sec.: %d", tps);
 	SDL_RenderDebugTextFormat(rend, 10, 150, "max FPS: ~%u", (1000000000ULL / FRAME_TIME));
 
 	SDL_RenderDebugTextFormat(rend, 10, 160, "beings: %d", g_d->beings.num);
 	SDL_RenderDebugTextFormat(rend, 10, 170, "projectiles: %d", g_d->projectiles.num);
-	SDL_RenderDebugTextFormat(rend, 10, 180, "blade charge: %f", 1.0F - g_d->pc.blade.charge);
-	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", g_d->pc.hit_points);
-	SDL_RenderDebugTextFormat(rend, 10, 200, "coins: %d", g_d->pc.coins);
+	SDL_RenderDebugTextFormat(rend, 10, 180, "blade charge: %f", 1.0F - (g_d->champions.array + g_d->human_indx)->blade.charge);
+	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", (g_d->champions.array + g_d->human_indx)->hit_points);
+	SDL_RenderDebugTextFormat(rend, 10, 200, "coins: %d", (g_d->champions.array + g_d->human_indx)->coins);
 	SDL_RenderDebugTextFormat(rend, 10, 210, "boxes: %d", g_d->boxes.num);
 	SDL_RenderDebugTextFormat(rend, 10, 220, "keys: %d", g_d->keys);
 	SDL_RenderDebugTextFormat(rend, 10, 230, "needed: %d", g_d->needed_keys);
-	SDL_RenderDebugTextFormat(rend, 10, 240, "player: x: %d y: %d", g_d->pc.segment->indx.x, g_d->pc.segment->indx.y);
-	SDL_RenderDebugTextFormat(rend, 10, 250, "selected scroll: %d", g_d->pc.selected_scroll);
-	SDL_RenderDebugTextFormat(rend, 10, 260, "selected scroll num: %d", *(g_d->pc.scrolls + g_d->pc.selected_scroll));
-	SDL_RenderDebugTextFormat(rend, 10, 270, "selected scroll cost: %d", ScrollCost(g_d->pc.selected_scroll));
+	SDL_RenderDebugTextFormat(rend, 10, 240, "player: x: %d y: %d", (g_d->champions.array + g_d->human_indx)->segment->indx.x, (g_d->champions.array + g_d->human_indx)->segment->indx.y);
+	SDL_RenderDebugTextFormat(rend, 10, 250, "selected scroll: %d", (g_d->champions.array + g_d->human_indx)->selected_scroll);
+	SDL_RenderDebugTextFormat(rend, 10, 260, "selected scroll num: %d", *((g_d->champions.array + g_d->human_indx)->scrolls + (g_d->champions.array + g_d->human_indx)->selected_scroll));
+	SDL_RenderDebugTextFormat(rend, 10, 270, "selected scroll cost: %d", ScrollCost((g_d->champions.array + g_d->human_indx)->selected_scroll));
 
 }
 
@@ -284,7 +284,7 @@ void RenderMainMenu(Render_data* const rend_data){
 }
 
 void RenderGame(Render_data* const rend_data, Game_data* const g_d){
-	SetSineCosine(rend_data, &g_d->pc);
+	SetSineCosine(rend_data, g_d->champions.array + g_d->human_indx);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 0);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
@@ -292,22 +292,38 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	RenderTerrain(rend_data, g_d);
 	RenderStaticThings(rend_data, g_d);
-	if(!(g_d->pc.control_flags & range_mode)){
-		RenderBlade(rend_data, &g_d->pc.blade);
+	if(!((g_d->champions.array + g_d->human_indx)->control_flags & range_mode)){
+		RenderHumanPlayerBlade(rend_data, &(g_d->champions.array + g_d->human_indx)->blade);
 	}else{
-		RenderScroll(rend_data);
+		RenderHumanPlayerScroll(rend_data, (bool)((g_d->champions.array + g_d->human_indx)->control_flags & attack));
 	}
+	Player* players_to_rend[g_d->champions.num - 1U];
+	SDL_FPoint players_rend_points[g_d->champions.num - 1U];
+	unsigned int indx = 0U;
+	for(unsigned int i = 0U; i < g_d->champions.num; ++i){
+		if(i == g_d->human_indx){
+			continue;
+		}
+		SDL_FPoint point;
+		if(GetRenderPointFromTrue(rend_data, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y, g_d->champions.array + g_d->human_indx, &point)){
+			*(players_to_rend + indx) = g_d->champions.array + i;
+			*(players_rend_points + indx++) = point;
+		}
+	}
+	RenderPlayersBladesAndScrolls(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
 	RenderBeings(rend_data, g_d);
 	RenderProjectiles(rend_data, g_d);
-	RenderPlayer(rend_data);
-	if(g_d->pc.control_flags & block){
-		RenderBarrier(rend_data);
+	RenderHumanPlayer(rend_data);
+	RenderPlayers(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
+	if((g_d->champions.array + g_d->human_indx)->control_flags & block){
+		RenderHumanPlayerBarrier(rend_data, g_d->champions.array + g_d->human_indx);
 	}
+	RenderBarriers(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
 	RenderGunSight(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
-	RenderMap(rend_data, &g_d->pc);
-	RenderPlayerStatus(rend_data, &g_d->pc);
+	RenderMap(rend_data, g_d->champions.array + g_d->human_indx);
+	RenderPlayerStatus(rend_data, g_d->champions.array + g_d->human_indx);
 }
 
 static inline void SetSineCosine(Render_data* const rend_data, Player* const p){
@@ -331,8 +347,8 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 		SEGMENT_SIZE,
 		SEGMENT_SIZE
 	};
-	const SDL_FPoint corner_first = {g_d->pc.position.x - (rend_data->viewfinder + SEGMENT_SIZE), g_d->pc.position.y - (rend_data->viewfinder + SEGMENT_SIZE)};
-	const SDL_FPoint corner_last = {g_d->pc.position.x + (rend_data->viewfinder + SEGMENT_SIZE), g_d->pc.position.y + (rend_data->viewfinder + SEGMENT_SIZE)};
+	const SDL_FPoint corner_first = {(g_d->champions.array + g_d->human_indx)->position.x - (rend_data->viewfinder + SEGMENT_SIZE), (g_d->champions.array + g_d->human_indx)->position.y - (rend_data->viewfinder + SEGMENT_SIZE)};
+	const SDL_FPoint corner_last = {(g_d->champions.array + g_d->human_indx)->position.x + (rend_data->viewfinder + SEGMENT_SIZE), (g_d->champions.array + g_d->human_indx)->position.y + (rend_data->viewfinder + SEGMENT_SIZE)};
 	SDL_FPoint point = corner_first;
 	float shift_y = SDL_fmodf(point.y, SEGMENT_SIZE) + half(SEGMENT_SIZE);
 	point.x -= SDL_fmodf(point.x, SEGMENT_SIZE) + half(SEGMENT_SIZE);
@@ -340,13 +356,13 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 	while(point.x < corner_last.x){
 		while(point.y < corner_last.y){
 			SDL_FPoint rend_point;
-			if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, &g_d->pc, &rend_point)){
+			if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, g_d->champions.array + g_d->human_indx, &rend_point)){
 				rect.x = rend_point.x - half(SEGMENT_SIZE);
 				rect.y = rend_point.y - half(SEGMENT_SIZE);
 				if(point.x > 0.0F && point.y > 0.0F && point.x < WORLD_SIZE && point.y < WORLD_SIZE && GetSegment(&g_d->world, point.x, point.y) != NULL){
-					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &rect, -RadToDeg(g_d->pc.direction), NULL, SDL_FLIP_NONE);
+					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
 				}else{
-					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_wall), NULL, &rect, -RadToDeg(g_d->pc.direction), NULL, SDL_FLIP_NONE);
+					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_wall), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
 				}
 			}
 			point.y += SEGMENT_SIZE;
@@ -363,9 +379,9 @@ static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, 
 		rend_data->visible_rect.w + extension * 2.0F,
 		rend_data->visible_rect.h + extension * 2.0F
 	};
-	float dx = true_point_x - p->position.x;
+	const float dx = true_point_x - p->position.x;
 	if(SDL_fabsf(dx) > rend_data->viewfinder + extension) return false;
-	float dy = true_point_y - p->position.y;
+	const float dy = true_point_y - p->position.y;
 	if(SDL_fabsf(dy) > rend_data->viewfinder + extension) return false;
 	*rend_point = (SDL_FPoint){
 		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
@@ -396,11 +412,11 @@ static void RenderGunSight(Render_data* const rend_data){
 }
 
 static void RenderStaticThings(Render_data* const rend_data, Game_data* const g_d){
-	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, &g_d->pc, DOOR_SIZE, tx_portal);
-	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, &g_d->pc, DOOR_SIZE, tx_portal);
-	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, &g_d->pc, DOOR_SIZE, tx_door);
+	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal);
+	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal);
+	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_door);
 	for(unsigned int i = 0U; i < g_d->boxes.num; ++i){
-		RenderStaticThing(rend_data, (g_d->boxes.array + i)->location.x, (g_d->boxes.array + i)->location.y, &g_d->pc, BOX_SIZE, tx_box);
+		RenderStaticThing(rend_data, (g_d->boxes.array + i)->location.x, (g_d->boxes.array + i)->location.y,g_d->champions.array + g_d->human_indx, BOX_SIZE, tx_box);
 	}
 }
 
@@ -436,25 +452,106 @@ void DrawMap(Render_data* const rend_data, World* const w){
 	SDL_DestroySurface(surface);
 }
 
-static inline void RenderPlayer(Render_data* const rend_data){
+static inline void RenderHumanPlayer(Render_data* const rend_data){
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &(SDL_FRect)PC_RECT);
 }
 
-static inline void RenderBarrier(Render_data* const rend_data){
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_barrier), NULL, &(SDL_FRect)PC_SHIELD_RECT);
+static inline void RenderHumanPlayerBarrier(Render_data* const rend_data, const Player* const p){
+	if(p->block_times.push < 1){
+		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_barrier), NULL, &(SDL_FRect)PC_SHIELD_RECT);
+	}else{
+		const float size = BARRIER_SIZE + (float)p->block_times.push * BARRIER_MAGNIFICATION;
+		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_barrier), NULL,
+			&(SDL_FRect){
+				VIEWFINDER_CENTER - half(size),
+				VIEWFINDER_CENTER - half(size) + PLAYER_REND_Y_SHIFT,
+				size,
+				size
+			}
+		);
+	}
 }
 
-static inline void RenderScroll(Render_data* const rend_data){
-	static SDL_FRect src_rect = {
-		0.0F,
-		0.0F,
-		SCROLL_TX_SIZE,
-		SCROLL_TX_SIZE
-	};
-	if(rend_data->render_flags & rend_casting){
+static inline void RenderHumanPlayerScroll(Render_data* const rend_data, const bool unrolled){
+	SDL_FRect src_rect = SRC_SCROLL_RECT;
+	if(unrolled){
 		src_rect.x = SCROLL_TX_SIZE;
-	}else{
-		src_rect.x = 0.0F;
 	}
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_scroll), &src_rect, &(SDL_FRect)PC_SCROLL_RECT);
+}
+
+static void	RenderPlayersBladesAndScrolls(Render_data* const rend_data, const float human_player_direction, Player** plys, SDL_FPoint* points, const unsigned int num){
+	SDL_FRect rect_blade = {
+		0.0F,
+		0.0F,
+		BLADE_SIZE,
+		BLADE_SIZE
+	};
+	SDL_FRect rect_scroll = {
+		0.0F,
+		0.0F,
+		SCROLL_SIZE,
+		SCROLL_SIZE
+	};
+	for(unsigned int i = 0U; i < num; ++i){
+		const float player_direction = (*(plys + i))->direction - human_player_direction;
+		const float sine = SineSafe(player_direction);
+		const float cosine = CosiSafe(player_direction);
+		if(!((*(plys + i))->control_flags & range_mode)){
+			rect_blade.x = (points + i)->x + ((*(plys + i))->blade.placement.position.x * cosine + (*(plys + i))->blade.placement.position.y * sine) - half(BLADE_SIZE);
+			rect_blade.y = (points + i)->y + ((*(plys + i))->blade.placement.position.x * sine - (*(plys + i))->blade.placement.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(player_direction + (*(plys + i))->blade.placement.direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
+		}else{
+			SDL_FRect src_rect = SRC_SCROLL_RECT;
+			if((*(plys + i))->control_flags & attack){
+				src_rect.x = SCROLL_TX_SIZE;
+			}
+			rect_scroll.x = (points + i)->x + (half(SCROLL_SIZE) * cosine + half(SCROLL_SIZE) * sine) - half(SCROLL_SIZE);
+			rect_scroll.y = (points + i)->y + (half(SCROLL_SIZE) * sine - half(SCROLL_SIZE) * cosine) - half(SCROLL_SIZE);
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_scroll), &src_rect, &rect_scroll, (double)RadToDeg(player_direction), NULL, SDL_FLIP_NONE);
+		}
+	}
+}
+
+static void	RenderPlayers(Render_data* const rend_data, const float human_player_direction, Player** plys, SDL_FPoint* points, const unsigned int num){
+	SDL_FRect rect_player = {
+		0.0F,
+		0.0F,
+		(float)PLAYER_SIZE,
+		(float)PLAYER_SIZE
+	};
+	for(unsigned int i = 0U; i < num; ++i){
+		rect_player.x = (points + i)->x - half(PLAYER_SIZE);
+		rect_player.y = (points + i)->y - half(PLAYER_SIZE);
+		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect_player, (double)RadToDeg((*(plys + i))->direction - human_player_direction), NULL, SDL_FLIP_NONE);
+	}
+}
+
+static void	RenderBarriers(Render_data* const rend_data, const float human_player_direction, Player** plys, SDL_FPoint* points, const unsigned int num){
+	SDL_FRect rect_barrier = {
+		0.0F,
+		0.0F,
+		BARRIER_SIZE,
+		BARRIER_SIZE
+	};
+	for(unsigned int i = 0U; i < num; ++i){
+		if(!((*(plys + i))->control_flags & block)){
+			continue;
+		}
+		rect_barrier.x = (points + i)->x - half(BARRIER_SIZE);
+		rect_barrier.y = (points + i)->y - half(BARRIER_SIZE);
+		if((*(plys + i))->block_times.push < 1){
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_barrier), NULL, &rect_barrier, (double)RadToDeg((*(plys + i))->direction - human_player_direction), NULL, SDL_FLIP_NONE);
+		}else{
+			const float size = BARRIER_SIZE + (float)(*(plys + i))->block_times.push * BARRIER_MAGNIFICATION;
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_barrier), NULL,
+				&(SDL_FRect){
+					(points + i)->x - half(size),
+					(points + i)->y - half(size),
+					size,
+					size
+				}, (double)RadToDeg((*(plys + i))->direction - human_player_direction), NULL, SDL_FLIP_NONE
+			);
+		}
+	}
 }

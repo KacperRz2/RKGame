@@ -8,7 +8,7 @@ void AddHProjectileToArray(Projectiles_array* const, const SDL_FPoint* const, co
 static void DestroyProjectileInArray(Projectiles_array* const, const unsigned int);
 static void MoveProjectile(Projectile* const);
 void UpdateProjectiles(Game_data* const);
-static bool ProjectileHitsPlayerOrLost(Projectile* const, Player* const);
+static bool ProjectileHitsPlayer(Projectile* const, Player* const);
 
 static bool UpdatePCProjectile(Projectile* const, Game_data* const);
 static bool UpdateHostileProjectile(Projectile* const, Game_data* const);
