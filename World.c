@@ -291,9 +291,13 @@ extern inline Segment* GetSegmentByIndx(World* const world, const unsigned int c
 	return *(*(world->segments + c) + r);
 }
 
-extern inline void UpdateSegmentBeingPointer(Being* old, Being* new){
-	*(old->segment->beings.array + old->indx) = new;
+extern inline void UpdateSegmentBeingPointer(Being* old, Being* new, Segment_beings* const bs){
+	*(bs->array + old->indx) = new;
 }
+
+// extern inline void UpdateSegmentAllyPointer(Being* old, Being* new){
+// 	*(old->segment->ally_beings.array + old->indx) = new;
+// }
 
 void StartLevel(Game_data* const g_d){
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
@@ -312,10 +316,10 @@ void StartLevel(Game_data* const g_d){
 		++g_d->champions.num;
 	}
 	Uint64 start_time = SDL_GetTicks();
-	while (g_d->beings.num < MAX_START_BEINGS_NUM){//test beings
+	while (g_d->beings.num < MAX_START_BEINGS_NUM / 2){//test beings
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
-		if(SDL_fabsf(start_position.x - x) > 1000.0F && SDL_fabsf(start_position.y - y) > 1000.0F){//not too close
+		if(SDL_fabsf(start_position.x - x) > 1000.0F && SDL_fabsf(start_position.y - y) > 1000.0F && SDL_fabsf(start_position.x - x) < WORLD_W * 0.25F && SDL_fabsf(start_position.y - y) < WORLD_H * 0.25F){
 			Segment* s = GetSegment(&g_d->world, x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
 				AddBeingToArray(&g_d->beings, (unsigned int)SDL_rand(2), x, y, s);

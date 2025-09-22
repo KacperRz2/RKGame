@@ -169,7 +169,7 @@ struct Block_times{
 	int cast;
 };
 struct Player{
-	Uint32 control_flags;
+	Uint32 flags;
 	SDL_FPoint position;
 	Blade blade;
 	Impact blade_attack;

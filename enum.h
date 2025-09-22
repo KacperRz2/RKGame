@@ -23,6 +23,7 @@ enum texture_num{
     tx_scroll,
     tx_being1,
     tx_weapon,
+    tx_being2,
     tx_map
 };
 
@@ -49,7 +50,8 @@ enum being_status{
     being_walk,
     being_dead,
     being_stunned,
-    being_fly
+    being_fly,
+    being_attack_being
 };
 
 enum menu_option{
@@ -77,9 +79,9 @@ enum scroll_type{
     scroll_empty
 };
 
-enum render_flags{
-    rend_casting = 1 << 0
-};
+// enum render_flags{
+//     rend_casting = 1 << 0
+// };
 
 enum being_type{
     being_0,

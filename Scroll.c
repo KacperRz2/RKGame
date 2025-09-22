@@ -6,6 +6,7 @@
 #include <Being.h>
 #include <Player.h>
 #include <World.h>
+#include <enum.h>
 
 const void (*effect[])(Game_data* const) = SCR_EFFECTS;
 const int costs[] = SCR_COSTS;
@@ -38,7 +39,9 @@ void effect1(Game_data* const g_d){
 }
 
 void effect2(Game_data* const g_d){
-    
+    if(g_d->beings.num < MAX_BEINGS_NUM && (g_d->champions.array + g_d->human_indx)->segment->ally_beings.num < MAX_SEGM_BEINGS){
+        AddBeingToArray(&g_d->beings, being_2, (g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y, (g_d->champions.array + g_d->human_indx)->segment);
+    }
 }
 
 void effect3(Game_data* const g_d){

@@ -73,7 +73,7 @@ void UpdateProjectiles(Game_data* const g_d){
 static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 		MoveProjectile(pr);
 		Segment* s = GetSegment(&g_d->world, pr->position.x, pr->position.y);
-		if(s == NULL || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
+		if(s == NULL){
 			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
 			return false;
 		}
@@ -111,7 +111,7 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const g_d){
 	MoveProjectile(pr);
 	Segment* s = GetSegment(&g_d->world, pr->position.x, pr->position.y);
-	if(s == NULL || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.x - s->indx.x) > PROJECTILE_RAN_SEG || SDL_abs((g_d->champions.array + g_d->human_indx)->segment->indx.y - s->indx.y) > PROJECTILE_RAN_SEG){
+	if(s == NULL){
 		*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
 		return false;
 	}
@@ -122,7 +122,7 @@ static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const g_d){
 		for(unsigned int j = 0U; j < neighbour->ally_beings.num; ++j){
 			Being* b = *(neighbour->ally_beings.array + j);
 			if(!ProjectileHitsBeing(pr, b)) continue;
-			if(!DamageBeing(b, &pr->data.basic.impact)){
+			if(!DamageAlly(b, &pr->data.basic.impact)){
 				if(b->status == being_strike){
 					ResetBeingBlade(b);
 				}
@@ -146,7 +146,7 @@ static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const g_d){
 
 static inline bool ProjectileHitsPlayer(Projectile* const pr, Player* const p){
 	if(pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y) < pow2(half(PLAYER_SIZE))){
-		if(p->control_flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
+		if(p->flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
 			HitBarrier(p, &pr->data.basic.impact);
 		}else{
 			DamagePlayer(p, &pr->data.basic.impact);

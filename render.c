@@ -292,10 +292,10 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	RenderTerrain(rend_data, g_d);
 	RenderStaticThings(rend_data, g_d);
-	if(!((g_d->champions.array + g_d->human_indx)->control_flags & range_mode)){
+	if(!((g_d->champions.array + g_d->human_indx)->flags & range_mode)){
 		RenderHumanPlayerBlade(rend_data, &(g_d->champions.array + g_d->human_indx)->blade);
 	}else{
-		RenderHumanPlayerScroll(rend_data, (bool)((g_d->champions.array + g_d->human_indx)->control_flags & attack));
+		RenderHumanPlayerScroll(rend_data, (bool)((g_d->champions.array + g_d->human_indx)->flags & attack));
 	}
 	Player* players_to_rend[g_d->champions.num - 1U];
 	SDL_FPoint players_rend_points[g_d->champions.num - 1U];
@@ -315,7 +315,7 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	RenderProjectiles(rend_data, g_d);
 	RenderHumanPlayer(rend_data);
 	RenderPlayers(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
-	if((g_d->champions.array + g_d->human_indx)->control_flags & block){
+	if((g_d->champions.array + g_d->human_indx)->flags & block){
 		RenderHumanPlayerBarrier(rend_data, g_d->champions.array + g_d->human_indx);
 	}
 	RenderBarriers(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
@@ -497,13 +497,13 @@ static void	RenderPlayersBladesAndScrolls(Render_data* const rend_data, const fl
 		const float player_direction = (*(plys + i))->direction - human_player_direction;
 		const float sine = SineSafe(player_direction);
 		const float cosine = CosiSafe(player_direction);
-		if(!((*(plys + i))->control_flags & range_mode)){
+		if(!((*(plys + i))->flags & range_mode)){
 			rect_blade.x = (points + i)->x + ((*(plys + i))->blade.placement.position.x * cosine + (*(plys + i))->blade.placement.position.y * sine) - half(BLADE_SIZE);
 			rect_blade.y = (points + i)->y + ((*(plys + i))->blade.placement.position.x * sine - (*(plys + i))->blade.placement.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(player_direction + (*(plys + i))->blade.placement.direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
 		}else{
 			SDL_FRect src_rect = SRC_SCROLL_RECT;
-			if((*(plys + i))->control_flags & attack){
+			if((*(plys + i))->flags & attack){
 				src_rect.x = SCROLL_TX_SIZE;
 			}
 			rect_scroll.x = (points + i)->x + (half(SCROLL_SIZE) * cosine + half(SCROLL_SIZE) * sine) - half(SCROLL_SIZE);
@@ -535,7 +535,7 @@ static void	RenderBarriers(Render_data* const rend_data, const float human_playe
 		BARRIER_SIZE
 	};
 	for(unsigned int i = 0U; i < num; ++i){
-		if(!((*(plys + i))->control_flags & block)){
+		if(!((*(plys + i))->flags & block)){
 			continue;
 		}
 		rect_barrier.x = (points + i)->x - half(BARRIER_SIZE);

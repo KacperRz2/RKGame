@@ -29,7 +29,7 @@
 #define RUN_MULTIPL		            2.0F
 #define BLOCK_VELOCITY_MULTIP		0.5F
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        21
+#define TEXTURE_FILES_NUM	        22
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -148,7 +148,7 @@
 #define SCR_COSTS                   {\
                                         8U,\
                                         2U,\
-                                        8U,\
+                                        1U,\
                                         8U,\
                                         8U,\
                                         8U,\
@@ -181,6 +181,14 @@
                                             {10.0F, 0.75F, 0.25F, 0.5F},\
                                             {20.0F, 0.5F, 10.0F, 0.25F},\
                                             UpdateBeing1\
+                                        },\
+                                        {\
+                                            32,\
+                                            PLAYER_VELOCITY * 2.5F,\
+                                            1000,\
+                                            {0.0F, 1.0F, 1.0F, 1.5F},\
+                                            {20.0F, 0.0F, 0.0F, 0.5F},\
+                                            UpdateBeing2\
                                         }\
                                     }
 #define PC_BLADE_IMPACT             {1200.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
@@ -196,11 +204,13 @@
 #define PC_BLADE_BASE_PLCMNT        {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_PC}
 #define BEINGS_TEXTURES             {\
                                         tx_being,\
-                                        tx_being1\
+                                        tx_being1,\
+                                        tx_being2\
                                     }
 #define BEINGS_WEAPON_TEXTURES      {\
                                         tx_being_blade,\
-                                        tx_weapon\
+                                        tx_weapon,\
+                                        tx_being_blade\
                                     }
 #define PROJECTILE_TEXTURES         {\
                                         tx_projectile,\
@@ -248,7 +258,8 @@
                                         "img10.bmp",\
                                         "img11.bmp",\
                                         "img12.bmp",\
-                                        "img13.bmp"\
+                                        "img13.bmp",\
+                                        "img14.bmp"\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\
