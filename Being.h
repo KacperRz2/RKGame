@@ -8,7 +8,6 @@ static void AddBeingToSegment(Segment* const, Being* const, Segment_beings* cons
 static void RemoveBeingFromSegment(Being* const, Segment_beings* const);
 void DestroyBeings(Beings_array* const);
 void AddBeingToArray(Beings_array* const, const unsigned int, const float, const float, Segment* const);
-static void DestroyBeingInArray(Beings_array* const, const unsigned int);
 static void MoveBeing(Being* const, const float, const float);
 static void SetBeingPosition(Being* const, const float, const float);
 static void SetBeingPositionInNewSegment(Being* const, const float, const float, Segment* const);

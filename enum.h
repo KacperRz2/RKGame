@@ -79,10 +79,6 @@ enum scroll_type{
     scroll_empty
 };
 
-// enum render_flags{
-//     rend_casting = 1 << 0
-// };
-
 enum being_type{
     being_0,
     being_1,

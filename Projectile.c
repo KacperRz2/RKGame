@@ -23,7 +23,7 @@ void DestroyProjectiles(Projectiles_array* const prs){
 static inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
 	if(SDL_fabsf(pr->position.x - b->position.x) < half(BeingSize(b)) && SDL_fabsf(pr->position.y - b->position.y) < half(BeingSize(b))){
 		for(unsigned int i = pr->data.penetrating.hits; i > 0U; --i){
-			if(*(pr->data.penetrating.hit_targets + (i - 1U)) == b->id){
+			if(*(pr->data.penetrating.hit_targets + (i - 1U)) == b->main_indx){
 				return false;
 			}
 		}
@@ -97,7 +97,7 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 						StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.penetrating.impact, &b->armour)));
 					}
 					if(pr->data.penetrating.hits < pr->data.penetrating.penetration){
-						*(pr->data.penetrating.hit_targets + pr->data.penetrating.hits++) = b->id;
+						*(pr->data.penetrating.hit_targets + pr->data.penetrating.hits++) = b->main_indx;
 						continue;
 					}
 				}

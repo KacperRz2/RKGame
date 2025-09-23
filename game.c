@@ -91,7 +91,13 @@ static void SetGameData(Game_data* const g_d){
 	g_d->human_indx = 0U;
 	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	g_d->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
-	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL || g_d->champions.array == NULL || g_d->boxes.array == NULL){SDL_Quit(); exit(1);}
+	g_d->beings.ptrs = (Being**)SDL_malloc(sizeof(Being*) * MAX_BEINGS_NUM);
+	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL || g_d->champions.array == NULL || g_d->boxes.array == NULL || g_d->beings.ptrs == NULL){SDL_Quit(); exit(1);}
+	for(unsigned int i = 0U; i < MAX_BEINGS_NUM; ++i){
+		*(g_d->beings.ptrs + i) = g_d->beings.array + i;
+		(g_d->beings.array + i)->main_indx = i;
+	}
+	g_d->beings.num = 0U;
 	g_d->projectiles.num = 0U;
 	g_d->keys = 0U;
 	g_d->needed_keys = KEYS_NUM;

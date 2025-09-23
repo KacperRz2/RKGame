@@ -291,14 +291,6 @@ extern inline Segment* GetSegmentByIndx(World* const world, const unsigned int c
 	return *(*(world->segments + c) + r);
 }
 
-extern inline void UpdateSegmentBeingPointer(Being* old, Being* new, Segment_beings* const bs){
-	*(bs->array + old->indx) = new;
-}
-
-// extern inline void UpdateSegmentAllyPointer(Being* old, Being* new){
-// 	*(old->segment->ally_beings.array + old->indx) = new;
-// }
-
 void StartLevel(Game_data* const g_d){
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 	for(unsigned int r = 0U; r < SEGMENTS_Y; ++r){

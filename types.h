@@ -70,7 +70,6 @@ struct Render_data{
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	SDL_Texture* textures[TEXTURES_NUM];
-	// Uint32 render_flags;
 };
 struct Lasting_effect{
 	unsigned int id;
@@ -98,24 +97,25 @@ struct Weapon{
 struct Being{
     SDL_FPoint position;
 	float direction;
-    Segment* segment;
-	unsigned int indx;
     float velocity;
     int hit_points;
-	unsigned int type_id;
-	unsigned int target_indx;
-	int status;
+    Segment* segment;
+	Uint8 indx;
+	Uint8 type_id;
+	Uint8 target_indx;
+	Sint8 status;
 	int status_ticks_left;
 	Armour armour;
 	Weapon weapon;
 	SDL_FPoint special_move_shift;
 	float special_rotation_shift;
-	unsigned int id;
+	unsigned int main_indx;
 	unsigned int effects_num;
 	Lasting_effect effects[MAX_BEING_EFFECTS];
 };
 struct Beings_array{
 	Being* array;
+    Being** ptrs;
     unsigned int num;
 };
 struct Segment_beings{

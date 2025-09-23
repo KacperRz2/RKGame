@@ -68,7 +68,6 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 			switch (e->button.button){
 				case BUTTON_ATTACK:
 					p->flags |= attack;
-					// rend_data->render_flags |= rend_casting;
 					break;
 				case BUTTON_BLOCK:
 					p->flags |= block; break;
@@ -78,7 +77,6 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 			switch (e->button.button){
 				case BUTTON_ATTACK:
 					p->flags &= ~(attack);
-					// rend_data->render_flags &= ~(rend_casting);
 					if((p->flags & range_mode) && p->selected_scroll != scroll_empty){
 						p->flags |= cast;
 					}

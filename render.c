@@ -77,7 +77,6 @@ void SetRenderData(Render_data* const rend_data, const float window_w, const flo
 		rend_data->viewfinder,
 		rend_data->viewfinder
 	};
-	// rend_data->render_flags = 0U;
 }
 
 static void RenderHumanPlayerBlade(Render_data* const rend_data, Blade* const blade){
@@ -117,7 +116,8 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 		BLADE_SIZE
 	};
 	static const SDL_FPoint blade_rotation_point = WEAPON_ROTATION_POINT;
-    for(Being* b = g_d->beings.array; b != (g_d->beings.array + g_d->beings.num); ++b){
+    for(unsigned int i = 0U; i < g_d->beings.num; ++i){
+		Being* b = *(g_d->beings.ptrs + i);
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, g_d->champions.array + g_d->human_indx, &point)){
 			const SDL_FRect rect = {
@@ -207,7 +207,7 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 	SDL_RenderDebugTextFormat(rend, 10, 140, "Ticks per sec.: %d", tps);
 	SDL_RenderDebugTextFormat(rend, 10, 150, "max FPS: ~%u", (1000000000ULL / FRAME_TIME));
 
-	SDL_RenderDebugTextFormat(rend, 10, 160, "beings: %d", g_d->beings.num);
+	SDL_RenderDebugTextFormat(rend, 10, 160, "beings: %u", g_d->beings.num - 1U);
 	SDL_RenderDebugTextFormat(rend, 10, 170, "projectiles: %d", g_d->projectiles.num);
 	SDL_RenderDebugTextFormat(rend, 10, 180, "blade charge: %f", 1.0F - (g_d->champions.array + g_d->human_indx)->blade.charge);
 	SDL_RenderDebugTextFormat(rend, 10, 190, "hp: %d", (g_d->champions.array + g_d->human_indx)->hit_points);

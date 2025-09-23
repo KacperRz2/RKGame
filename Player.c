@@ -225,7 +225,7 @@ static inline bool BladeHitsBeing(Blade* const bl, Placement* const location, Be
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
 		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(BeingSize(b)) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(BeingSize(b))){
 			for(unsigned int j = bl->hits; j > 0U; --j){
-				if(*(bl->hit_targets + (j - 1U)) == b->id){
+				if(*(bl->hit_targets + (j - 1U)) == b->main_indx){
 					return false;
 				}
 			}
@@ -268,7 +268,7 @@ static bool UnleashDestruction(Game_data* const g_d, const unsigned int indx){
 				const float stun_power = CalculateStunPower(&bl->impact, &b->armour);
 				CatapultBeing(b, SineSafe(angle) * stun_power, -CosiSafe(angle) * stun_power, BEING_DEFAULT_LEFT_TICKS * 2);
 				if(bl->hits < bl->penetration){
-					*(bl->hit_targets + bl->hits++) = b->id;
+					*(bl->hit_targets + bl->hits++) = b->main_indx;
 					continue;
 				}
 			}
