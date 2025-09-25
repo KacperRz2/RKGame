@@ -37,14 +37,14 @@
 #define SIGHT_BACK_SQUARED	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT))
 #define FRAME_TIME			        0x400000ULL
 #define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
-#define MAX_PROJECTILES_NUM	        0x1000U
-#define MAX_SEGM_BEINGS		        16
+#define MAX_PROJECTILES_NUM	        0x4000U
+#define MAX_SEGM_BEINGS		        0x10U
 #define MAX_BEINGS_NUM		        0x8000U
 #define MAX_PLAYERS_NUM		        0x4U
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
-#define BLADE_DAMAGE                50
 #define BLADE_SIZE                  64.0F
+#define BEING_HIT_CIRCLE_DIAMET     16.0F
 #define RANGE_SEGMENTS              ((unsigned int)(7000.0F / SEGMENT_SIZE))
 #define PROJECTILE_RAN_SEG          ((unsigned int)(2000.0F / SEGMENT_SIZE))
 #define MAX_HITS                    16U
@@ -62,6 +62,7 @@
 #define IDLE_BEING_ACTION_DISTANCE  900.0F
 #define BEING_ATTACK_DISTANCE       140.0F
 #define BEING_SHOOT_DISTANCE        700.0F
+#define BEING_FOCUS_DISTANCE        256.0F
 #define BEING_RELOAD_TICKS          128
 #define BEING_STUN_DURATION         256
 #define PROJECTILE_VELOCITY         4.0F
@@ -132,6 +133,7 @@
 #define SCROLL_TX_SIZE              128.0F
 #define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
 #define BARRIER_MAGNIFICATION       0.25F
+#define WEAPON_ATTACK_Y             24.0F
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -201,6 +203,8 @@
                                         UpdateSpecialProjectile\
                                     }
 #define BEING_WEAPON_BASE_PLCMNT    {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING}
+#define BEING_WEAPON_PREPARE_PLCMNT {{20.0F, -16.0F}, 0.5F}
+#define BEING_WEAPON_ATTACK_PLCMNT  {{0.0F, 24.0F}, 0.0F}
 #define PC_BLADE_BASE_PLCMNT        {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_PC}
 #define BEINGS_TEXTURES             {\
                                         tx_being,\
@@ -329,8 +333,5 @@
                                     0, 1, 1, 1, 1, 1, 0,\
                                     0, 0, 1, 1, 1, 0, 0,\
                                 }
-#define BEING_BLD_SHIFT_PREPARE {{(20.0F - 16.0F) / BEING_ATTACK_STEPS, (-16.0F - -8.0F) / BEING_ATTACK_STEPS}, (0.5F - 0.0F) / BEING_ATTACK_STEPS}
-#define BEING_BLD_SHIFT_ATTACK  {{(0.0F - 20.0F) / BEING_ATTACK_STEPS, (24.0F - -16.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.5F) / BEING_ATTACK_STEPS}
-#define BEING_BLD_SHIFT_RESET   {{(BLADE_BASE_X - 0.0F) / BEING_ATTACK_STEPS, (BLADE_BASE_Y - 24.0F) / BEING_ATTACK_STEPS}, (BLADE_BASE_DIRECTION_BEING - 0.0F) / BEING_ATTACK_STEPS}
 
 #endif

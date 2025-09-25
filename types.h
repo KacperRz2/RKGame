@@ -9,7 +9,6 @@ typedef struct Render_data Render_data;
 typedef struct Lasting_effect Lasting_effect;
 typedef struct Armour Armour;
 //Being
-typedef struct Weapon Weapon;
 typedef struct Being_type Being_type;
 typedef struct Being Being;
 typedef struct Beings_array Beings_array;
@@ -45,26 +44,26 @@ struct Impact{
 struct Blade{
 	Placement placement;
 	Impact impact;
-	unsigned int hit_targets[MAX_HITS];
+	Uint16 hit_targets[MAX_HITS];
 	Uint8 penetration;
 	Uint8 hits;
 	Placement step_shift;
-	int key;
-	int steps;
-	int step;
-	unsigned int chain;
-	unsigned int chain_next;
+	Sint8 key;
+	Sint16 steps;
+	Sint16 step;
+	Uint8 chain;
+	Uint8 chain_next;
 	bool abide;
 	bool freehand;
-	unsigned int idle_ticks;
+	Uint16 idle_ticks;
 	float charge;	
 };
 struct Render_data{
 	float viewfinder;
 	SDL_FRect visible_rect;
 	SDL_Rect viewfinder_rect;
-	int window_w;
-	int window_h;
+	Uint16 window_w;
+	Uint16 window_h;
 	float sin_player_direction;
 	float cos_player_direction;
 	SDL_Window* window;
@@ -72,7 +71,7 @@ struct Render_data{
 	SDL_Texture* textures[TEXTURES_NUM];
 };
 struct Lasting_effect{
-	unsigned int id;
+	Uint8 id;
 	int ticks_left;
 };
 struct Armour{
@@ -90,10 +89,6 @@ struct Being_type{
 	Impact impact;
 	void (*update)(Being* const, Game_data* const);
 };
-struct Weapon{
-	Placement placement;
-	Impact impact;
-};
 struct Being{
     SDL_FPoint position;
 	float direction;
@@ -109,33 +104,33 @@ struct Being{
 	Sint8 status;
 	int status_ticks_left;
 	Armour armour;
-	Weapon weapon;
+	Impact impact;
 	SDL_FPoint special_move_shift;
 	struct rend_fly_help_data{
 		_Float16 start_angle;
 		Sint16 ticks;
 	}rend_fly_help_data;
-	unsigned int main_indx;
-	unsigned int effects_num;
+	Uint16 main_indx;
+	Uint8 effects_num;
 	Lasting_effect effects[MAX_BEING_EFFECTS];
 };
 struct Beings_array{
 	Being* array;
-    Being** ptrs;
-    unsigned int num;
+	Uint16* indices;
+    Uint16 num;
 };
 struct Segment_beings{
-	Being* array[MAX_SEGM_BEINGS];
+	Uint16 beings_ind[MAX_SEGM_BEINGS];
     Uint8 num;
 };
 //Projectile
 struct Projectile{
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
-	unsigned int type_id;
+	Uint8 type_id;
 	union data{
 		struct penetrating{
-			unsigned int hit_targets[MAX_HITS];
+			Uint16 hit_targets[MAX_HITS];
 			Impact impact;
 			Uint8 penetration;
 			Uint8 hits;
@@ -144,13 +139,13 @@ struct Projectile{
 			Impact impact;
 		}basic;
 		struct special{
-			unsigned int effect_id;
+			Uint8 effect_id;
 		}special;
 	}data;
 };
 struct Projectiles_array{
 	Projectile* array;
-	unsigned int num;
+	Uint16 num;
 };
 //World
 struct Segment{
@@ -168,11 +163,11 @@ struct World{
 };
 //Player
 struct Block_times{
-	int fatigue;
-	int shoot;
-	int push;
-	int dodge;
-	int cast;
+	Sint16 fatigue;
+	Sint16 shoot;
+	Sint16 push;
+	Sint16 dodge;
+	Sint16 cast;
 };
 struct Player{
 	Uint32 flags;
@@ -193,20 +188,20 @@ struct Player{
 	Block_times block_times;
 	Armour armour;
 	int coins;
-	unsigned int selected_scroll;
-	unsigned int scrolls[SCROLLS_NUM];
-	unsigned int scrolls_quick_access[QUICK_SCROLLS];
-	unsigned int effects_num;
+	Uint8 selected_scroll;
+	Uint8 scrolls[SCROLLS_NUM];
+	Uint8 scrolls_quick_access[QUICK_SCROLLS];
+	Uint8 effects_num;
 	Lasting_effect effects[MAX_PC_EFFECTS];
 };
 struct Players{
 	Player* array;
-	unsigned int num;
+	Uint8 num;
 };
 //Game
 struct Box_element{
-	int type;
-	unsigned int value;
+	Uint8 type;
+	Uint16 value;
 };
 struct Box{
 	SDL_FPoint location;
@@ -214,7 +209,7 @@ struct Box{
 };
 struct Boxes{
 	Box* array;
-	unsigned int num;
+	Uint16 num;
 };
 struct Game_data{
 	Players champions;
@@ -222,12 +217,12 @@ struct Game_data{
 	Projectiles_array projectiles;
 	World world;
 	Boxes boxes;
-	unsigned int human_indx;
-	unsigned int keys;
-	unsigned int needed_keys;
-	int enemy_morale;
-	unsigned int effects_num;
+	Uint8 human_indx;
+	Uint8 keys;
+	Uint8 needed_keys;
+	Sint16 enemy_morale;
+	Uint8 effects_num;
 	Lasting_effect effects[MAX_GAME_EFFECTS];
 };
-
+// int a = sizeof(Segment);
 #endif

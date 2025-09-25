@@ -8,14 +8,14 @@
 #include <World.h>
 #include <enum.h>
 
-const void (*effect[])(Game_data* const) = SCR_EFFECTS;
-const int costs[] = SCR_COSTS;
 
 extern inline int ScrollCost(const unsigned int scroll_id){
+    const int costs[] = SCR_COSTS;
     return *(costs + scroll_id);
 }
 
 extern inline void UseScroll(Game_data* const g_d){
+    const void (*effect[])(Game_data* const) = SCR_EFFECTS;
     (*(effect + (g_d->champions.array + g_d->human_indx)->selected_scroll))(g_d);
 }
 
@@ -26,7 +26,7 @@ void effect0(Game_data* const g_d){
         Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
         if(neighbour == NULL) continue;
         for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
-            Being* b = *(neighbour->beings.array + i);
+            Being* b = (g_d->beings.array + *(neighbour->beings.beings_ind + i));
             const float angle = GetDirectionToPush(&(g_d->champions.array + g_d->human_indx)->position, &b->position);
             const float stun = DEFAULT_FLY_VELOCITY * b->armour.unstability;
             CatapultBeing(b, SineSafe(angle) * stun, -CosiSafe(angle) * stun, BEING_DEFAULT_LEFT_TICKS * 8);

@@ -115,9 +115,8 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 		BLADE_SIZE,
 		BLADE_SIZE
 	};
-	static const SDL_FPoint blade_rotation_point = WEAPON_ROTATION_POINT;
     for(unsigned int i = 0U; i < g_d->beings.num; ++i){
-		Being* b = *(g_d->beings.ptrs + i);
+		Being* b = (g_d->beings.array + *(g_d->beings.indices + i));
 		SDL_FPoint point;
 		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, g_d->champions.array + g_d->human_indx, &point)){
 			const SDL_FRect rect = {
@@ -136,9 +135,11 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 			const float being_direction = b->direction - (g_d->champions.array + g_d->human_indx)->direction;
 			const float sine = SineSafe(being_direction);
 			const float cosine = CosiSafe(being_direction);
-			rect_blade.x = point.x + (b->weapon.placement.position.x * cosine + b->weapon.placement.position.y * sine) - half(BLADE_SIZE);
-			rect_blade.y = point.y + (b->weapon.placement.position.x * sine - b->weapon.placement.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
-			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_weapon_textures + b->type_id)), NULL, &rect_blade, (double)RadToDeg(b->weapon.placement.direction + being_direction), &blade_rotation_point, SDL_FLIP_NONE);
+			const Placement weapon = GetBeingWeaponPlacement(b);
+			//  BEING_WEAPON_BASE_PLCMNT;
+			rect_blade.x = point.x + (weapon.position.x * cosine + weapon.position.y * sine) - half(BLADE_SIZE);
+			rect_blade.y = point.y + (weapon.position.x * sine - weapon.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_weapon_textures + b->type_id)), NULL, &rect_blade, (double)RadToDeg(weapon.direction + being_direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_textures + b->type_id)), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
 			if(b->status == being_stunned){
 				SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_stun), NULL, &rect, -(double)b->status_ticks_left, NULL, SDL_FLIP_NONE);
@@ -561,4 +562,46 @@ static void	RenderBarriers(Render_data* const rend_data, const float human_playe
 			);
 		}
 	}
+}
+
+static inline Placement GetBeingWeaponPlacement(const Being* const b){
+    if(b->status == being_strike){
+        if(b->status_ticks_left > 0){
+            const int step = BEING_ATTACK_STEPS - b->status_ticks_left;
+            return GetWeaponPlacement(&(Placement)BEING_WEAPON_PREPARE_PLCMNT, &(Placement)BEING_WEAPON_ATTACK_PLCMNT, step, BEING_ATTACK_STEPS);
+        }
+        if(b->status_ticks_left <= -BEING_ATTACK_STEPS){
+            const int step = b->status_ticks_left + BEING_ATTACK_STEPS + BEING_ATTACK_STEPS;
+            return GetWeaponPlacement(&(Placement)BEING_WEAPON_BASE_PLCMNT, &(Placement)BEING_WEAPON_PREPARE_PLCMNT, step, BEING_ATTACK_STEPS);
+        }
+        const int step = b->status_ticks_left + BEING_ATTACK_STEPS;
+		return GetWeaponPlacement(&(Placement)BEING_WEAPON_ATTACK_PLCMNT, &(Placement)BEING_WEAPON_BASE_PLCMNT, step, BEING_ATTACK_STEPS);
+    }else if(b->status == being_shoot){
+		if(b->status_ticks_left < BEING_ATTACK_STEPS / 2){
+			const int step = BEING_ATTACK_STEPS / 2 - b->status_ticks_left;
+			return GetWeaponPlacement(&(Placement)BEING_WEAPON_ATTACK_PLCMNT, &(Placement)BEING_WEAPON_BASE_PLCMNT, step, BEING_ATTACK_STEPS / 2);
+		}
+		if(b->status_ticks_left < BEING_ATTACK_STEPS * 3){
+        	return (Placement)BEING_WEAPON_ATTACK_PLCMNT;
+		}
+		if(b->status_ticks_left < (int)(BEING_ATTACK_STEPS * 4)){
+			const int step = (int)(BEING_ATTACK_STEPS * 4) - b->status_ticks_left;
+			return GetWeaponPlacement(&(Placement)BEING_WEAPON_BASE_PLCMNT, &(Placement)BEING_WEAPON_ATTACK_PLCMNT, step, BEING_ATTACK_STEPS);
+		}
+        return (Placement)BEING_WEAPON_BASE_PLCMNT;
+    }else if(b->status == being_attack_being){
+        return (Placement)BEING_WEAPON_BASE_PLCMNT;
+    }else{
+        return (Placement)BEING_WEAPON_BASE_PLCMNT;
+    }
+}
+
+static inline Placement GetWeaponPlacement(Placement* const start, Placement* const end, const int step, const int steps){
+	return (Placement){
+		{
+			start->position.x + (end->position.x - start->position.x) / (float)steps * step,
+			start->position.y + (end->position.y - start->position.y) / (float)steps * step
+		},
+		start->direction + (end->direction - start->direction) / (float)steps * step
+	};
 }

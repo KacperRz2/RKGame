@@ -256,9 +256,9 @@ static bool UnleashDestruction(Game_data* const g_d, const unsigned int indx){
 		Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
 		if(neighbour == NULL) continue;
 		for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
-			Being* b = *(neighbour->beings.array + i);
+			Being* b = (g_d->beings.array + *(neighbour->beings.beings_ind + i));
 			if(!BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) continue;
-			if(DamageBeing(b, &bl->impact)){
+			if(DamageBeing(b, &bl->impact, g_d->beings.array)){
 				if(bl->hits < --bl->penetration){
 					--i;
 					continue;
@@ -367,6 +367,13 @@ extern inline bool PointInPlayer(const float x, const float y, Player* const pl)
 	return false;
 }
 
+extern inline bool CircleMeetsPlayer(const float x, const float y, const float diameter, Player* const pl){
+	if(pow2(x - pl->position.x) + pow2(y - pl->position.y) < pow2(half((float)PLAYER_SIZE + diameter))){
+		return true;
+	}
+	return false;
+}
+
 extern inline void DamagePlayer(Player* const p, const Impact* impact){
 	p->hit_points -= CalculateDamage(impact, &p->armour);
 }
@@ -395,7 +402,7 @@ static void UpdatePlayerPush(Game_data* const g_d, const unsigned int indx){
 			Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
 			if(neighbour == NULL) continue;
 			for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
-				Being* b = *(neighbour->beings.array + i);
+				Being* b = (g_d->beings.array + *(neighbour->beings.beings_ind + i));
 				if(pow2((g_d->champions.array + indx)->position.x - b->position.x) + pow2((g_d->champions.array + indx)->position.y - b->position.y) < pow2(PC_PUSH_REACH)){
 					float angle = GetDirectionToPush(&(g_d->champions.array + indx)->position, &b->position);
 					if(angle < 0.0F){

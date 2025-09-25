@@ -32,7 +32,7 @@ static inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
 	return false;
 }
 
-extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float shift_x, const float shift_y, const Impact* const impact, const unsigned int penetration){
+extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float shift_x, const float shift_y, const Impact* const impact, const Uint8 penetration){
 	Projectile* pr = (prs->array + prs->num++);
 	pr->type_id = projectile_penetrat;
 	pr->position = *position;
@@ -50,7 +50,7 @@ extern inline void AddHProjectileToArray(Projectiles_array* const prs, const SDL
 	pr->data.basic.impact = *impact;
 }
 
-static inline void DestroyProjectileInArray(Projectiles_array* const prs, const unsigned int indx){
+static inline void DestroyProjectileInArray(Projectiles_array* const prs, const Uint16 indx){
 	if(indx != prs->num - 1){
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}
@@ -82,17 +82,17 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 			Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
 			if(neighbour == NULL) continue;
 			for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
-				Being* b = *(neighbour->beings.array + j);
+				Being* b = (g_d->beings.array + *(neighbour->beings.beings_ind + j));
 				if(!ProjectileHitsBeing(pr, b)) continue;
-				if(DamageBeing(b, &pr->data.penetrating.impact)){
+				if(DamageBeing(b, &pr->data.penetrating.impact, g_d->beings.array)){
 					if(pr->data.penetrating.hits < --pr->data.penetrating.penetration){
 						--j;
 						continue;
 					}
 				}else{
-					if(b->status == being_strike){
-						ResetBeingBlade(b);
-					}
+					// if(b->status == being_strike){
+					// 	ResetBeingBlade(b);
+					// }
 					if(b->status != being_fly){
 						StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.penetrating.impact, &b->armour)));
 					}
@@ -120,12 +120,12 @@ static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const g_d){
 		Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
 		if(neighbour == NULL) continue;
 		for(unsigned int j = 0U; j < neighbour->ally_beings.num; ++j){
-			Being* b = *(neighbour->ally_beings.array + j);
+			Being* b = (g_d->beings.array + *(neighbour->ally_beings.beings_ind + j));
 			if(!ProjectileHitsBeing(pr, b)) continue;
-			if(!DamageAlly(b, &pr->data.basic.impact)){
-				if(b->status == being_strike){
-					ResetBeingBlade(b);
-				}
+			if(!DamageAlly(b, &pr->data.basic.impact, g_d->beings.array)){
+				// if(b->status == being_strike){
+				// 	ResetBeingBlade(b);
+				// }
 				if(b->status != being_fly){
 					StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.basic.impact, &b->armour)));
 				}

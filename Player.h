@@ -18,6 +18,7 @@ static bool BladeHitsBeing(Blade* const, Placement* const, Being* const, SDL_FPo
 static bool UnleashDestruction(Game_data* const, const unsigned int);
 static void UpdatePlayerBlade(Game_data* const, const unsigned int);
 bool PointInPlayer(const float, const float, Player* const);
+bool CircleMeetsPlayer(const float, const float, const float, Player* const);
 void DamagePlayer(Player* const, const Impact* const);
 static void UpdatePlayerFire(Game_data* const, const unsigned int);
 static void UpdatePlayerPush(Game_data* const, const unsigned int);

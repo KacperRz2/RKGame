@@ -26,5 +26,7 @@ static void RenderHumanPlayerScroll(Render_data* const, const bool);
 static void	RenderPlayersBladesAndScrolls(Render_data* const, const float, Player**, SDL_FPoint*, const unsigned int);
 static void	RenderPlayers(Render_data* const, const float, Player**, SDL_FPoint*, const unsigned int);
 static void	RenderBarriers(Render_data* const, const float, Player**, SDL_FPoint*, const unsigned int);
+static Placement GetBeingWeaponPlacement(const Being* const);
+static Placement GetWeaponPlacement(Placement* const, Placement* const, const int, const int);
 
 #endif
