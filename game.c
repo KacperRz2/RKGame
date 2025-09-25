@@ -87,8 +87,8 @@ static void SetGameData(Game_data* const g_d){
 	g_d->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
 	g_d->champions.num = 0U;
 	g_d->boxes.num = 0U;
-	CreateWorld(g_d, WORLD_W, WORLD_H);
 	g_d->human_indx = 0U;
+	CreateWorld(g_d, WORLD_W, WORLD_H);
 	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	g_d->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
 	g_d->beings.ptrs = (Being**)SDL_malloc(sizeof(Being*) * MAX_BEINGS_NUM);

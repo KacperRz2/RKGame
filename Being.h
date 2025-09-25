@@ -7,10 +7,11 @@ float BeingSize(Being* const);
 static void AddBeingToSegment(Segment* const, Being* const, Segment_beings* const);
 static void RemoveBeingFromSegment(Being* const, Segment_beings* const);
 void DestroyBeings(Beings_array* const);
-void AddBeingToArray(Beings_array* const, const unsigned int, const float, const float, Segment* const);
+void AddBeingToArray(Beings_array* const, const unsigned int, const float, const float, Segment* const, Player* const);
 static void MoveBeing(Being* const, const float, const float);
 static void SetBeingPosition(Being* const, const float, const float);
 static void SetBeingPositionInNewSegment(Being* const, const float, const float, Segment* const);
+static void SetAllyPositionInNewSegment(Being* const, const float, const float, Segment* const);
 static void MoveBeingX(Being* const, const float);
 static void MoveBeingY(Being* const, const float);
 static void MoveBeingToSegment(Being* const, Segment* const);
@@ -46,9 +47,14 @@ void CatapultBeing(Being* const, const float, const float, const int);
 static void UpdateBeingStunned(Being* const, World* const);
 static void UpdateBeingFly(Being* const, World* const);
 static void FindTargetForBeing(Being* const, Players* const);
+static bool IdleBeingCollision(Being* const, Players* const);
+static bool FindAllyTargetFar(Being* const, World* const, const unsigned int);
+static bool FindAllyTarget(Being* const, World* const);
+static void UpdateAllyFollow(Being* const, World* const);
+static void UpdateAllyWalk(Being* const, World* const);
 
 static void UpdateBeing0(Being* const, Game_data* const);
 static void UpdateBeing1(Being* const, Game_data* const);
-static void UpdateBeing2(Being* const, Game_data* const);
+static void UpdateAlly0(Being* const, Game_data* const);
 
 #endif

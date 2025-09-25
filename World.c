@@ -291,6 +291,13 @@ extern inline Segment* GetSegmentByIndx(World* const world, const unsigned int c
 	return *(*(world->segments + c) + r);
 }
 
+extern inline Segment* GetSegmentByIndxSafe(World* const world, const int c, const int r){
+	if(c >= SEGMENTS_X || c < 0 || r >= SEGMENTS_Y || r < 0){
+		return NULL;
+	}
+	return *(*(world->segments + c) + r);
+}
+
 void StartLevel(Game_data* const g_d){
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 	for(unsigned int r = 0U; r < SEGMENTS_Y; ++r){
@@ -308,13 +315,13 @@ void StartLevel(Game_data* const g_d){
 		++g_d->champions.num;
 	}
 	Uint64 start_time = SDL_GetTicks();
-	while (g_d->beings.num < MAX_START_BEINGS_NUM / 2){//test beings
+	while (g_d->beings.num < MAX_START_BEINGS_NUM / 8U){//test beings
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		if(SDL_fabsf(start_position.x - x) > 1000.0F && SDL_fabsf(start_position.y - y) > 1000.0F && SDL_fabsf(start_position.x - x) < WORLD_W * 0.25F && SDL_fabsf(start_position.y - y) < WORLD_H * 0.25F){
 			Segment* s = GetSegment(&g_d->world, x, y);
 			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-				AddBeingToArray(&g_d->beings, (unsigned int)SDL_rand(2), x, y, s);
+				AddBeingToArray(&g_d->beings, (unsigned int)SDL_rand(2), x, y, s, g_d->champions.array + g_d->human_indx);
 			}
 		}
 		if(SDL_GetTicks() - start_time > 1500U) break;

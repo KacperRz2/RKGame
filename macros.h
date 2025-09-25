@@ -44,11 +44,11 @@
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BLADE_DAMAGE                50
-#define BLADE_PENETRATION           25U
 #define BLADE_SIZE                  64.0F
 #define RANGE_SEGMENTS              ((unsigned int)(7000.0F / SEGMENT_SIZE))
 #define PROJECTILE_RAN_SEG          ((unsigned int)(2000.0F / SEGMENT_SIZE))
-#define MAX_HITS                    25U
+#define MAX_HITS                    16U
+#define BLADE_PENETRATION           MAX_HITS
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
@@ -85,7 +85,7 @@
 #define PC_PUSH_FATIG_BLOCK_TIME    50
 #define PC_PUSH_RELOAD              256
 #define PC_PUSH_REACH               (PLAYER_SIZE * 3.0F)
-#define PC_CAST_RELOAD              512
+#define PC_CAST_RELOAD              256
 #define PC_FAILURE_FATIG_BLOCK_TIME 2
 #define PC_FAILURE_VELOCITY         0.5F
 #define PC_FATIGUE_GAIN_INTERVAL    3
@@ -187,8 +187,8 @@
                                             PLAYER_VELOCITY * 2.5F,\
                                             1000,\
                                             {0.0F, 1.0F, 1.0F, 1.5F},\
-                                            {20.0F, 0.0F, 0.0F, 0.5F},\
-                                            UpdateBeing2\
+                                            {128.0F, 0.125F, 16.0F, 0.5F},\
+                                            UpdateAlly0\
                                         }\
                                     }
 #define PC_BLADE_IMPACT             {1200.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
@@ -329,7 +329,7 @@
                                     0, 1, 1, 1, 1, 1, 0,\
                                     0, 0, 1, 1, 1, 0, 0,\
                                 }
-#define BEING_BLD_SHIFT_PREPATE {{(20.0F - 16.0F) / BEING_ATTACK_STEPS, (-16.0F - -8.0F) / BEING_ATTACK_STEPS}, (0.5F - 0.0F) / BEING_ATTACK_STEPS}
+#define BEING_BLD_SHIFT_PREPARE {{(20.0F - 16.0F) / BEING_ATTACK_STEPS, (-16.0F - -8.0F) / BEING_ATTACK_STEPS}, (0.5F - 0.0F) / BEING_ATTACK_STEPS}
 #define BEING_BLD_SHIFT_ATTACK  {{(0.0F - 20.0F) / BEING_ATTACK_STEPS, (24.0F - -16.0F) / BEING_ATTACK_STEPS}, (0.0F - 0.5F) / BEING_ATTACK_STEPS}
 #define BEING_BLD_SHIFT_RESET   {{(BLADE_BASE_X - 0.0F) / BEING_ATTACK_STEPS, (BLADE_BASE_Y - 24.0F) / BEING_ATTACK_STEPS}, (BLADE_BASE_DIRECTION_BEING - 0.0F) / BEING_ATTACK_STEPS}
 

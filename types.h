@@ -100,15 +100,21 @@ struct Being{
     float velocity;
     int hit_points;
     Segment* segment;
+	union target{
+		Player* player;
+		Being* being;
+	}target;
 	Uint8 indx;
 	Uint8 type_id;
-	Uint8 target_indx;
 	Sint8 status;
 	int status_ticks_left;
 	Armour armour;
 	Weapon weapon;
 	SDL_FPoint special_move_shift;
-	float special_rotation_shift;
+	struct rend_fly_help_data{
+		_Float16 start_angle;
+		Sint16 ticks;
+	}rend_fly_help_data;
 	unsigned int main_indx;
 	unsigned int effects_num;
 	Lasting_effect effects[MAX_BEING_EFFECTS];

@@ -67,18 +67,18 @@ extern inline void SetPlayerPosition(Player* const p, const float x, const float
 	p->position = (SDL_FPoint){x, y};
 }
 
-extern inline void MovePlayer(Game_data* const g_d, const unsigned int indx, const float x, const float y){
-	float new_x = (g_d->champions.array + indx)->position.x + x;
-	float new_y = (g_d->champions.array + indx)->position.y + y;
+extern inline void MovePlayer(Game_data* const g_d, Player* const p, const float x, const float y){
+	float new_x = p->position.x + x;
+	float new_y = p->position.y + y;
 
 	if(GetSegment(&g_d->world, new_x, new_y) != NULL){
-		SetPlayerPosition(g_d->champions.array + indx, new_x, new_y);
-	}else if(GetSegment(&g_d->world, (g_d->champions.array + indx)->position.x, new_y) != NULL){
-		(g_d->champions.array + indx)->position.y = new_y;
-	}else if(GetSegment(&g_d->world, new_x, (g_d->champions.array + indx)->position.y) != NULL){
-		(g_d->champions.array + indx)->position.x = new_x;
+		SetPlayerPosition(p, new_x, new_y);
+	}else if(GetSegment(&g_d->world, p->position.x, new_y) != NULL){
+		p->position.y = new_y;
+	}else if(GetSegment(&g_d->world, new_x, p->position.y) != NULL){
+		p->position.x = new_x;
 	}
-	(g_d->champions.array + indx)->segment = GetSegment(&g_d->world, (g_d->champions.array + indx)->position.x, (g_d->champions.array + indx)->position.y);
+	p->segment = GetSegment(&g_d->world, p->position.x, p->position.y);
 }
 
 static void UpdatePlayerMove(Game_data* const g_d, const unsigned int indx){
@@ -146,7 +146,7 @@ static void UpdatePlayerMove(Game_data* const g_d, const unsigned int indx){
 		--p->block_times.dodge;
 	}
 	if(p->velocity > 0.0F){
-		MovePlayer(g_d, indx, SDL_sinf(p->move_direction) * p->velocity, -SDL_cosf(p->move_direction) * p->velocity);
+		MovePlayer(g_d, p, SDL_sinf(p->move_direction) * p->velocity, -SDL_cosf(p->move_direction) * p->velocity);
 	}
 }
 
@@ -375,7 +375,9 @@ static void UpdatePlayerFire(Game_data* const g_d, const unsigned int indx){
 	if((g_d->champions.array + indx)->block_times.shoot > 0){
 		--(g_d->champions.array + indx)->block_times.shoot;
 	}else if((g_d->champions.array + indx)->selected_scroll == scroll_empty && ((g_d->champions.array + indx)->flags & (range_mode | attack | block)) == (range_mode | attack) && g_d->projectiles.num < MAX_PROJECTILES_NUM){
-		AddPCProjectileToArray(&g_d->projectiles, &(g_d->champions.array + indx)->position, (g_d->champions.array + indx)->direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &(g_d->champions.array + indx)->range_attack, TEST_PENETRATION);
+		float x, y;
+		GetShiftFromAngle((g_d->champions.array + indx)->direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &x, &y);
+		AddPCProjectileToArray(&g_d->projectiles, &(g_d->champions.array + indx)->position, x, y, &(g_d->champions.array + indx)->range_attack, TEST_PENETRATION);
 		(g_d->champions.array + indx)->block_times.shoot = PC_SHOOT_RELOAD;
 	}
 }
@@ -423,7 +425,7 @@ extern inline void HitBarrier(Player* const p, const Impact* const impact){
 }
 
 extern inline float GetDirectionToPush(SDL_FPoint* const pushing, SDL_FPoint* const pushed){
-    return SDL_atan2f(pushed->y - pushing->y, pushed->x - pushing->x) + SDL_PI_F * 0.5F;
+    return arctan2(pushed->y - pushing->y, pushed->x - pushing->x) + SDL_PI_F * 0.5F;
 }
 
 static void UpdatePlayerCast(Game_data* const g_d, const unsigned int indx){

@@ -32,21 +32,21 @@ static inline bool ProjectileHitsBeing(Projectile* const pr, Being* const b){
 	return false;
 }
 
-extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const Impact* const impact, const unsigned int penetration){
+extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float shift_x, const float shift_y, const Impact* const impact, const unsigned int penetration){
 	Projectile* pr = (prs->array + prs->num++);
 	pr->type_id = projectile_penetrat;
 	pr->position = *position;
-	pr->shift_per_tick = (SDL_FPoint){SineSafe(direction) * velocity, -CosiSafe(direction) * velocity};
+	pr->shift_per_tick = (SDL_FPoint){shift_x, shift_y};
 	pr->data.penetrating.impact = *impact;
 	pr->data.penetrating.penetration = penetration;
 	pr->data.penetrating.hits = 0;
 }
 
-extern inline void AddHProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float direction, const float velocity, const Impact* const impact){
+extern inline void AddHProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float shift_x, const float shift_y, const Impact* const impact){
 	Projectile* pr = (prs->array + prs->num++);
 	pr->type_id = projectile_hostile;
 	pr->position = *position;
-	pr->shift_per_tick = (SDL_FPoint){SineSafe(direction) * velocity, -CosiSafe(direction) * velocity};
+	pr->shift_per_tick = (SDL_FPoint){shift_x, shift_y};
 	pr->data.basic.impact = *impact;
 }
 

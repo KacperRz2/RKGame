@@ -3,7 +3,7 @@
 
 void CreatePlayer(Player* const, const float, const float);
 void SetPlayerPosition(Player* const, const float, const float);
-void MovePlayer(Game_data* const, const unsigned int, const float, const float);
+void MovePlayer(Game_data* const, Player* const, const float, const float);
 static void UpdatePlayerMove(Game_data* const, const unsigned int);
 static void UpdatePlayerDirection(Player* const);
 static void UpdatePlayerPoints(Player* const);

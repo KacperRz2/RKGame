@@ -43,10 +43,10 @@ enum control{
 };
 
 enum being_status{
-    being_idle,
     being_follow,
     being_shoot,
     being_strike,
+    being_idle,
     being_walk,
     being_dead,
     being_stunned,

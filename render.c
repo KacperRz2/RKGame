@@ -126,6 +126,13 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 				BeingSize(b),
 				BeingSize(b)
 			};
+			if(b->status == being_attack_being){
+				b->direction = arctan2(b->position.y - b->target.being->position.y, b->position.x - b->target.being->position.x) - SDL_PI_F * 0.5F;
+			}else if(b->status == being_fly){
+				b->direction = b->rend_fly_help_data.start_angle + FULL_ANGLE * (1.0F - (float)b->status_ticks_left / (float)b->rend_fly_help_data.ticks);
+			}else if(b->status <= being_strike){
+				b->direction = arctan2(b->position.y - b->target.player->position.y, b->position.x - b->target.player->position.x) - SDL_PI_F * 0.5F;
+			}
 			const float being_direction = b->direction - (g_d->champions.array + g_d->human_indx)->direction;
 			const float sine = SineSafe(being_direction);
 			const float cosine = CosiSafe(being_direction);

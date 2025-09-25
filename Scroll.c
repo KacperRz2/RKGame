@@ -40,7 +40,7 @@ void effect1(Game_data* const g_d){
 
 void effect2(Game_data* const g_d){
     if(g_d->beings.num < MAX_BEINGS_NUM && (g_d->champions.array + g_d->human_indx)->segment->ally_beings.num < MAX_SEGM_BEINGS){
-        AddBeingToArray(&g_d->beings, being_2, (g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y, (g_d->champions.array + g_d->human_indx)->segment);
+        AddBeingToArray(&g_d->beings, being_2, (g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y, (g_d->champions.array + g_d->human_indx)->segment, g_d->champions.array + g_d->human_indx);
     }
 }
 

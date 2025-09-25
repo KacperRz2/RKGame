@@ -21,3 +21,34 @@ extern inline float SineSafe(const float a){
 extern inline float CosiSafe(const float a){
     return *(co + (unsigned int)(a * RAD_TO_MINE) % ANGLE_PARTS);
 }
+
+extern inline float arctan2(const float y, const float x){
+    const float abs_x = SDL_fabsf(x);
+    const float abs_y = SDL_fabsf(y);
+    const float a = (abs_x > abs_y) ? (abs_y / abs_x) : (abs_x / abs_y);
+    float approx = a * SDL_PI_F * 0.25F;
+    if(abs_y > abs_x){
+        approx = SDL_PI_F * 0.5F - approx;
+    }
+    if(x < 0.0F){
+        approx = SDL_PI_F - approx;
+    }
+    if(y < 0.0F){
+        approx = -approx;
+    }
+    return approx;
+}
+
+extern inline void GetShift(const SDL_FPoint* const a, const SDL_FPoint* const b, const float velocity, float* x, float* y){
+    const float distance_x = b->x - a->x;
+    const float distance_y = b->y - a->y;
+    const float distance = SDL_sqrtf(pow2(distance_x) + pow2(distance_y));
+    const float velocity_xy = distance / velocity;
+    *x = distance_x / velocity_xy;
+    *y = distance_y / velocity_xy;
+}
+
+extern inline void GetShiftFromAngle(const float angle, const float velocity, float* x, float* y){
+    *x = SineSafe(angle) * velocity;
+    *y = -CosiSafe(angle) * velocity;
+}
