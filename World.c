@@ -281,17 +281,17 @@ void DestroyWorld(World* const world){
 	SDL_free(world->segments);
 }
 
-extern inline Segment* GetSegment(World* const world, const float x, const float y){
+extern inline Segment* GetSegment(const World* const world, const float x, const float y){
 	const unsigned int c = (unsigned int)(x / SEGMENT_SIZE);
 	const unsigned int r = (unsigned int)(y / SEGMENT_SIZE);
 	return *(*(world->segments + c) + r);
 }
 
-extern inline Segment* GetSegmentByIndx(World* const world, const unsigned int c, const unsigned int r){
+extern inline Segment* GetSegmentByIndx(const World* const world, const unsigned int c, const unsigned int r){
 	return *(*(world->segments + c) + r);
 }
 
-extern inline Segment* GetSegmentByIndxSafe(World* const world, const int c, const int r){
+extern inline Segment* GetSegmentByIndxSafe(const World* const world, const int c, const int r){
 	if(c >= SEGMENTS_X || c < 0 || r >= SEGMENTS_Y || r < 0){
 		return NULL;
 	}
@@ -312,10 +312,11 @@ void StartLevel(Game_data* const g_d){
 	for(unsigned int i = 0U; i < MAX_PLAYERS_NUM; ++i){
 		CreatePlayer((g_d->champions.array + i), start_position.x, start_position.y);
 		(g_d->champions.array + i)->segment = GetSegment(&g_d->world, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y);
+		(g_d->champions.array + i)->last_seen_in = (g_d->champions.array + i)->segment;
 		++g_d->champions.num;
 	}
 	Uint64 start_time = SDL_GetTicks();
-	while (g_d->beings.num < MAX_START_BEINGS_NUM / 8U){//test beings
+	while (g_d->beings.num < MAX_START_BEINGS_NUM / 2U){//test beings
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		if(SDL_fabsf(start_position.x - x) > 1000.0F && SDL_fabsf(start_position.y - y) > 1000.0F && SDL_fabsf(start_position.x - x) < WORLD_W * 0.25F && SDL_fabsf(start_position.y - y) < WORLD_H * 0.25F){
@@ -364,4 +365,60 @@ static float GetDoorPositionXorY(const unsigned int small_plan_position){
 	if(small_plan_position == 6){
 		return WORLD_SIZE - SEGMENT_SIZE * 1.25F;
 	}
+}
+
+extern inline bool IsClearSight(const SDL_FPoint* const from, const SDL_FPoint* const to, const Segment* const to_s, const World* const w){
+	const float distance_x = to->x - from->x;
+	const float distance_y = to->y - from->y;
+	const float distance = SDL_sqrtf(pow2(distance_x) + pow2(distance_y));
+    const float velocity_xy = distance / PLAYER_SIZE;
+    const float shift_x = distance_x / velocity_xy;
+    const float shift_y = distance_y / velocity_xy;
+	SDL_FPoint control_point = *from;
+	const Segment* s = GetSegment(w, control_point.x, control_point.y);
+	while(s != to_s){
+		control_point.x += shift_x;
+		control_point.y += shift_y;
+		s = GetSegment(w, control_point.x, control_point.y);
+		if(s == NULL){
+			return false;
+		}
+	}
+	return true;
+}
+
+extern inline bool IsClearSightWithKnownDistance(const SDL_FPoint* const from, const Segment* const to_s, const World* const w, const float d_x, const float d_y, const float distance_squared){
+	const float distance = SDL_sqrtf(distance_squared);
+    const float velocity_xy = distance / PLAYER_SIZE;
+    const float shift_x = d_x / velocity_xy;
+    const float shift_y = d_y / velocity_xy;
+	SDL_FPoint control_point = *from;
+	const Segment* s = GetSegment(w, control_point.x, control_point.y);
+	while(s != to_s){
+		control_point.x += shift_x;
+		control_point.y += shift_y;
+		s = GetSegment(w, control_point.x, control_point.y);
+		if(s == NULL){
+			return false;
+		}
+	}
+	return true;
+}
+
+extern inline bool IsClearPathWithKnownDistance(const SDL_FPoint* const from, const Segment* const to_s, const World* const w, const float d_x, const float d_y, const float distance_squared){
+	const float distance = SDL_sqrtf(distance_squared);
+    const float velocity_xy = distance / SEGMENT_SIZE;
+    const float shift_x = d_x / velocity_xy;
+    const float shift_y = d_y / velocity_xy;
+	SDL_FPoint control_point = *from;
+	const Segment* s = GetSegment(w, control_point.x, control_point.y);
+	while(s != to_s){
+		control_point.x += shift_x;
+		control_point.y += shift_y;
+		s = GetSegment(w, control_point.x, control_point.y);
+		if(s == NULL){
+			return false;
+		}
+	}
+	return true;
 }

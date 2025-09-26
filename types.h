@@ -176,6 +176,7 @@ struct Player{
 	Impact blade_attack;
 	Impact range_attack;
 	Segment* segment;
+	Segment* last_seen_in;
 	float direction;
 	float move_direction;
 	float velocity;

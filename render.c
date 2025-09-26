@@ -136,7 +136,6 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 			const float sine = SineSafe(being_direction);
 			const float cosine = CosiSafe(being_direction);
 			const Placement weapon = GetBeingWeaponPlacement(b);
-			//  BEING_WEAPON_BASE_PLCMNT;
 			rect_blade.x = point.x + (weapon.position.x * cosine + weapon.position.y * sine) - half(BLADE_SIZE);
 			rect_blade.y = point.y + (weapon.position.x * sine - weapon.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
 			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_weapon_textures + b->type_id)), NULL, &rect_blade, (double)RadToDeg(weapon.direction + being_direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);

@@ -55,6 +55,7 @@
 
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
+#define NAP_TICKS                   512
 #define BLADE_BASE_X                16.0F
 #define BLADE_BASE_Y                (-8.0F)
 #define BLADE_BASE_DIRECTION_BEING  0.0F

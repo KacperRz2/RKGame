@@ -70,15 +70,18 @@ extern inline void SetPlayerPosition(Player* const p, const float x, const float
 extern inline void MovePlayer(Game_data* const g_d, Player* const p, const float x, const float y){
 	float new_x = p->position.x + x;
 	float new_y = p->position.y + y;
-
-	if(GetSegment(&g_d->world, new_x, new_y) != NULL){
+	const Segment* s = GetSegment(&g_d->world, new_x, new_y);
+	if(s != NULL){
 		SetPlayerPosition(p, new_x, new_y);
-	}else if(GetSegment(&g_d->world, p->position.x, new_y) != NULL){
+	}else if((s = GetSegment(&g_d->world, p->position.x, new_y)) != NULL){
 		p->position.y = new_y;
-	}else if(GetSegment(&g_d->world, new_x, p->position.y) != NULL){
+	}else if((s = GetSegment(&g_d->world, new_x, p->position.y)) != NULL){
 		p->position.x = new_x;
 	}
-	p->segment = GetSegment(&g_d->world, p->position.x, p->position.y);
+	if(s != p->segment){
+		p->last_seen_in = p->segment;
+		p->segment = GetSegment(&g_d->world, p->position.x, p->position.y);
+	}
 }
 
 static void UpdatePlayerMove(Game_data* const g_d, const unsigned int indx){
