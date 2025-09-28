@@ -51,6 +51,7 @@ enum being_status{
     being_dead,
     being_stunned,
     being_fly,
+    being_search,
     being_attack_being
 };
 
@@ -112,6 +113,11 @@ enum projectile_type{
     projectile_penetrat,
     projectile_hostile,
     projectile_special
+};
+
+enum segment_flags{
+    segment_in_sight = 1 << 0,
+    segment_known = 1 << 1
 };
 
 #endif

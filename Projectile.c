@@ -90,9 +90,6 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
 						continue;
 					}
 				}else{
-					// if(b->status == being_strike){
-					// 	ResetBeingBlade(b);
-					// }
 					if(b->status != being_fly){
 						StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.penetrating.impact, &b->armour)));
 					}
@@ -123,9 +120,6 @@ static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const g_d){
 			Being* b = (g_d->beings.array + *(neighbour->ally_beings.beings_ind + j));
 			if(!ProjectileHitsBeing(pr, b)) continue;
 			if(!DamageAlly(b, &pr->data.basic.impact, g_d->beings.array)){
-				// if(b->status == being_strike){
-				// 	ResetBeingBlade(b);
-				// }
 				if(b->status != being_fly){
 					StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.basic.impact, &b->armour)));
 				}

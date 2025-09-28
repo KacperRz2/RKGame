@@ -247,6 +247,7 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 							(*(*(world->segments + c) + r))->indx.y = r;
 							(*(*(world->segments + c) + r))->beings.num = 0U;
 							(*(*(world->segments + c) + r))->ally_beings.num = 0U;
+							(*(*(world->segments + c) + r))->flags = 0x0U;
 						}else{
 							*(*(world->segments + c) + r) = NULL;
 						}
@@ -316,7 +317,7 @@ void StartLevel(Game_data* const g_d){
 		++g_d->champions.num;
 	}
 	Uint64 start_time = SDL_GetTicks();
-	while (g_d->beings.num < MAX_START_BEINGS_NUM / 2U){//test beings
+	while (g_d->beings.num < MAX_START_BEINGS_NUM - 64U){//test beings
 		float x = (float)(SDL_rand((Sint32)(WORLD_W - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		float y = (float)(SDL_rand((Sint32)(WORLD_H - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
 		if(SDL_fabsf(start_position.x - x) > 1000.0F && SDL_fabsf(start_position.y - y) > 1000.0F && SDL_fabsf(start_position.x - x) < WORLD_W * 0.25F && SDL_fabsf(start_position.y - y) < WORLD_H * 0.25F){
@@ -347,12 +348,20 @@ static SDL_FPoint GetStartPosition(World* const w){
 	return result;
 }
 
-extern inline float SegmentPositionX(Segment* const s){
+extern inline float SegmentPositionX(const Segment* const s){
 	return s->indx.x * SEGMENT_SIZE;
 }
 
-extern inline float SegmentPositionY(Segment* const s){
+extern inline float SegmentPositionY(const Segment* const s){
 	return s->indx.y * SEGMENT_SIZE;
+}
+
+extern inline float SegmentCenterX(const Segment* const s){
+	return (s->indx.x + 0.5F) * SEGMENT_SIZE;
+}
+
+extern inline float SegmentCenterY(const Segment* const s){
+	return (s->indx.y + 0.5F) * SEGMENT_SIZE;
 }
 
 static float GetDoorPositionXorY(const unsigned int small_plan_position){
@@ -368,57 +377,94 @@ static float GetDoorPositionXorY(const unsigned int small_plan_position){
 }
 
 extern inline bool IsClearSight(const SDL_FPoint* const from, const SDL_FPoint* const to, const Segment* const to_s, const World* const w){
+	const Segment* s = GetSegment(w, from->x, from->y);
+	if(s == to_s){return true;}
 	const float distance_x = to->x - from->x;
 	const float distance_y = to->y - from->y;
 	const float distance = SDL_sqrtf(pow2(distance_x) + pow2(distance_y));
-    const float velocity_xy = distance / PLAYER_SIZE;
-    const float shift_x = distance_x / velocity_xy;
-    const float shift_y = distance_y / velocity_xy;
+    const float shift_x = distance_x / distance;
+    const float shift_y = distance_y / distance;
+	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
+	const float help_to_y = shift_y < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
 	SDL_FPoint control_point = *from;
-	const Segment* s = GetSegment(w, control_point.x, control_point.y);
-	while(s != to_s){
-		control_point.x += shift_x;
-		control_point.y += shift_y;
+	do{
+		const float help_x = SDL_fmodf(control_point.x, SEGMENT_SIZE);
+		const float help_y = SDL_fmodf(control_point.y, SEGMENT_SIZE);
+		const float shifts_to_next_seg_x = (help_to_x - help_x) / shift_x;
+		const float shifts_to_next_seg_y = (help_to_y - help_y) / shift_y;
+		const float multipl = shifts_to_next_seg_x < shifts_to_next_seg_y ? shifts_to_next_seg_x : shifts_to_next_seg_y;
+		control_point.x += shift_x * multipl;
+		control_point.y += shift_y * multipl;
 		s = GetSegment(w, control_point.x, control_point.y);
 		if(s == NULL){
 			return false;
 		}
-	}
+	}while(s != to_s);
 	return true;
 }
 
 extern inline bool IsClearSightWithKnownDistance(const SDL_FPoint* const from, const Segment* const to_s, const World* const w, const float d_x, const float d_y, const float distance_squared){
+	const Segment* s = GetSegment(w, from->x, from->y);
+	if(s == to_s){return true;}
 	const float distance = SDL_sqrtf(distance_squared);
-    const float velocity_xy = distance / PLAYER_SIZE;
-    const float shift_x = d_x / velocity_xy;
-    const float shift_y = d_y / velocity_xy;
+    const float shift_x = d_x / distance;
+    const float shift_y = d_y / distance;
+	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
+	const float help_to_y = shift_y < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
 	SDL_FPoint control_point = *from;
-	const Segment* s = GetSegment(w, control_point.x, control_point.y);
-	while(s != to_s){
-		control_point.x += shift_x;
-		control_point.y += shift_y;
+	do{
+		const float help_x = SDL_fmodf(control_point.x, SEGMENT_SIZE);
+		const float help_y = SDL_fmodf(control_point.y, SEGMENT_SIZE);
+		const float shifts_to_next_seg_x = (help_to_x - help_x) / shift_x;
+		const float shifts_to_next_seg_y = (help_to_y - help_y) / shift_y;
+		const float multipl = shifts_to_next_seg_x < shifts_to_next_seg_y ? shifts_to_next_seg_x : shifts_to_next_seg_y;
+		control_point.x += shift_x * multipl;
+		control_point.y += shift_y * multipl;
 		s = GetSegment(w, control_point.x, control_point.y);
 		if(s == NULL){
 			return false;
 		}
-	}
+	}while(s != to_s);
 	return true;
 }
 
-extern inline bool IsClearPathWithKnownDistance(const SDL_FPoint* const from, const Segment* const to_s, const World* const w, const float d_x, const float d_y, const float distance_squared){
-	const float distance = SDL_sqrtf(distance_squared);
-    const float velocity_xy = distance / SEGMENT_SIZE;
-    const float shift_x = d_x / velocity_xy;
-    const float shift_y = d_y / velocity_xy;
+extern inline bool SegmentInSight(const SDL_FPoint* const from, const SDL_FPoint* const point_in_seg, const Segment* const to_s, const World* const w){
+	const SDL_FPoint to = {point_in_seg->x - SDL_fmodf(point_in_seg->x, SEGMENT_SIZE) + 0.5F, point_in_seg->y - SDL_fmodf(point_in_seg->y, SEGMENT_SIZE) + 0.5F};
+	if(GetSegment(w, from->x, from->y) == to_s){return true;}
+	const float distance_x = to.x - from->x;
+	const float distance_y = to.y - from->y;
+	SDL_FPoint p0, p1, p2;
+	p0 = (SDL_FPoint){to.x, to.y + SEGMENT_SIZE - 1.0F};
+	p1 = (SDL_FPoint){to.x + SEGMENT_SIZE - 1.0F, to.y + SEGMENT_SIZE - 1.0F};
+	p2 = (SDL_FPoint){to.x + SEGMENT_SIZE - 1.0F, to.y};
+	return (IsClearSightPlus(from, &to, to_s, w) || IsClearSightPlus(from, &p0, to_s, w) || IsClearSightPlus(from, &p1, to_s, w) || IsClearSightPlus(from, &p2, to_s, w));
+}
+
+static inline bool IsClearSightPlus(const SDL_FPoint* const from, const SDL_FPoint* const to, const Segment* const to_s, const World* const w){
+	const float distance_x = to->x - from->x;
+	const float distance_y = to->y - from->y;
+	const float distance = SDL_sqrtf(pow2(distance_x) + pow2(distance_y));
+    const float shift_x = distance_x / distance;
+    const float shift_y = distance_y / distance;
+	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
+	const float help_to_y = shift_y < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
 	SDL_FPoint control_point = *from;
-	const Segment* s = GetSegment(w, control_point.x, control_point.y);
-	while(s != to_s){
-		control_point.x += shift_x;
-		control_point.y += shift_y;
+	const Segment* s;
+	do{
+		const float help_x = SDL_fmodf(control_point.x, SEGMENT_SIZE);
+		const float help_y = SDL_fmodf(control_point.y, SEGMENT_SIZE);
+		const float shifts_to_next_seg_x = (help_to_x - help_x) / shift_x;
+		const float shifts_to_next_seg_y = (help_to_y - help_y) / shift_y;
+		const float multipl = shifts_to_next_seg_x < shifts_to_next_seg_y ? shifts_to_next_seg_x : shifts_to_next_seg_y;
+		control_point.x += shift_x * multipl;
+		control_point.y += shift_y * multipl;
 		s = GetSegment(w, control_point.x, control_point.y);
 		if(s == NULL){
+			if(SDL_fabsf(to->x - control_point.x) < SEGMENT_SIZE * SQRT2DIV2 && SDL_fabsf(to->y - control_point.y) < SEGMENT_SIZE * SQRT2DIV2){
+				return true;
+			}
 			return false;
 		}
-	}
+	}while(s != to_s);
 	return true;
 }

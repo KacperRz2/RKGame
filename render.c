@@ -100,7 +100,7 @@ static void RenderProjectiles(Render_data* const rend_data, Game_data* const g_d
 	};
 	for(Projectile* pr = g_d->projectiles.array; pr != (g_d->projectiles.array + g_d->projectiles.num); ++pr){
 		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, g_d->champions.array + g_d->human_indx, &point)){
+		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, g_d->champions.array + g_d->human_indx, &point, &g_d->world)){
 			rect.x = point.x - half(BULLET_SIZE);
 			rect.y = point.y - half(BULLET_SIZE);
 			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + *(projectile_textures + pr->type_id)), NULL, &rect);
@@ -118,7 +118,7 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
     for(unsigned int i = 0U; i < g_d->beings.num; ++i){
 		Being* b = (g_d->beings.array + *(g_d->beings.indices + i));
 		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, g_d->champions.array + g_d->human_indx, &point)){
+		if((b->segment->flags & segment_in_sight) && GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, g_d->champions.array + g_d->human_indx, &point, &g_d->world)){
 			const SDL_FRect rect = {
 				point.x - half(BeingSize(b)),
 				point.y - half(BeingSize(b)),
@@ -131,6 +131,8 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 				b->direction = b->rend_fly_help_data.start_angle + FULL_ANGLE * (1.0F - (float)b->status_ticks_left / (float)b->rend_fly_help_data.ticks);
 			}else if(b->status <= being_strike){
 				b->direction = arctan2(b->position.y - b->target.player->position.y, b->position.x - b->target.player->position.x) - SDL_PI_F * 0.5F;
+			}else if(b->status == being_search){
+				b->direction = arctan2(-b->special_move_shift.y, -b->special_move_shift.x) - SDL_PI_F * 0.5F;
 			}
 			const float being_direction = b->direction - (g_d->champions.array + g_d->human_indx)->direction;
 			const float sine = SineSafe(being_direction);
@@ -192,11 +194,12 @@ static void RenderMap(Render_data* const rend_data, Player* const p){
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 }
 
-static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const Player* const human_player, SDL_FPoint* const rend_point){
+static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const Player* const human_player, SDL_FPoint* const rend_point, World* const w){
 	float dx = true_point_x - human_player->position.x;
 	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
 	float dy = true_point_y - human_player->position.y;
 	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
+	if(!(GetSegment(w, true_point_x, true_point_y)->flags & segment_in_sight)) return false;
 	*rend_point = (SDL_FPoint){
 		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
 		PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction)
@@ -312,7 +315,7 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 			continue;
 		}
 		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y, g_d->champions.array + g_d->human_indx, &point)){
+		if(GetRenderPointFromTrue(rend_data, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y, g_d->champions.array + g_d->human_indx, &point, &g_d->world)){
 			*(players_to_rend + indx) = g_d->champions.array + i;
 			*(players_rend_points + indx++) = point;
 		}
@@ -366,10 +369,23 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 			if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, g_d->champions.array + g_d->human_indx, &rend_point)){
 				rect.x = rend_point.x - half(SEGMENT_SIZE);
 				rect.y = rend_point.y - half(SEGMENT_SIZE);
-				if(point.x > 0.0F && point.y > 0.0F && point.x < WORLD_SIZE && point.y < WORLD_SIZE && GetSegment(&g_d->world, point.x, point.y) != NULL){
-					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
-				}else{
-					SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_wall), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
+				if(point.x > 0.0F && point.y > 0.0F && point.x < WORLD_SIZE && point.y < WORLD_SIZE){
+					Segment* s = GetSegment(&g_d->world, point.x, point.y);
+					if(SegmentInSight(&(g_d->champions.array + g_d->human_indx)->position, &point, s, &g_d->world)){
+						if(s != NULL){
+							s->flags |= segment_in_sight | segment_known;
+							SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
+						}else{
+							SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_wall), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
+						}
+					}else{
+						if(s){
+							// if(s->flags & segment_known){
+							// 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_portal), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
+							// }
+							s->flags &= ~(segment_in_sight);
+						}
+					}
 				}
 			}
 			point.y += SEGMENT_SIZE;
@@ -419,17 +435,17 @@ static void RenderGunSight(Render_data* const rend_data){
 }
 
 static void RenderStaticThings(Render_data* const rend_data, Game_data* const g_d){
-	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal);
-	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal);
-	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_door);
+	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal, &g_d->world);
+	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal, &g_d->world);
+	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_door, &g_d->world);
 	for(unsigned int i = 0U; i < g_d->boxes.num; ++i){
-		RenderStaticThing(rend_data, (g_d->boxes.array + i)->location.x, (g_d->boxes.array + i)->location.y,g_d->champions.array + g_d->human_indx, BOX_SIZE, tx_box);
+		RenderStaticThing(rend_data, (g_d->boxes.array + i)->location.x, (g_d->boxes.array + i)->location.y,g_d->champions.array + g_d->human_indx, BOX_SIZE, tx_box, &g_d->world);
 	}
 }
 
-static void RenderStaticThing(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num){
+static void RenderStaticThing(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num, World* const w){
 	SDL_FPoint point;
-	if(GetRenderPointFromTrue(rend_data, pos_x, pos_y, p, &point)){
+	if(GetRenderPointFromTrue(rend_data, pos_x, pos_y, p, &point, w)){
 		const SDL_FRect rect = {
 			point.x - half(size),
 			point.y - half(size),

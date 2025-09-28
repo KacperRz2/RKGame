@@ -99,6 +99,10 @@ struct Being{
 		Player* player;
 		Being* being;
 	}target;
+	struct position{
+		_Float16 x;
+		_Float16 y;
+	}target_last_seen_at;
 	Uint8 indx;
 	Uint8 type_id;
 	Sint8 status;
@@ -149,9 +153,10 @@ struct Projectiles_array{
 };
 //World
 struct Segment{
+	Uint8 flags;
 	Segment_beings beings;
 	Segment_beings ally_beings;
-	SDL_Point indx;
+	struct coordinates {Sint16 x; Sint16 y;} indx;
 };
 struct World{
 	Segment*** segments;
