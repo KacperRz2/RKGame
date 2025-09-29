@@ -169,6 +169,7 @@ struct World{
 //Player
 struct Block_times{
 	Sint16 fatigue;
+	Sint16 armour;
 	Sint16 shoot;
 	Sint16 push;
 	Sint16 dodge;
@@ -193,6 +194,7 @@ struct Player{
 	int max_fatigue;
 	Block_times block_times;
 	Armour armour;
+	Armour max_armour;
 	int coins;
 	Uint8 selected_scroll;
 	Uint8 scrolls[SCROLLS_NUM];

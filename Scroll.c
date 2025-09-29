@@ -45,7 +45,9 @@ void effect2(Game_data* const g_d){
 }
 
 void effect3(Game_data* const g_d){
-    
+    (g_d->champions.array + g_d->human_indx)->armour.absorption = (g_d->champions.array + g_d->human_indx)->max_armour.absorption;
+    (g_d->champions.array + g_d->human_indx)->armour.multipl = (g_d->champions.array + g_d->human_indx)->max_armour.multipl;
+    (g_d->champions.array + g_d->human_indx)->armour.magic_multipl = (g_d->champions.array + g_d->human_indx)->max_armour.magic_multipl;
 }
 
 void effect4(Game_data* const g_d){

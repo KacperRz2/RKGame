@@ -29,6 +29,8 @@ static void UpdatePlayerCast(Game_data* const, const unsigned int);
 void HealPlayer(Player* const p, const int);
 static void UpdatePlayerHitPoints(Player* const);
 static void BlockPlayerFatigue(Player* const, const int);
+static void BlockPlayerArmourRegen(Player* const, const int);
+static void PlayerGainArmour(Player* const, const float);
 void UpdatePlayers(Game_data* const);
 
 #endif

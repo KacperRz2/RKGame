@@ -45,8 +45,10 @@ extern inline void AddBeingToArray(Beings_array* const bs, const Uint8 type_id, 
     b->target.player = target;
     if(IsAlly(b)){
         AddBeingToSegment(s, b, &s->ally_beings);
+        b->target_last_seen_at = (struct position){b->target.player->position.x, b->target.player->position.y};
     }else{
         AddBeingToSegment(s, b, &s->beings);
+        b->target_last_seen_at.x = 0.0F;
     }
     b->velocity = (being_types + b->type_id)->velocity;
     b->armour = (being_types + b->type_id)->armour;
@@ -298,6 +300,32 @@ static inline void TurnBlockedBeing(Being* const b, Game_data* const gd){
     TurnBeingWalk(b);
 }
 
+static inline void TurnBlockedAlly(Being* const b, Game_data* const gd){
+    float shift = SDL_copysignf(b->velocity, b->special_move_shift.x);
+    Segment* s = GetSegment(&gd->world, b->position.x + shift, b->position.y);
+    if(s == b->segment){
+        b->position.x += shift;
+        return;
+    }
+    if(s && s->ally_beings.num < MAX_SEGM_BEINGS){
+        b->position.x += shift;
+        MoveAllyToSegment(b, s, gd->beings.array);
+        return;
+    }
+    shift = SDL_copysignf(b->velocity, b->special_move_shift.y);
+    s = GetSegment(&gd->world, b->position.x, b->position.y + shift);
+    if(s == b->segment){
+        b->position.y += shift;
+        return;
+    }
+    if(s && s->ally_beings.num < MAX_SEGM_BEINGS){
+        b->position.y += shift;
+        MoveAllyToSegment(b, s, gd->beings.array);
+        return;
+    }
+    TurnBeingWalk(b);
+}
+
 static inline void UpdateBeingSearch(Being* const b, Game_data* const gd){
     if(b->status_ticks_left == 0){
         FindTargetForBeing(b, &gd->champions);
@@ -314,6 +342,7 @@ static inline void UpdateBeingSearch(Being* const b, Game_data* const gd){
     if(new_segment != b->segment){
         if(new_segment == NULL){
             TurnBlockedBeing(b, gd);
+            --b->status_ticks_left;
             return;
         }
         if(new_segment->beings.num >= MAX_SEGM_BEINGS){
@@ -498,9 +527,9 @@ static inline bool IdleBeingCollision(Being* const b, Game_data* const gd){
         if(b1 == b || b1->status == being_walk) continue;
         if(BeingCollideWithBeing(b1, b->position.x, b->position.y, BeingSize(b))){
             FindTargetForBeing(b, &gd->champions);
-            float distance_x = b->target.player->position.x - b->position.x;
-            float distance_y = b->target.player->position.y - b->position.y;
-            float distance_squared = pow2(distance_x) + pow2(distance_y);
+            const float distance_x = b->target.player->position.x - b->position.x;
+            const float distance_y = b->target.player->position.y - b->position.y;
+            const float distance_squared = pow2(distance_x) + pow2(distance_y);
             if(distance_squared <= pow2(BEING_HALT_DISTANCE)){
                 StartBeingRandWalk(b, BEING_DEFAULT_LEFT_TICKS);
                 return true;
@@ -620,6 +649,35 @@ static inline void UpdateAllyFollow(Being* const b, Game_data* const gd){
     --b->status_ticks_left;
 }
 
+static inline void UpdateAllySearch(Being* const b, Game_data* const gd){
+    if(b->status_ticks_left == 0){
+        if(IsClearSight(&b->position, &b->target.player->position, b->target.player->segment, &gd->world)){
+            b->status = being_idle;
+        }else{
+            b->status_ticks_left = BEING_DEFAULT_LEFT_TICKS;
+        }
+        return;
+    }
+    const float new_x = b->position.x + b->special_move_shift.x;
+    const float new_y = b->position.y + b->special_move_shift.y;
+    Segment* new_segment = GetSegment(&gd->world, new_x, new_y);
+    if(new_segment != b->segment){
+        if(new_segment == NULL){
+            TurnBlockedAlly(b, gd);
+            --b->status_ticks_left;
+            return;
+        }
+        if(new_segment->ally_beings.num >= MAX_SEGM_BEINGS){
+            --b->status_ticks_left;
+            return;
+        }
+        SetAllyPositionInNewSegment(b, new_x, new_y, new_segment, gd->beings.array);
+    }else{
+        SetBeingPosition(b, new_x, new_y);
+    }
+    --b->status_ticks_left;
+};
+
 static inline void UpdateAllyWalk(Being* const b, Game_data* const gd){
     if(b->status_ticks_left == 0){
         b->status = being_idle;
@@ -677,6 +735,8 @@ static inline void UpdateBeing0(Being* const b, Game_data* const g_d){
         }
         if(IsClearSightWithKnownDistance(&b->position, p->segment, &g_d->world, distance_x, distance_y, distance_squared)){
             StartBeingFollow(b, BEING_DEFAULT_LEFT_TICKS, distance_squared, distance_x, distance_y);
+        }else if(b->target_last_seen_at.x != 0.0F){
+            StartBeingSearch(b, BEING_DEFAULT_LEFT_TICKS);
         }else{
             HaltBeing(b, NAP_TICKS);
         }
@@ -752,6 +812,8 @@ static inline void UpdateBeing1(Being* const b, Game_data* const g_d){
         }
         if(IsClearSightWithKnownDistance(&b->position, p->segment, &g_d->world, distance_x, distance_y, distance_squared)){
             StartBeingFollow(b, BEING_DEFAULT_LEFT_TICKS, distance_squared, distance_x, distance_y);
+        }else if(b->target_last_seen_at.x != 0.0F){
+            StartBeingSearch(b, BEING_DEFAULT_LEFT_TICKS);
         }else{
             HaltBeing(b, NAP_TICKS);
         }
@@ -782,6 +844,10 @@ static inline void UpdateBeing1(Being* const b, Game_data* const g_d){
 
 static inline void UpdateAlly0(Being* const b, Game_data* const g_d){
     if(b->status == being_idle){
+        const bool plr_in_sight = IsClearSight(&b->position, &(g_d->champions.array + g_d->human_indx)->position, (g_d->champions.array + g_d->human_indx)->segment, &g_d->world);
+        if(plr_in_sight){
+            b->target_last_seen_at = (struct position){(g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y};
+        }
         if(FindAllyTarget(b, g_d)){
             b->status = being_attack_being;
             b->status_ticks_left = BEING_RELOAD_TICKS;
@@ -791,7 +857,11 @@ static inline void UpdateAlly0(Being* const b, Game_data* const g_d){
                 return;
             }
             b->target.player = g_d->champions.array + g_d->human_indx;
-            StartAllyFollow(b, BEING_DEFAULT_LEFT_TICKS);
+            if(plr_in_sight){
+                StartAllyFollow(b, BEING_DEFAULT_LEFT_TICKS);
+            }else{
+                StartBeingSearch(b, BEING_DEFAULT_LEFT_TICKS);
+            }
         }
         return;
     }
@@ -804,6 +874,10 @@ static inline void UpdateAlly0(Being* const b, Game_data* const g_d){
         }else{
             --b->status_ticks_left;
         }
+        return;
+    }
+    if(b->status == being_search){
+        UpdateAllySearch(b, g_d);
         return;
     }
     if(b->status == being_follow){

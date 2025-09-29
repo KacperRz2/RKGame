@@ -29,7 +29,7 @@
 #define RUN_MULTIPL		            2.0F
 #define BLOCK_VELOCITY_MULTIP		0.5F
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        22
+#define TEXTURE_FILES_NUM	        24
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -74,7 +74,7 @@
 #define WINDOW_START_W              1920
 #define WINDOW_START_H              1080
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       30000
+#define PC_HP                       3000
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    0x10
 #define PC_M_MAGIC                  0x10000000
@@ -91,6 +91,8 @@
 #define PC_FAILURE_FATIG_BLOCK_TIME 2
 #define PC_FAILURE_VELOCITY         0.5F
 #define PC_FATIGUE_GAIN_INTERVAL    3
+#define PC_ARMOUR_REGEN_BLOCK       0x2000
+#define PC_ARMOUR_GAIN_INTERVAL     0x100
 #define TEST_DAMAGE                 100
 #define TEST_PENETRATION            3U
 #define PC_BLADE_CHECKPOINTS        2U
@@ -135,6 +137,7 @@
 #define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
 #define BARRIER_MAGNIFICATION       0.25F
 #define WEAPON_ATTACK_Y             24.0F
+#define MAX_PC_ARMOUR_ABSORP        200.0F
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -149,13 +152,13 @@
 #define BUTTON_BLOCK                SDL_BUTTON_RIGHT
 
 #define SCR_COSTS                   {\
-                                        8U,\
-                                        2U,\
                                         1U,\
-                                        8U,\
-                                        8U,\
-                                        8U,\
-                                        8U,\
+                                        1U,\
+                                        1U,\
+                                        1U,\
+                                        1U,\
+                                        1U,\
+                                        1U,\
                                         0U\
                                     }
 #define SCR_EFFECTS                 {\
@@ -197,7 +200,8 @@
 #define PC_BLADE_IMPACT             {1200.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
 #define PC_RANGE_IMPACT             {10.0F, 0.5F, 350.0F, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
-#define PC_ARMOUR                   {5.0F, 0.875F, 1.0F, 0.25F}
+#define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}
+#define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.25F}
 #define PROJECTILES_UPDATE_FUNC     {\
                                         UpdatePCProjectile,\
                                         UpdateHostileProjectile,\
@@ -215,7 +219,7 @@
 #define BEINGS_WEAPON_TEXTURES      {\
                                         tx_being_blade,\
                                         tx_weapon,\
-                                        tx_being_blade\
+                                        tx_void\
                                     }
 #define PROJECTILE_TEXTURES         {\
                                         tx_projectile,\
@@ -264,7 +268,9 @@
                                         "img11.bmp",\
                                         "img12.bmp",\
                                         "img13.bmp",\
-                                        "img14.bmp"\
+                                        "img14.bmp",\
+                                        "img15.bmp",\
+                                        "void.bmp"\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\

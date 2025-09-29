@@ -14,7 +14,8 @@ static void InitScrolls(Player* const p){
 	*p->scrolls = 99U;
 	*(p->scrolls + 1) = 99U;
 	*(p->scrolls + 2) = 99U;
-	for(unsigned int i = 3U; i < (unsigned int)scroll_empty; ++i){
+	*(p->scrolls + 3) = 99U;
+	for(unsigned int i = 4U; i < (unsigned int)scroll_empty; ++i){
 		*(p->scrolls + i) = 0U;
 	}
 	*(p->scrolls + scroll_empty) = 0U;
@@ -22,7 +23,8 @@ static void InitScrolls(Player* const p){
 	*(p->scrolls_quick_access + 1) = scroll_0;
 	*(p->scrolls_quick_access + 2) = scroll_1;
 	*(p->scrolls_quick_access + 3) = scroll_2;
-	for(unsigned int i = 4U; i < QUICK_SCROLLS; ++i){
+	*(p->scrolls_quick_access + 4) = scroll_3;
+	for(unsigned int i = 5U; i < QUICK_SCROLLS; ++i){
 		*(p->scrolls_quick_access + i) = scroll_empty;
 	}
 }
@@ -55,8 +57,9 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->magic_points = PC_MAGIC;
 	p->max_fatigue = PC_FATIGUE;
 	p->max_h_p = PC_HP;
-	p->block_times = (Block_times){0, 0, 0, 0, 0};
+	p->block_times = (Block_times){0, 0, 0, 0, 0, 0};
 	p->armour = (Armour)PC_ARMOUR;
+	p->max_armour = (Armour)PC_MAX_ARMOUR;
 	p->coins = PC_START_COINS;
 	p->selected_scroll = scroll_empty;
 	InitScrolls(p);
@@ -173,6 +176,12 @@ static void UpdatePlayerPoints(Player* const p){
 		}
 	}else{
 		--(p->block_times.fatigue);
+	}
+	if(p->block_times.armour < 1U){
+		PlayerGainArmour(p, 0.01F);
+		BlockPlayerArmourRegen(p, PC_ARMOUR_GAIN_INTERVAL);
+	}else{
+		--(p->block_times.armour);
 	}
 }
 
@@ -379,6 +388,29 @@ extern inline bool CircleMeetsPlayer(const float x, const float y, const float d
 
 extern inline void DamagePlayer(Player* const p, const Impact* impact){
 	p->hit_points -= CalculateDamage(impact, &p->armour);
+	if(impact->damage > 0.0F){
+		if(p->armour.absorption > 0.0F){
+			p->armour.absorption -= impact->damage;
+			if(p->armour.absorption < 0.0F){
+				p->armour.absorption = 0.0F;
+			}
+		}
+		if(p->armour.multipl < 1.0F){
+			p->armour.multipl += (1.0F - p->max_armour.multipl) * (impact->damage / p->max_armour.absorption);
+			if(p->armour.multipl > 1.0F){
+				p->armour.multipl = 1.0F;
+			}
+		}
+	}
+	if(impact->magic > 0.0F){
+		if(p->armour.magic_multipl < 1.0F){
+			p->armour.magic_multipl += (1.0F - p->max_armour.magic_multipl) * 0.01F;
+			if(p->armour.magic_multipl > 1.0F){
+				p->armour.magic_multipl = 1.0F;
+			}
+		}
+	}
+	BlockPlayerArmourRegen(p, PC_ARMOUR_REGEN_BLOCK);
 }
 
 static void UpdatePlayerFire(Game_data* const g_d, const unsigned int indx){
@@ -467,6 +499,33 @@ static inline void UpdatePlayerHitPoints(Player* const p){
 static inline void BlockPlayerFatigue(Player* const p, const int time){
 	if(p->block_times.fatigue < time){
 		p->block_times.fatigue = time;
+	}
+}
+
+static inline void BlockPlayerArmourRegen(Player* const p, const int time){
+	if(p->block_times.armour < time){
+		p->block_times.armour = time;
+	}
+}
+
+static inline void PlayerGainArmour(Player* const p, const float perc){
+	if(p->armour.absorption < p->max_armour.absorption){
+		p->armour.absorption += p->max_armour.absorption * perc;
+		if(p->armour.absorption > p->max_armour.absorption){
+			p->armour.absorption = p->max_armour.absorption;
+		}
+	}
+	if(p->armour.multipl > p->max_armour.multipl){
+		p->armour.multipl -= (1.0F - p->max_armour.multipl) * perc;
+		if(p->armour.multipl < p->max_armour.multipl){
+			p->armour.multipl = p->max_armour.multipl;
+		}
+	}
+	if(p->armour.magic_multipl > p->max_armour.magic_multipl){
+		p->armour.magic_multipl -= (1.0F - p->max_armour.magic_multipl) * perc;
+		if(p->armour.magic_multipl < p->max_armour.magic_multipl){
+			p->armour.magic_multipl = p->max_armour.magic_multipl;
+		}
 	}
 }
 

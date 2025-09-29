@@ -263,18 +263,48 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 		(float)p->fatigue_points / (float)p->max_fatigue * (rect2a.w - 2.0F),
 		28.0F
 	};
+	const SDL_FRect rect_armoa = {
+		10.0F,
+		half(rend_data->window_h) - 44.0F,
+		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
+		20.0F
+	};
+	const SDL_FRect rect_armob = {
+		11.0F,
+		half(rend_data->window_h) - 43.0F,
+		((1.0F - p->armour.multipl) / (1.0F - p->max_armour.multipl)) * (rect_armoa.w - 2.0F),
+		18.0F
+	};
+	const SDL_FRect rect_marmoa = {
+		10.0F,
+		half(rend_data->window_h) - 22.0F,
+		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
+		20.0F
+	};
+	const SDL_FRect rect_marmob = {
+		11.0F,
+		half(rend_data->window_h) - 21.0F,
+		((1.0F - p->armour.magic_multipl) / (1.0F - p->max_armour.magic_multipl)) * (rect_armoa.w - 2.0F),
+		18.0F
+	};
 	SDL_SetRenderDrawColor(rend_data->renderer, 255U, 255U, 255U, 0U);
+	SDL_RenderRect(rend_data->renderer, &rect_armoa);
+	SDL_RenderRect(rend_data->renderer, &rect_marmoa);
 	SDL_RenderRect(rend_data->renderer, &rect0a);
 	SDL_RenderRect(rend_data->renderer, &rect1a);
 	SDL_RenderRect(rend_data->renderer, &rect2a);
+	SDL_SetRenderDrawColor(rend_data->renderer, 128U, 128U, 128U, 0U);
+	SDL_RenderFillRect(rend_data->renderer, &rect_armob);
+	SDL_SetRenderDrawColor(rend_data->renderer, 128U, 128U, 255U, 0U);
+	SDL_RenderFillRect(rend_data->renderer, &rect_marmob);
 	SDL_SetRenderDrawColor(rend_data->renderer, 255U, 0U, 0U, 0U);
 	SDL_RenderFillRect(rend_data->renderer, &rect0b);
+	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 255U, 0U, 0U);
+	SDL_RenderFillRect(rend_data->renderer, &rect2b);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 127U, 255U, 255U);
 	SDL_SetRenderScale(rend_data->renderer, 2.0F, 4.0F);
 	SDL_RenderDebugTextFormat(rend_data->renderer, (half(rend_data->window_w - rend_data->viewfinder) + rend_data->viewfinder + 11.0F) * 0.5F, (half(rend_data->window_h) + 41.0F) * 0.25F, "%d", p->magic_points);
 	SDL_SetRenderScale(rend_data->renderer, 1.0F, 1.0F);
-	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 255U, 0U, 0U);
-	SDL_RenderFillRect(rend_data->renderer, &rect2b);
 }
 
 void RenderMainMenu(Render_data* const rend_data){
@@ -380,9 +410,9 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 						}
 					}else{
 						if(s){
-							// if(s->flags & segment_known){
-							// 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_portal), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
-							// }
+							if(s->flags & segment_known){
+								SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain1), NULL, &rect, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
+							}
 							s->flags &= ~(segment_in_sight);
 						}
 					}
