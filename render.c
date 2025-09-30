@@ -131,6 +131,8 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 				b->direction = b->rend_fly_help_data.start_angle + FULL_ANGLE * (1.0F - (float)b->status_ticks_left / (float)b->rend_fly_help_data.ticks);
 			}else if(b->status <= being_strike){
 				b->direction = arctan2(b->position.y - b->target.player->position.y, b->position.x - b->target.player->position.x) - SDL_PI_F * 0.5F;
+			}else if(b->status <= being_strike_being){
+				b->direction = arctan2(b->position.y - b->target.being->position.y, b->position.x - b->target.being->position.x) - SDL_PI_F * 0.5F;
 			}else if(b->status == being_search){
 				b->direction = arctan2(-b->special_move_shift.y, -b->special_move_shift.x) - SDL_PI_F * 0.5F;
 			}
@@ -610,7 +612,7 @@ static void	RenderBarriers(Render_data* const rend_data, const float human_playe
 }
 
 static inline Placement GetBeingWeaponPlacement(const Being* const b){
-    if(b->status == being_strike){
+    if(b->status == being_strike || b->status == being_strike_being){
         if(b->status_ticks_left > 0){
             const int step = BEING_ATTACK_STEPS - b->status_ticks_left;
             return GetWeaponPlacement(&(Placement)BEING_WEAPON_PREPARE_PLCMNT, &(Placement)BEING_WEAPON_ATTACK_PLCMNT, step, BEING_ATTACK_STEPS);
@@ -621,7 +623,7 @@ static inline Placement GetBeingWeaponPlacement(const Being* const b){
         }
         const int step = b->status_ticks_left + BEING_ATTACK_STEPS;
 		return GetWeaponPlacement(&(Placement)BEING_WEAPON_ATTACK_PLCMNT, &(Placement)BEING_WEAPON_BASE_PLCMNT, step, BEING_ATTACK_STEPS);
-    }else if(b->status == being_shoot){
+    }else if(b->status == being_shoot || b->status == being_shoot_being){
 		if(b->status_ticks_left < BEING_ATTACK_STEPS / 2){
 			const int step = BEING_ATTACK_STEPS / 2 - b->status_ticks_left;
 			return GetWeaponPlacement(&(Placement)BEING_WEAPON_ATTACK_PLCMNT, &(Placement)BEING_WEAPON_BASE_PLCMNT, step, BEING_ATTACK_STEPS / 2);
@@ -633,8 +635,6 @@ static inline Placement GetBeingWeaponPlacement(const Being* const b){
 			const int step = (int)(BEING_ATTACK_STEPS * 4) - b->status_ticks_left;
 			return GetWeaponPlacement(&(Placement)BEING_WEAPON_BASE_PLCMNT, &(Placement)BEING_WEAPON_ATTACK_PLCMNT, step, BEING_ATTACK_STEPS);
 		}
-        return (Placement)BEING_WEAPON_BASE_PLCMNT;
-    }else if(b->status == being_attack_being){
         return (Placement)BEING_WEAPON_BASE_PLCMNT;
     }else{
         return (Placement)BEING_WEAPON_BASE_PLCMNT;

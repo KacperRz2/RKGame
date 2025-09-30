@@ -40,7 +40,8 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 		quit = EventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
 		//TEST
 		if((game_data.champions.array + game_data.human_indx)->flags & tmp0){
-			(game_data.champions.array + game_data.human_indx)->flags &= ~(tmp0);
+			(game_data.champions.array + game_data.human_indx)->flags = 0U;
+			(game_data.champions.array + game_data.human_indx)->selected_scroll = scroll_empty;
 			game_data.human_indx = (game_data.human_indx + 1U) % game_data.champions.num;
 		}
 		//TEST

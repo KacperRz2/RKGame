@@ -185,7 +185,7 @@ static void UpdatePlayerPoints(Player* const p){
 	}
 }
 
-void UpdatePlayer(Game_data* const g_d, const unsigned int indx){
+static inline void UpdatePlayer(Game_data* const g_d, const unsigned int indx){
 	UpdatePlayerDirection(g_d->champions.array + indx);
 	UpdatePlayerMove(g_d, indx);
 	UpdatePlayerCast(g_d, indx);
@@ -531,6 +531,119 @@ static inline void PlayerGainArmour(Player* const p, const float perc){
 
 void UpdatePlayers(Game_data* const g_d){
 	for(unsigned int i = 0U; i < g_d->champions.num; ++i){
+		if(i != g_d->human_indx){
+			UpdateCPUPlayerFlags(g_d, i);
+		}
 		UpdatePlayer(g_d, i);
     }
+}
+
+static void UpdateCPUPlayerFlags(Game_data* const g_d, const unsigned int indx){
+	Player* const p = g_d->champions.array + indx;
+	unsigned int next_i = (indx + 1U) % g_d->champions.num;
+	if(next_i == g_d->human_indx && g_d->champions.num > 2U){
+		next_i = (next_i + 1U) % g_d->champions.num;
+	}
+	if(pow2((g_d->champions.array + next_i)->position.x - p->position.x) + pow2((g_d->champions.array + next_i)->position.y - p->position.y) < pow2(PLAYER_SIZE * 2.0F)){
+		if(indx % 2U == 0U) p->flags |= left;
+		else p->flags |= right;
+	}else{
+		p->flags &= ~(left | right);
+	}
+	Being* target;
+	float d_x;
+	float d_y;
+	float d_squared;
+	if(target = BeingNear(p->segment, g_d)){
+		d_x = target->position.x - p->position.x;
+		d_y = target->position.y - p->position.y;
+		d_squared = pow2(d_x) + pow2(d_y);
+		if(IsClearSightWithKnownDistance(&p->position, target->segment, &g_d->world, d_x, d_y, d_squared)){
+			p->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
+			if(d_squared <= pow2(BEING_ATTACK_DISTANCE)){
+				p->flags &= ~(back);
+				if(d_squared <= pow2(BEING_HALT_DISTANCE)){
+					p->flags &= ~(forward | run);
+				}else{
+					p->flags |= forward;
+				}
+				if((p->flags & (attack | range_mode)) != attack){
+					p->flags &= ~(range_mode);
+					p->flags |= attack;
+				}else if((p->flags & (attack | range_mode)) == attack && SDL_randf() < 0x1.0p-7F){
+					p->flags &= ~(attack);
+				}
+				return;
+			}
+			d_x = p->position.x - (g_d->champions.array + g_d->human_indx)->position.x;
+			d_y = p->position.y - (g_d->champions.array + g_d->human_indx)->position.y;
+			d_squared = pow2(d_x) + pow2(d_y);
+			if(d_squared > pow2(SEGMENT_SIZE)){
+				const float direction_to_main_player = arctan2(d_y, d_x) - SDL_PI_F * 0.5F;
+				const float direc_diff = SDL_fabsf(p->direction - direction_to_main_player);
+				if(direc_diff > SDL_PI_F * 0.5F && direc_diff < SDL_PI_F * 1.5F){
+					p->flags |= back;
+				}else{
+					p->flags &= ~(back);
+				}
+			}else{
+				p->flags &= ~(back);
+			}
+			p->flags &= ~(forward | run);
+			p->flags |= range_mode | attack;
+			return;
+		}
+	}
+	p->flags &= ~(attack | back);
+	d_x = (g_d->champions.array + g_d->human_indx)->position.x - p->position.x;
+	d_y = (g_d->champions.array + g_d->human_indx)->position.y - p->position.y;
+	d_squared = pow2(d_x) + pow2(d_y);
+	if(!IsClearSightWithKnownDistance(&p->position, (g_d->champions.array + g_d->human_indx)->segment, &g_d->world, d_x, d_y, d_squared)){
+		d_x = SegmentCenterX((g_d->champions.array + g_d->human_indx)->last_seen_in) - p->position.x;
+		d_y = SegmentCenterY((g_d->champions.array + g_d->human_indx)->last_seen_in) - p->position.y;
+	}
+	p->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
+	if(d_squared < pow2(SEGMENT_SIZE)){
+		p->flags &= ~(forward | run);
+		return;
+	}
+	p->flags |= forward;
+	if(d_squared > pow2(SEGMENT_SIZE * 2.0F)){
+		p->flags |= run;
+	}else{
+		p->flags &= ~(run);
+	}
+}
+
+static inline Being* BeingNear(Segment* s, Game_data* const gd){
+	if(s->beings.num > 0U){
+		return gd->beings.array + *s->beings.beings_ind;
+	}
+	int c = s->indx.x;
+	int r = s->indx.y;
+	unsigned int i = 0U;
+	int sign = 1;
+	do{
+		unsigned int j = 0U;
+		unsigned int k = 0U;
+		++i;
+		while(j < i){
+			c += sign;
+			s = GetSegmentByIndxSafe(&gd->world, c, r);
+			if(s && s->beings.num > 0U){
+				return gd->beings.array + *s->beings.beings_ind;
+			}
+			++j;
+		}
+		while(k < i){
+			r += sign;
+			s = GetSegmentByIndxSafe(&gd->world, c, r);
+			if(s && s->beings.num > 0U){
+				return gd->beings.array + *s->beings.beings_ind;
+			}
+			++k;
+		}
+		sign *= -1;
+	}while(i < 13);
+	return NULL;
 }

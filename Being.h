@@ -8,12 +8,14 @@ static void AddBeingToSegment(Segment* const, Being* const, Segment_beings* cons
 static void RemoveBeingFromSegment(Being* const, Segment_beings* const, Being* const);
 void DestroyBeings(Beings_array* const);
 void AddBeingToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
+static void GetBeingDistances(const Being* const, const SDL_FPoint* const, float* const, float* const, float* const);
 static void MoveBeing(Being* const, const float, const float);
 static void SetBeingPosition(Being* const, const float, const float);
 static void SetBeingPositionInNewSegment(Being* const, const float, const float, Segment* const, Being* const);
 static void SetAllyPositionInNewSegment(Being* const, const float, const float, Segment* const, Being* const);
 static void MoveBeingX(Being* const, const float);
 static void MoveBeingY(Being* const, const float);
+static bool CircleMeetsBeing(const float, const float, const float, Being* const);
 static void MoveBeingToSegment(Being* const, Segment* const, Being* const);
 static void MoveAllyToSegment(Being* const, Segment* const, Being* const);
 
@@ -29,12 +31,14 @@ static bool ResolveBeingCollisionInNewSegment(Being* const, Segment* const, floa
 static void TurnBeingWalk(Being* const);
 
 static void UpdateBeingWalk(Being* const, Game_data* const);
-static void UpdateBeingShoot(Being* const, Projectiles_array* const, const World* const);
+static void UpdateBeingShoot(Being* const, Projectiles_array* const, const World* const, const SDL_FPoint* const, Segment* const);
 static void UpdateBeingStrike(Being* const, Player* const, float const, float const, float const, Game_data* const);
+static void UpdateBeingStrikeAlly(Being* const, float const, float const, float const, Game_data* const);
 static void UpdateBeingSearch(Being* const, Game_data* const);
 static void UpdateBeingFollow(Being* const, float const, float const, float const, Game_data* const);
 static void UpdateBeingStunned(Being* const);
 static void UpdateBeingFly(Being* const, Game_data* const);
+static void UpdateBeingAttackAlly(Being* const b, Game_data* const gd, const float attack_range);
 
 static void MoveStrikingBeing(Being* const, float const, float const, float const, Game_data* const);
 static void MoveBackStrikingBeing(Being* const, float const, float const, float const, Game_data* const);
@@ -56,6 +60,9 @@ static bool HasTargetForAlly(const int, const int, Being* const, Game_data* cons
 static bool FindAllyTargetFar(Being* const, Game_data* const, const int);
 static bool FindAllyTarget(Being* const, Game_data* const);
 static void TurnBlockedAlly(Being* const, Game_data* const);
+static bool AllyNear(Being* const, Game_data* const);
+static bool FindBeingTargetFar(Being* const, Game_data* const, const int);
+static bool HasAllyForBeingTarget(const int, const int, Being* const, Game_data* const);
 
 static void StartAllyFollow(Being* const, const int);
 static void UpdateAllyFollow(Being* const, Game_data* const);

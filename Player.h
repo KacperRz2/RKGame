@@ -7,11 +7,11 @@ void MovePlayer(Game_data* const, Player* const, const float, const float);
 static void UpdatePlayerMove(Game_data* const, const unsigned int);
 static void UpdatePlayerDirection(Player* const);
 static void UpdatePlayerPoints(Player* const);
-void UpdatePlayer(Game_data* const, const unsigned int);
+static void UpdatePlayer(Game_data* const, const unsigned int);
 static void ShiftBlade(Blade* const, Placement*);
 static void SetBladePosition(Blade* const, const Placement*);
 static void SetShiftToBase(Blade* const, Placement* const, const unsigned int);
-static inline void SetBladePositionToBase(Blade* const);
+static void SetBladePositionToBase(Blade* const);
 static void SetShiftToPosition(Blade*, Placement* const, const Placement* const, const unsigned int);
 static Placement GetBladeLocation(Player* const, float* const, float* const);
 static bool BladeHitsBeing(Blade* const, Placement* const, Being* const, SDL_FPoint* const);
@@ -32,5 +32,7 @@ static void BlockPlayerFatigue(Player* const, const int);
 static void BlockPlayerArmourRegen(Player* const, const int);
 static void PlayerGainArmour(Player* const, const float);
 void UpdatePlayers(Game_data* const);
+static void UpdateCPUPlayerFlags(Game_data* const, const unsigned int);
+static Being* BeingNear(Segment* s, Game_data* const);
 
 #endif
