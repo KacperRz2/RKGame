@@ -235,59 +235,66 @@ void RenderTextInfo(SDL_Renderer* const rend, const Uint64 tps, Game_data* const
 }
 
 static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
+	const float frame_w = rend_data->viewfinder_rect.y;
+	const float bar_x = frame_w * 2.0F;
+	const float bar_w = rend_data->viewfinder_rect.x - frame_w * 4.0F;
+	const float bar_h = 30.0F;
+	const float small_bar_h = 20.0F;
+	const float y_space = 10.0F;
+	const float small_y_space = 2.0F;
 	const SDL_FRect rect0a = {
-		10.0F,
+		bar_x,
 		half(rend_data->window_h),
-		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
-		30.0F
+		bar_w,
+		bar_h
 	};
 	const SDL_FRect rect1a = {
-		half(rend_data->window_w - rend_data->viewfinder) + rend_data->viewfinder + 10.0F,
-		half(rend_data->window_h) + 40.0F,
-		(rend_data->window_w - rend_data->viewfinder) * 0.48F,
-		30.0F
+		rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + bar_x,
+		half(rend_data->window_h) + bar_h + y_space,
+		bar_w,
+		bar_h
 	};
 	const SDL_FRect rect2a = {
-		10.0F,
-		half(rend_data->window_h) + 40.0F,
-		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
-		30.0F
+		bar_x,
+		half(rend_data->window_h) + bar_h + y_space,
+		bar_w,
+		bar_h
 	};
 	const SDL_FRect rect0b = {
-		11.0F,
+		bar_x + 1.0F,
 		half(rend_data->window_h) + 1.0F,
 		(float)p->hit_points / (float)p->max_h_p * (rect0a.w - 2.0F),
-		28.0F
+		bar_h - 2.0F
 	};
 	const SDL_FRect rect2b = {
-		11.0F,
-		half(rend_data->window_h) + 41.0F,
+		bar_x + 1.0F,
+		half(rend_data->window_h) + bar_h + y_space + 1.0F,
 		(float)p->fatigue_points / (float)p->max_fatigue * (rect2a.w - 2.0F),
-		28.0F
+		bar_h - 2.0F
 	};
 	const SDL_FRect rect_armoa = {
-		10.0F,
-		half(rend_data->window_h) - 44.0F,
-		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
-		20.0F
+		bar_x,
+		half(rend_data->window_h) - (small_bar_h + small_y_space) * 2.0F,
+		bar_w,
+		small_bar_h
 	};
 	const SDL_FRect rect_armob = {
-		11.0F,
-		half(rend_data->window_h) - 43.0F,
+		bar_x + 1.0F,
+		rect_armoa.y + 1.0F,
 		((1.0F - p->armour.multipl) / (1.0F - p->max_armour.multipl)) * (rect_armoa.w - 2.0F),
-		18.0F
+		small_bar_h - 2.0F
 	};
 	const SDL_FRect rect_marmoa = {
-		10.0F,
-		half(rend_data->window_h) - 22.0F,
-		(rend_data->window_w - rend_data->viewfinder) * 0.49F,
-		20.0F
+		bar_x,
+		half(rend_data->window_h) - small_bar_h - small_y_space,
+		bar_w,
+		small_bar_h
 	};
 	const SDL_FRect rect_marmob = {
-		11.0F,
-		half(rend_data->window_h) - 21.0F,
+		bar_x + 1.0F,
+		rect_marmoa.y + 1.0F,
 		((1.0F - p->armour.magic_multipl) / (1.0F - p->max_armour.magic_multipl)) * (rect_armoa.w - 2.0F),
-		18.0F
+		small_bar_h - 2.0F
 	};
 	SDL_SetRenderDrawColor(rend_data->renderer, 255U, 255U, 255U, 0U);
 	SDL_RenderRect(rend_data->renderer, &rect_armoa);
@@ -305,8 +312,26 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 	SDL_RenderFillRect(rend_data->renderer, &rect2b);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 127U, 255U, 255U);
 	SDL_SetRenderScale(rend_data->renderer, 2.0F, 4.0F);
-	SDL_RenderDebugTextFormat(rend_data->renderer, (half(rend_data->window_w - rend_data->viewfinder) + rend_data->viewfinder + 11.0F) * 0.5F, (half(rend_data->window_h) + 41.0F) * 0.25F, "%d", p->magic_points);
+	SDL_RenderDebugTextFormat(rend_data->renderer, (rect1a.x + 1.0F) * 0.5F, (rect1a.y + 1.0F) * 0.25F, "%d", p->magic_points);
 	SDL_SetRenderScale(rend_data->renderer, 1.0F, 1.0F);
+	if(p->blade.charge != PC_BLADE_CHARGE_BASE){
+		const SDL_FRect rect_cha = {
+			half(rend_data->window_w) - half(PLAYER_SIZE),
+			PLAYER_REND_Y + PLAYER_SIZE,
+			PLAYER_SIZE,
+			10.0F
+		};
+		const SDL_FRect rect_chb = {
+			half(rend_data->window_w) - (half(PLAYER_SIZE) - 1.0F),
+			PLAYER_REND_Y + PLAYER_SIZE + 1.0F,
+			(1.0F - p->blade.charge) * (rect_cha.w - 2.0F),
+			8.0F
+		};
+		SDL_SetRenderDrawColor(rend_data->renderer, 255U, 255U, 255U, 0U);
+		SDL_RenderRect(rend_data->renderer, &rect_cha);
+		SDL_SetRenderDrawColor(rend_data->renderer, (Uint8)((1.0F - p->blade.charge) * 255.0F), (Uint8)(p->blade.charge * 255.0F), 0U, 0U);
+		SDL_RenderFillRect(rend_data->renderer, &rect_chb);
+	}
 }
 
 void RenderMainMenu(Render_data* const rend_data){
@@ -329,6 +354,7 @@ void RenderGame(Render_data* const rend_data, Game_data* const g_d){
 	SetSineCosine(rend_data, g_d->champions.array + g_d->human_indx);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 0);
 	SDL_RenderClear(rend_data->renderer);
+	RenderBackground(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 0);
 	SDL_RenderFillRect(rend_data->renderer, NULL);
@@ -649,4 +675,180 @@ static inline Placement GetWeaponPlacement(Placement* const start, Placement* co
 		},
 		start->direction + (end->direction - start->direction) / (float)steps * step
 	};
+}
+
+static void RenderBackground(Render_data* const rend_data){
+	const float frame_w = rend_data->viewfinder_rect.y;
+	const SDL_FRect rects[16] = {
+		{
+			frame_w,
+			frame_w,
+			rend_data->viewfinder_rect.x - frame_w * 2.0F,
+			rend_data->window_h - frame_w * 2.0
+		}, {
+			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w,
+			frame_w,
+			rend_data->viewfinder_rect.x - frame_w * 2.0F,
+			rend_data->window_h - frame_w * 2.0
+		}, {//
+			rend_data->viewfinder_rect.x - frame_w * 2.0F,
+			0.0F,
+			frame_w,
+			frame_w
+		}, {
+			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w,
+			0.0F,
+			frame_w,
+			frame_w
+		}, {
+			rend_data->viewfinder_rect.x - frame_w * 2.0F,
+			rend_data->viewfinder_rect.y + rend_data->viewfinder_rect.h,
+			frame_w,
+			frame_w
+		}, {
+			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w,
+			rend_data->viewfinder_rect.y + rend_data->viewfinder_rect.h,
+			frame_w,
+			frame_w
+		}, {//
+			0.0F,
+			0.0F,
+			frame_w,
+			frame_w
+		}, {
+			0.0F + rend_data->window_w - frame_w,
+			0.0F,
+			frame_w,
+			frame_w
+		}, {
+			0.0F,
+			0.0F + rend_data->window_h - frame_w,
+			frame_w,
+			frame_w
+		}, {
+			0.0F + rend_data->window_w - frame_w,
+			0.0F + rend_data->window_h - frame_w,
+			frame_w,
+			frame_w
+		}, {//
+			frame_w,
+			0.0F,
+			rend_data->viewfinder_rect.x - frame_w * 3.0F,
+			frame_w
+		}, {
+			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w * 2.0F,
+			0.0F,
+			rend_data->viewfinder_rect.x - frame_w * 3.0F,
+			frame_w
+		}, {
+			frame_w,
+			rend_data->window_h - frame_w,
+			rend_data->viewfinder_rect.x - frame_w * 3.0F,
+			frame_w
+		}, {
+			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w * 2.0F,
+			rend_data->window_h - frame_w,
+			rend_data->viewfinder_rect.x - frame_w * 3.0F,
+			frame_w
+		}, {//
+			0.0F,
+			frame_w,
+			frame_w,
+			rend_data->window_h - frame_w * 2.0F
+		}, {
+			rend_data->window_w - frame_w,
+			frame_w,
+			frame_w,
+			rend_data->window_h - frame_w * 2.0F
+		}
+	};
+	const SDL_FRect src_rects[6] = {
+		{0.0F, 0.0F, 512.0F, 1024.0F},
+		{512.0F, 0.0F, 512.0F, 1024.0F},
+		{0.0F, 0.0F, 8.0F, 8.0F},
+		{8.0F, 0.0F, 8.0F, 8.0F},
+		{0.0F, 8.0F, 8.0F, 8.0F},
+		{8.0F, 8.0F, 8.0F, 8.0F}
+	};
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects, rects);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects + 1, rects + 1);
+
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 2, 180.0, NULL, SDL_FLIP_NONE);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 3, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 4, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 5);
+
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 6);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 8, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 9, 180.0, NULL, SDL_FLIP_NONE);
+
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 10, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 11, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 12);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 13);
+
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 14, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 15);
+
+	RenderFrame(rend_data, &(SDL_FRect)VIEWFINDER_FRAME, frame_w);
+}
+
+static void RenderFrame(Render_data* const rend_data, const SDL_FRect* const frame, const float width){
+	const SDL_FRect rects[8] = {
+		{
+			frame->x,
+			frame->y,
+			width,
+			width
+		}, {
+			frame->x + frame->w - width,
+			frame->y,
+			width,
+			width
+		}, {
+			frame->x,
+			frame->y + frame->h - width,
+			width,
+			width
+		}, {
+			frame->x + frame->w - width,
+			frame->y + frame->h - width,
+			width,
+			width
+		}, {//
+			frame->x + width,
+			frame->y,
+			frame->w - width * 2.0F,
+			width
+		}, {
+			frame->x + width,
+			frame->y + frame->h - width,
+			frame->w - width * 2.0F,
+			width
+		}, {
+			frame->x,
+			width,
+			width,
+			frame->h - width * 2.0F
+		}, {
+			frame->x + frame->w - width,
+			width,
+			width,
+			frame->h - width * 2.0F
+		}
+	};
+	const SDL_FRect src_rects[3] = {
+		{0.0F, 0.0F, 8.0F, 8.0F},
+		{8.0F, 0.0F, 8.0F, 8.0F},
+		{0.0F, 8.0F, 8.0F, 8.0F}
+	};
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects + 1, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects + 2, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects + 3, 180.0, NULL, SDL_FLIP_NONE);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 1, rects + 4);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 1, rects + 5, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 6);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
 }

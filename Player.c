@@ -545,10 +545,15 @@ static void UpdateCPUPlayerFlags(Game_data* const g_d, const unsigned int indx){
 		next_i = (next_i + 1U) % g_d->champions.num;
 	}
 	if(pow2((g_d->champions.array + next_i)->position.x - p->position.x) + pow2((g_d->champions.array + next_i)->position.y - p->position.y) < pow2(PLAYER_SIZE * 2.0F)){
-		if(indx % 2U == 0U) p->flags |= left;
-		else p->flags |= right;
+		if(indx % 2U == 0U){
+			p->flags |= left;
+			p->flags &= ~(right);
+		}else{
+			p->flags |= right;
+			p->flags &= ~(left);
+		}
 	}else{
-		p->flags &= ~(left | right);
+		p->flags &= ~(right | left);
 	}
 	Being* target;
 	float d_x;
@@ -580,9 +585,17 @@ static void UpdateCPUPlayerFlags(Game_data* const g_d, const unsigned int indx){
 			d_squared = pow2(d_x) + pow2(d_y);
 			if(d_squared > pow2(SEGMENT_SIZE)){
 				const float direction_to_main_player = arctan2(d_y, d_x) - SDL_PI_F * 0.5F;
-				const float direc_diff = SDL_fabsf(p->direction - direction_to_main_player);
-				if(direc_diff > SDL_PI_F * 0.5F && direc_diff < SDL_PI_F * 1.5F){
+				float direc_diff = p->direction - direction_to_main_player;
+				if(direc_diff < 0.0F){
+					direc_diff += FULL_ANGLE;
+				}
+				if(direc_diff < SDL_PI_F * 1.5F && direc_diff > SDL_PI_F * 0.5F){
 					p->flags |= back;
+					if(direc_diff < SDL_PI_F * 0.75F){
+						p->flags |= left;
+					}else if(direc_diff > SDL_PI_F * 1.25F){
+						p->flags |= right;
+					}
 				}else{
 					p->flags &= ~(back);
 				}

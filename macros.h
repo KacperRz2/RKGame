@@ -29,7 +29,7 @@
 #define RUN_MULTIPL		            2.0F
 #define BLOCK_VELOCITY_MULTIP		0.5F
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        24
+#define TEXTURE_FILES_NUM	        26
 #define TEXTURE_TARGET_NUM	        0
 #define TEXTURE_CREATED_NUM	        1
 #define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
@@ -105,8 +105,7 @@
 #define PC_BLADE_STRIKE_STEPS       32
 #define PC_BLADE_AFTER_BLOCK_STEPS  512
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
-#define VIEWFINDER_WINDOW_H_PART    0.984375F
-#define VIEWFINDER_SIZE             (rend_data->window_h * VIEWFINDER_WINDOW_H_PART)
+#define VIEWFINDER_SIZE             (rend_data->window_h - 16.0F)
 #define BLADE_HANDLER_POSITION      0.85F
 #define PC_SHOOT_RELOAD             64
 #define GUN_SIGHT_SPREAD_MIN        8.0F
@@ -270,6 +269,8 @@
                                         "img13.bmp",\
                                         "img14.bmp",\
                                         "img15.bmp",\
+                                        "img16.bmp",\
+                                        "img17.bmp",\
                                         "void.bmp"\
                                     }
 #define PC_RECT                     {\
@@ -289,6 +290,12 @@
                                         0.0F,\
                                         SCROLL_TX_SIZE,\
                                         SCROLL_TX_SIZE\
+                                    }
+#define VIEWFINDER_FRAME            {\
+                                        rend_data->viewfinder_rect.x - rend_data->viewfinder_rect.y,\
+                                        0.0F,\
+                                        rend_data->viewfinder_rect.w + rend_data->viewfinder_rect.y * 2.0F,\
+                                        rend_data->viewfinder_rect.h + rend_data->viewfinder_rect.y * 2.0F\
                                     }
 #define PC_SHIELD_RECT              {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F),\
@@ -340,5 +347,6 @@
                                     0, 1, 1, 1, 1, 1, 0,\
                                     0, 0, 1, 1, 1, 0, 0,\
                                 }
+#define ZERO_POINT_F            ((SDL_FPoint){0.0F, 0.0F})
 
 #endif

@@ -25,6 +25,8 @@ enum texture_num{
     tx_weapon,
     tx_being2,
     tx_terrain1,
+    tx_backgr0,
+    tx_backgr1,
     tx_void,
     tx_map
 };

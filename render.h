@@ -28,5 +28,7 @@ static void	RenderPlayers(Render_data* const, const float, Player**, SDL_FPoint*
 static void	RenderBarriers(Render_data* const, const float, Player**, SDL_FPoint*, const unsigned int);
 static Placement GetBeingWeaponPlacement(const Being* const);
 static Placement GetWeaponPlacement(Placement* const, Placement* const, const int, const int);
+static void RenderBackground(Render_data* const);
+static void RenderFrame(Render_data* const, const SDL_FRect* const, const float);
 
 #endif
