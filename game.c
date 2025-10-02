@@ -62,7 +62,7 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 		if(now > prev_frame_time + FRAME_TIME){
 			prev_frame_time = now;
             RenderGame(rend_data, &game_data);
-			RenderTextInfo(rend_data->renderer, tps, &game_data);
+			RenderTextInfo(rend_data, tps, &game_data);
 			SDL_RenderPresent(rend_data->renderer);
 		}
 

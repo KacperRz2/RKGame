@@ -3,7 +3,7 @@
 
 enum texture_num{
     tx_pc,
-    tx_compass,
+    tx_icon,
     tx_projectile,
     tx_being,
     tx_viewfinder,

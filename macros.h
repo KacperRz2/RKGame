@@ -53,6 +53,8 @@
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
 
+#define WINDOW_START_W              1600
+#define WINDOW_START_H              900
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
 #define NAP_TICKS                   512
@@ -71,8 +73,6 @@
 #define BEING_MIN_DISTANCE          64.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define UPDATE_BEINGS_INTERVAL      1U
-#define WINDOW_START_W              1920
-#define WINDOW_START_H              1080
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
 #define PC_HP                       3000
 #define PC_FATIGUE                  1000
@@ -137,6 +137,14 @@
 #define BARRIER_MAGNIFICATION       0.25F
 #define WEAPON_ATTACK_Y             24.0F
 #define MAX_PC_ARMOUR_ABSORP        200.0F
+#define FRAME_W                     rend_data->viewfinder_rect.y
+#define BAR_H                       (SDL_floorf(rend_data->window_h / 32.0F))
+#define AREAA_H                     (BAR_H * 3.0F + FRAME_W * 6.0F)
+#define AREAA_Y                     (rend_data->window_h - AREAA_H - FRAME_W * 2.0F)
+#define ICON_X                      (FRAME_W * 3.0F)
+#define BAR_X                       (ICON_X + BAR_H + FRAME_W * 2.0F)
+#define BAR_W                       (rend_data->viewfinder_rect.x - FRAME_W * 8.0F - BAR_H)
+#define SMALL_BAR_H                 (BAR_H * 0.5F)
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -348,5 +356,6 @@
                                     0, 0, 1, 1, 1, 0, 0,\
                                 }
 #define ZERO_POINT_F            ((SDL_FPoint){0.0F, 0.0F})
+#define FRAME_PART_0            ((SDL_FRect){8.0F, 0.0F, 8.0F, 8.0F})
 
 #endif
