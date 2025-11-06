@@ -5,11 +5,6 @@
 #define FULL_ANGLE			        (SDL_PI_F * 2.0F)
 #define pow2(x)                     ((x) * (x))
 #define half(x)                     ((x) * (0.5F))
-#define VIEWFINDER_CENTER	        (rend_data->viewfinder * 0.5F)
-#define WINDOW_CENTER_Y		        (rend_data->window_h / 2)
-#define VIEWFINDER_BEFORE_PC_PART   0.9375F
-#define PLAYER_REND_Y               (rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART)
-#define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(rend_data->viewfinder))
 #define BIG_SEGMENTS_X              29U
 #define BIG_SEGMENT_SEGMENTS_X      16U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
@@ -29,18 +24,13 @@
 #define RUN_MULTIPL		            2.0F
 #define BLOCK_VELOCITY_MULTIP		0.5F
 #define ROTATION_SPEED		        3.90625e-3F
-#define TEXTURE_FILES_NUM	        26
-#define TEXTURE_TARGET_NUM	        0
-#define TEXTURE_CREATED_NUM	        1
-#define TEXTURES_NUM		        (TEXTURE_FILES_NUM + TEXTURE_TARGET_NUM + TEXTURE_CREATED_NUM)
-#define SIGHT_SQUARED   	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT))
-#define SIGHT_BACK_SQUARED	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT))
 #define FRAME_TIME			        0x400000ULL
 #define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
 #define MAX_PROJECTILES_NUM	        0x4000U
 #define MAX_SEGM_BEINGS		        0x10U
-#define MAX_BEINGS_NUM		        0x8000U
+#define MAX_BEINGS_NUM		        0x4000U
 #define MAX_PLAYERS_NUM		        0x4U
+#define START_PLAYERS_NUM		    0x1U
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BLADE_SIZE                  64.0F
@@ -52,9 +42,8 @@
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
+#define TEXTURES_NUM		        31
 
-#define WINDOW_START_W              1600
-#define WINDOW_START_H              900
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
 #define NAP_TICKS                   512
@@ -105,20 +94,15 @@
 #define PC_BLADE_STRIKE_STEPS       32
 #define PC_BLADE_AFTER_BLOCK_STEPS  512
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
-#define VIEWFINDER_SIZE             (rend_data->window_h - 16.0F)
 #define BLADE_HANDLER_POSITION      0.85F
 #define PC_SHOOT_RELOAD             64
-#define GUN_SIGHT_SPREAD_MIN        8.0F
-#define GUN_SIGHT_SPREAD_RANGE      (GUN_SIGHT_SPREAD_MIN * 4.0F)
-#define GUN_SIGHT_MIN_DISTANCE      PLAYER_SIZE
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x1U)
+#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x40U)
 #define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
 #define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
 #define PC_START_COINS              123
-#define MINIMAP_PC_SIZE             8.0F
-#define KEYS_NUM                    8U
+#define KEYS_NUM                    7U
 #define BOXES_NUM                   0x200U
 #define BOX_SIZE                    32.0F
 #define BOX_SLOTS                   8
@@ -126,25 +110,21 @@
 #define PC_BLOCK_FATIG_BLOCK_TIME   50
 #define DEFAULT_FLY_VELOCITY        0.5F
 #define QUICK_SCROLLS               9U
-#define SCROLLS_NUM                 8U
+#define SCROLLS_NUM                 35U
 #define SCROLL_SIZE                 32.0F
 #define BEING_TYPES_NUM             2U
 #define MAX_BEING_EFFECTS           8
 #define MAX_PC_EFFECTS              8
 #define MAX_GAME_EFFECTS            8
-#define SCROLL_TX_SIZE              128.0F
 #define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
-#define BARRIER_MAGNIFICATION       0.25F
 #define WEAPON_ATTACK_Y             24.0F
 #define MAX_PC_ARMOUR_ABSORP        200.0F
-#define FRAME_W                     rend_data->viewfinder_rect.y
-#define BAR_H                       (SDL_floorf(rend_data->window_h / 32.0F))
-#define AREAA_H                     (BAR_H * 3.0F + FRAME_W * 6.0F)
-#define AREAA_Y                     (rend_data->window_h - AREAA_H - FRAME_W * 2.0F)
-#define ICON_X                      (FRAME_W * 3.0F)
-#define BAR_X                       (ICON_X + BAR_H + FRAME_W * 2.0F)
-#define BAR_W                       (rend_data->viewfinder_rect.x - FRAME_W * 8.0F - BAR_H)
-#define SMALL_BAR_H                 (BAR_H * 0.5F)
+#define ICONS_IN_VIEWF_ROW          7
+#define BOX_MAX_COINS               256U
+#define BOX_MAX_MP                  32U
+#define MAX_KEYS                    16U
+#define MAX_MAPS                    32U
+#define SMALL_PLAN_SIZE             (BIG_SEGMENTS_X / 4)
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -154,7 +134,12 @@
 #define KEY_RUN                     SDL_SCANCODE_LALT
 #define KEY_ACTION                  SDL_SCANCODE_E
 #define KEY_SWITCH_RANGE            SDL_SCANCODE_Q
-#define KEY_TMP                     SDL_SCANCODE_H
+#define KEY_MANAGE_SCROLLS          SDL_SCANCODE_I
+#define KEY_TMP                     SDL_SCANCODE_PERIOD
+#define KEY_TMP1                    SDL_SCANCODE_H
+#define KEY_SELECT                  SDL_SCANCODE_E
+#define KEY_FULLSCR                 SDL_SCANCODE_F11
+#define KEY_WINDOWED                SDL_SCANCODE_F12
 #define BUTTON_ATTACK               SDL_BUTTON_LEFT
 #define BUTTON_BLOCK                SDL_BUTTON_RIGHT
 
@@ -165,7 +150,9 @@
                                         1U,\
                                         1U,\
                                         1U,\
-                                        1U,\
+                                        1U,1U,1U,1U,1U,1U,1U,1U,1U,1U,\
+                                        1U,1U,1U,1U,1U,1U,1U,1U,1U,1U,\
+                                        1U,1U,1U,1U,1U,1U,1U,1U,\
                                         0U\
                                     }
 #define SCR_EFFECTS                 {\
@@ -176,6 +163,9 @@
                                         effect4,\
                                         effect5,\
                                         effect6,\
+                                        EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
+                                        EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
+                                        EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
                                         EffectEmpty\
                                     }
 #define BEING_TYPES                 {\
@@ -218,21 +208,6 @@
 #define BEING_WEAPON_PREPARE_PLCMNT {{20.0F, -16.0F}, 0.5F}
 #define BEING_WEAPON_ATTACK_PLCMNT  {{0.0F, 24.0F}, 0.0F}
 #define PC_BLADE_BASE_PLCMNT        {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_PC}
-#define BEINGS_TEXTURES             {\
-                                        tx_being,\
-                                        tx_being1,\
-                                        tx_being2\
-                                    }
-#define BEINGS_WEAPON_TEXTURES      {\
-                                        tx_being_blade,\
-                                        tx_weapon,\
-                                        tx_void\
-                                    }
-#define PROJECTILE_TEXTURES         {\
-                                        tx_projectile,\
-                                        tx_h_projectile,\
-                                        tx_h_projectile\
-                                    }
 #define PC_BLADE_FRAMES0	        {\
                                         {{16.0F, -8.0F}, SDL_PI_F * 0.55F},\
                                         {{6.0F, 8.0F}, SDL_PI_F * 0.25F},\
@@ -253,68 +228,7 @@
                                         {{-1.0F, 24.0F}, 0.0F},\
                                         {{0.0F, 25.0F}, 0.0F}\
                                     }
-#define TEXTURE_FILES_NAMES         {\
-                                        "img0.bmp",\
-                                        "img1.bmp",\
-                                        "img2.bmp",\
-                                        "being.bmp",\
-                                        "img3.bmp",\
-                                        "img4.bmp",\
-                                        "img5.bmp",\
-                                        "img6.bmp",\
-                                        "img7.bmp",\
-                                        "img8.bmp",\
-                                        "img9.bmp",\
-                                        "imgA.bmp",\
-                                        "imgB.bmp",\
-                                        "imgC.bmp",\
-                                        "imgD.bmp",\
-                                        "imgE.bmp",\
-                                        "imgF.bmp",\
-                                        "img10.bmp",\
-                                        "img11.bmp",\
-                                        "img12.bmp",\
-                                        "img13.bmp",\
-                                        "img14.bmp",\
-                                        "img15.bmp",\
-                                        "img16.bmp",\
-                                        "img17.bmp",\
-                                        "void.bmp"\
-                                    }
-#define PC_RECT                     {\
-                                        VIEWFINDER_CENTER - half(PLAYER_SIZE),\
-                                        VIEWFINDER_CENTER - half(PLAYER_SIZE) + PLAYER_REND_Y_SHIFT,\
-                                        (float)PLAYER_SIZE,\
-                                        (float)PLAYER_SIZE\
-                                    }
-#define PC_SCROLL_RECT              {\
-                                        VIEWFINDER_CENTER,\
-                                        VIEWFINDER_CENTER - SCROLL_SIZE + PLAYER_REND_Y_SHIFT,\
-                                        SCROLL_SIZE,\
-                                        SCROLL_SIZE\
-                                    }
-#define SRC_SCROLL_RECT             {\
-                                        0.0F,\
-                                        0.0F,\
-                                        SCROLL_TX_SIZE,\
-                                        SCROLL_TX_SIZE\
-                                    }
-#define VIEWFINDER_FRAME            {\
-                                        rend_data->viewfinder_rect.x - rend_data->viewfinder_rect.y,\
-                                        0.0F,\
-                                        rend_data->viewfinder_rect.w + rend_data->viewfinder_rect.y * 2.0F,\
-                                        rend_data->viewfinder_rect.h + rend_data->viewfinder_rect.y * 2.0F\
-                                    }
-#define PC_SHIELD_RECT              {\
-                                        VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F),\
-                                        VIEWFINDER_CENTER - half(PLAYER_SIZE * 2.0F) + PLAYER_REND_Y_SHIFT,\
-                                        (float)PLAYER_SIZE * 2.0F,\
-                                        (float)PLAYER_SIZE * 2.0F\
-                                    }
-#define WEAPON_ROTATION_POINT       {\
-                                        half(BLADE_SIZE),\
-                                        BLADE_SIZE * BLADE_HANDLER_POSITION\
-                                    }
+
 #define WORLD_BASE              {\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
@@ -350,12 +264,11 @@
                                     0, 0, 1, 1, 1, 0, 0,\
                                     0, 1, 1, 1, 1, 1, 0,\
                                     1, 1, 1, 1, 1, 1, 1,\
-                                    1, 1, 1, 2, 1, 1, 1,\
+                                    1, 1, 1, 1, 1, 1, 1,\
                                     1, 1, 1, 1, 1, 1, 1,\
                                     0, 1, 1, 1, 1, 1, 0,\
                                     0, 0, 1, 1, 1, 0, 0,\
                                 }
 #define ZERO_POINT_F            ((SDL_FPoint){0.0F, 0.0F})
-#define FRAME_PART_0            ((SDL_FRect){8.0F, 0.0F, 8.0F, 8.0F})
 
 #endif

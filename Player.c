@@ -11,21 +11,17 @@
 #include <game.h>
 
 static void InitScrolls(Player* const p){
-	*p->scrolls = 99U;
-	*(p->scrolls + 1) = 99U;
-	*(p->scrolls + 2) = 99U;
-	*(p->scrolls + 3) = 99U;
-	for(unsigned int i = 4U; i < (unsigned int)scroll_empty; ++i){
+	*(p->scrolls + scroll_0) = 99U;
+	*(p->scrolls + scroll_1) = 99U;
+	*(p->scrolls + scroll_2) = 99U;
+	*(p->scrolls + scroll_3) = 99U;
+	for(unsigned int i = 4U; i < SCROLLS_NUM - 1U; ++i){
 		*(p->scrolls + i) = 0U;
 	}
-	*(p->scrolls + scroll_empty) = 0U;
+	*(p->scrolls + scroll_empty) = 1U;
 	*(p->scrolls_quick_access) = scroll_empty;
-	*(p->scrolls_quick_access + 1) = scroll_0;
-	*(p->scrolls_quick_access + 2) = scroll_1;
-	*(p->scrolls_quick_access + 3) = scroll_2;
-	*(p->scrolls_quick_access + 4) = scroll_3;
-	for(unsigned int i = 5U; i < QUICK_SCROLLS; ++i){
-		*(p->scrolls_quick_access + i) = scroll_empty;
+	for(unsigned int i = 1U; i < 9U; ++i){
+		*(p->scrolls_quick_access + i) = i - 1U;
 	}
 }
 
@@ -64,6 +60,7 @@ void CreatePlayer(Player* const p, const float x, const float y){
 	p->selected_scroll = scroll_empty;
 	InitScrolls(p);
     p->effects_num = 0U;
+	p->help_data.menu_position = 0U;
 }
 
 extern inline void SetPlayerPosition(Player* const p, const float x, const float y){
@@ -476,7 +473,7 @@ static void UpdatePlayerCast(Game_data* const g_d, const unsigned int indx){
 	}else if((g_d->champions.array + indx)->flags & cast){
 		(g_d->champions.array + indx)->flags &= ~(cast);
 		const int cost = ScrollCost((g_d->champions.array + indx)->selected_scroll);
-		if((g_d->champions.array + indx)->magic_points >= cost){
+		if(*((g_d->champions.array + indx)->scrolls + (g_d->champions.array + indx)->selected_scroll) > 0U && (g_d->champions.array + indx)->magic_points >= cost){
 			(g_d->champions.array + indx)->magic_points -= cost;
 			--(*((g_d->champions.array + indx)->scrolls + (g_d->champions.array + indx)->selected_scroll));
 			UseScroll(g_d);
@@ -659,4 +656,18 @@ static inline Being* BeingNear(Segment* s, Game_data* const gd){
 		sign *= -1;
 	}while(i < 13);
 	return NULL;
+}
+
+extern inline void SetQuickScroll(Player* const p, int num){
+	for(unsigned int i = 0U; i < 9U; ++i){
+		if(*(p->scrolls_quick_access + i) == p->help_data.menu_position){
+			if(i != num){
+				*(p->scrolls_quick_access + i) = *(p->scrolls_quick_access + num);
+				break;
+			}else{
+				return;
+			}
+		}
+	}
+	*(p->scrolls_quick_access + num) = p->help_data.menu_position;
 }

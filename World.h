@@ -17,5 +17,6 @@ bool IsClearSight(const SDL_FPoint* const, const SDL_FPoint* const, const Segmen
 bool IsClearSightWithKnownDistance(const SDL_FPoint* const, const Segment* const, const World* const, const float, const float, const float);
 bool SegmentInSight(const SDL_FPoint* const, const SDL_FPoint* const, const Segment* const, const World* const);
 static bool IsClearSightPlus(const SDL_FPoint* const, const SDL_FPoint* const, const Segment* const, const World* const);
+static void FillBoxes(Game_data* const);
 
 #endif

@@ -7,7 +7,7 @@ int main(int argc, char* argv[]){
 		*(si + i) = SDL_sinf(MIN_ANGLE * i);
 		*(co + i) = SDL_cosf(MIN_ANGLE * i);
 	}
-	SetRenderData(&rend_data, WINDOW_START_W, WINDOW_START_H);
+	SetRenderData(&rend_data);
 	if(GraphicsInitiation(&rend_data)) return 1;
 	while(1){
 		if(MainMenuLoop(&event, &rend_data) == menu_quit) break;

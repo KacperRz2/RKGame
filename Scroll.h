@@ -3,6 +3,7 @@
 
 int ScrollCost(const unsigned int);
 void UseScroll(Game_data* const);
+Uint8 GetRandomScroll();
 void effect0(Game_data* const);
 void effect1(Game_data* const);
 void effect2(Game_data* const);

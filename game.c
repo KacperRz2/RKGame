@@ -12,12 +12,18 @@
 
 int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
     int option = menu_unknown;
+	float angle = 0.0F;
     while(1){
-        RenderMainMenu(rend_data);
+		angle += 0.02F;
+		if(angle >= SDL_PI_F * 2.0F){
+			angle = 0.0F;
+		}
+        RenderMainMenu(rend_data, angle);
         option = MenuEventsService(e, rend_data);
         if(option != menu_unknown) break;
         SDL_Delay(FRAME_TIME_MS);
     }
+	ResetTextTextureAlpha(rend_data);
     return option;
 }
 
@@ -25,47 +31,36 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Game_data game_data;
 	SetGameData(&game_data);
 	DrawMap(rend_data, &game_data.world);
-	unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 now = 0ULL;
 	Uint64 timer;
-    bool quit = false;
+    int quit = 0;
 	Uint64 time = SDL_GetTicksNS();
 	Uint64 prev_frame_time = time;
 	Uint64 TPS_time = SDL_GetTicks();
     StartLevel(&game_data);
-    while(!quit){
+    while(quit != 1){
         timer = SDL_GetTicksNS();
-		quit = EventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
-		//TEST
-		if((game_data.champions.array + game_data.human_indx)->flags & tmp0){
-			(game_data.champions.array + game_data.human_indx)->flags = 0U;
-			(game_data.champions.array + game_data.human_indx)->selected_scroll = scroll_empty;
-			game_data.human_indx = (game_data.human_indx + 1U) % game_data.champions.num;
+		if(quit == 0){
+			quit = EventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
+		}else if(quit == event_manage_scrolls){
+			quit = ManageScrollsEventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
+			(game_data.champions.array + game_data.human_indx)->help_data.menu_position += SCROLLS_NUM;
+			(game_data.champions.array + game_data.human_indx)->help_data.menu_position %= SCROLLS_NUM;
 		}
-		//TEST
-		UpdatePlayers(&game_data);
-		UpdateProjectiles(&game_data);
-		if(ticks_to_update_beings == 0U){
-			UpdateBeings(&game_data);
-			ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
-		}else{
-			RareEventsService(&game_data);
-			--ticks_to_update_beings;
-		}
-		if((game_data.champions.array + game_data.human_indx)->hit_points < 1){
+		if(UpdateGame(&game_data)){
             break;
 		}
-
 		now = SDL_GetTicksNS();
 		if(now > prev_frame_time + FRAME_TIME){
 			prev_frame_time = now;
-            RenderGame(rend_data, &game_data);
-			RenderTextInfo(rend_data, tps, &game_data);
+            RenderGame(rend_data, &game_data, quit);
+			if((game_data.champions.array + game_data.human_indx)->flags & tmp1){
+				RenderTextInfo(rend_data, tps, &game_data);
+			}
 			SDL_RenderPresent(rend_data->renderer);
 		}
-
 		if(SDL_GetTicks() - TPS_time >= 1000ULL){
 			tps = tps_count;
 			tps_count = 0;
@@ -101,7 +96,6 @@ static void SetGameData(Game_data* const g_d){
 	g_d->beings.num = 0U;
 	g_d->projectiles.num = 0U;
 	g_d->keys = 0U;
-	g_d->needed_keys = KEYS_NUM;
 	g_d->effects_num = 0U;
 }
 
@@ -145,18 +139,11 @@ extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const
 		}
 	}
 	++bxs->num;
-	Box* bx = (bxs->array + new_box_indx);
-	bx->location.x = position_x;
-	bx->location.y = position_y;
-	AddToBox(bx, 0, box_coins, 32U);
-	AddToBox(bx, 1, box_key, 1U);
-	AddToBox(bx, 2, box_mp, (unsigned int)PC_MAGIC);
-	for(unsigned int i = 3U; i < BOX_SLOTS; ++i){
-		AddToBox(bx, i, box_mp, 0U);
-	}
+	(bxs->array + new_box_indx)->location.x = position_x;
+	(bxs->array + new_box_indx)->location.y = position_y;
 }
 
-static inline void AddToBox(Box* const bx, const unsigned int slot, const int type, unsigned int const value){
+extern inline void AddToBox(Box* const bx, const unsigned int slot, const int type, const unsigned int value){
 	(bx->elements + slot)->type = type;
 	(bx->elements + slot)->value = value;
 }
@@ -207,19 +194,37 @@ static int GetNearbyBoxIndx(Game_data* const g_d){
 static inline void LootBox(Game_data* const g_d, const unsigned int box_indx){
 	Box_element* elem = (g_d->boxes.array + box_indx)->elements;
 	int element_type;
+	bool empty = true;
 	while(1){
 		element_type = elem->type;
-		if(element_type == box_coins){
+		if(element_type == box_scroll){
+			if(*((g_d->champions.array + g_d->human_indx)->scrolls + elem->value) < 255U){
+				++(*((g_d->champions.array + g_d->human_indx)->scrolls + elem->value));
+				elem->type = box_clear;
+			}else{
+				SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "No space for scroll %u!", elem->value);
+				empty = false;
+			}
+		}else if(element_type == box_coins){
 			(g_d->champions.array + g_d->human_indx)->coins += (int)elem->value;
+			elem->type = box_clear;
 		}else if(element_type == box_key){
 			g_d->keys += (int)elem->value;
+			elem->type = box_clear;
+		}else if(element_type == box_map){
+			Key_location* kl = g_d->world.key_locations + elem->value;
+			SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "Key location: x: %u, y: %u!", kl->x, kl->y);
+			elem->type = box_clear;
 		}else if(element_type == box_mp){
 			(g_d->champions.array + g_d->human_indx)->magic_points += (int)elem->value;
+			elem->value = 0U;
 			break;
 		}
 		++elem;
 	}
-	DestroyBoxInArray(&g_d->boxes, box_indx);
+	if(empty){
+		DestroyBoxInArray(&g_d->boxes, box_indx);
+	}
 }
 
 static inline void DestroyBoxInArray(Boxes* const bxs, unsigned int indx){
@@ -248,4 +253,28 @@ extern inline int CalculateDamage(const Impact* const impact, const Armour* cons
 
 extern inline float CalculateStunPower(const Impact* const impact, const Armour* const armour){
 	return impact->stun * armour->unstability;
+}
+
+static int UpdateGame(Game_data* const gd){
+	static unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
+	//TEST
+	if((gd->champions.array + gd->human_indx)->flags & tmp0){
+		(gd->champions.array + gd->human_indx)->flags = 0U;
+		(gd->champions.array + gd->human_indx)->selected_scroll = scroll_empty;
+		gd->human_indx = (gd->human_indx + 1U) % gd->champions.num;
+	}
+	//TEST
+	UpdatePlayers(gd);
+	UpdateProjectiles(gd);
+	if(ticks_to_update_beings == 0U){
+		UpdateBeings(gd);
+		ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
+	}else{
+		RareEventsService(gd);
+		--ticks_to_update_beings;
+	}
+	if((gd->champions.array + gd->human_indx)->hit_points < 1){
+		return update_defeated;
+	}
+	return update_ok;
 }

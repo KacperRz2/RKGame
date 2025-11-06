@@ -1,36 +1,6 @@
 #ifndef ENUM_H_
 #define ENUM_H_
 
-enum texture_num{
-    tx_pc,
-    tx_icon,
-    tx_projectile,
-    tx_being,
-    tx_viewfinder,
-    tx_pc_blade,
-    tx_nesw,
-    tx_arrow,
-    tx_being_blade,
-    tx_h_projectile,
-    tx_terrain,
-    tx_gunsightpart,
-    tx_wall,
-    tx_portal,
-    tx_door,
-    tx_box,
-    tx_barrier,
-    tx_stun,
-    tx_scroll,
-    tx_being1,
-    tx_weapon,
-    tx_being2,
-    tx_terrain1,
-    tx_backgr0,
-    tx_backgr1,
-    tx_void,
-    tx_map
-};
-
 enum control{
     forward = 1 << 0,
     back = 1 << 1,
@@ -43,7 +13,8 @@ enum control{
     block = 1 << 8,
     action = 1 << 9,
     range_mode = 1 << 10,
-    cast = 1 << 11
+    cast = 1 << 11,
+    tmp1 = 1 << 13
 };
 
 enum being_status{
@@ -73,7 +44,8 @@ enum box_content_type{
     box_coins,
     box_scroll,
     box_key,
-    box_map
+    box_map,
+    box_clear
 };
 
 enum scroll_type{
@@ -84,7 +56,7 @@ enum scroll_type{
     scroll_4,
     scroll_5,
     scroll_6,
-    scroll_empty
+    scroll_empty = 34
 };
 
 enum being_type{
@@ -125,6 +97,26 @@ enum projectile_type{
 enum segment_flags{
     segment_in_sight = 1 << 0,
     segment_known = 1 << 1
+};
+
+enum event{
+    event_manage_scrolls = 2
+};
+
+enum game_update{
+    update_ok,
+    update_defeated
+};
+
+enum character{
+    Ż,Ź,Ś,Ć,s0,Ń,Ó,J,Q,s1,Z,s2,Ą,L,
+    Ę,Ł,S,C,D,E,s3,s4,j,T,s5,s6,s7,s8,f,B,s9,
+    V,W,s10,G,H,N,U,s11,s12,n3,n8,b,dot,
+    h,l,I,M,O,P,R,Y,s14,ł,n1,n2,n6,n7,a,
+    k,A,F,K,X,ź,ż,n0,n4,n5,n9,d,ń,ć,ó,i,
+    ś,q,g,p,y,ą,ę,s15,t,z,m,n,o,r,s,v,w,
+    c,e,u,x,s16,s17,s18,s19,s20,s21,s22,s23,s24,s25,s26,s27,s28,s29,sp,
+    char_end
 };
 
 #endif

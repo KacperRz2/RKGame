@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
+#include <render_macros.h>
 #include <types.h>
 #include <render.h>
 #include <function.h>
@@ -12,18 +13,18 @@ const unsigned int beings_textures[] = BEINGS_TEXTURES;
 const unsigned int beings_weapon_textures[] = BEINGS_WEAPON_TEXTURES;
 const unsigned int projectile_textures[] = PROJECTILE_TEXTURES;
 
-int GraphicsInitiation(Render_data* const data){
+int GraphicsInitiation(Render_data* const rend_data){
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
 	const char* const texture_files[TEXTURE_FILES_NUM] = TEXTURE_FILES_NAMES;
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 
-	if(!SDL_Init(SDL_INIT_VIDEO)){
+	if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
 		return 3;
 	}
 
-	if(!SDL_CreateWindowAndRenderer("KacWindow", data->window_w, data->window_h, SDL_WINDOW_BORDERLESS, &data->window, &data->renderer)){
+	if(!SDL_CreateWindowAndRenderer("KacWindow", rend_data->window_w, rend_data->window_h, SDL_WINDOW_BORDERLESS, &rend_data->window, &rend_data->renderer)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
 		return 3;
 	}
@@ -35,46 +36,43 @@ int GraphicsInitiation(Render_data* const data){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 			return 3;
 		}
-		*(data->textures + i + TEXTURE_TARGET_NUM) = SDL_CreateTextureFromSurface(data->renderer, surface);
-		if(!*(data->textures + i + TEXTURE_TARGET_NUM)){
+		*(rend_data->textures + i) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+		if(!*(rend_data->textures + i)){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 			return 3;
 		}
 	}
-
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
 
-	SDL_SetWindowRelativeMouseMode(data->window, true);
-	SDL_WarpMouseInWindow(data->window, half(data->window_w), half(data->window_h));
-	const SDL_Rect mouse_barrier = {
-		data->viewfinder_rect.x,
-		data->viewfinder_rect.y,
-		data->viewfinder_rect.w,
-		(int)(data->viewfinder * VIEWFINDER_BEFORE_PC_PART - GUN_SIGHT_MIN_DISTANCE)
-	};
-	SDL_SetWindowMouseRect(data->window, &mouse_barrier);
+	SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
+	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
+	DrawBackgroud(rend_data);
 	return 0;
 }
 
-void SetRenderData(Render_data* const rend_data, const float window_w, const float window_h){
+void SetRenderData(Render_data* const rend_data){
 	rend_data->window = NULL;
 	rend_data->renderer = NULL;
-	rend_data->window_w = window_w;
-	rend_data->window_h = window_h;
+	rend_data->window_w = WINDOW_START_W;
+	rend_data->window_h = WINDOW_START_H;
 	rend_data->viewfinder = VIEWFINDER_SIZE;
-	rend_data->viewfinder_rect = (SDL_Rect){
-		(int)(half(rend_data->window_w - rend_data->viewfinder)),
-		(int)(half(rend_data->window_h - rend_data->viewfinder)),
-		(int)(rend_data->viewfinder),
-		(int)(rend_data->viewfinder)
-	};
-	rend_data->visible_rect = (SDL_FRect){
-		0.0F,
-		0.0F,
-		rend_data->viewfinder,
-		rend_data->viewfinder
-	};
+	rend_data->viewfinder_rect = (SDL_Rect)VIEWFINDER_RECT;
+	rend_data->visible_rect = (SDL_FRect)VISIBLE_RECT;
+}
+
+void ResetRenderData(Render_data* const rend_data){
+	int w, h;
+	SDL_GetWindowSizeInPixels(rend_data->window, &w, &h);
+	rend_data->window_w = w;
+	rend_data->window_h = h;
+	rend_data->viewfinder = VIEWFINDER_SIZE;
+	rend_data->viewfinder_rect = (SDL_Rect)VIEWFINDER_RECT;
+	rend_data->visible_rect = (SDL_FRect)VISIBLE_RECT;
+	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
+	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
+	DrawBackgroud(rend_data);
 }
 
 static void RenderHumanPlayerBlade(Render_data* const rend_data, Blade* const blade){
@@ -152,7 +150,7 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
 static void RenderMap(Render_data* const rend_data, Player* const p){
 	const int map_size = half(rend_data->window_w - rend_data->viewfinder_rect.w) - FRAME_W * 6;
 	const SDL_Rect rect = {
-		rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + FRAME_W * 3,
+		RIGHT_AREA_X + FRAME_W * 2,
 		FRAME_W * 3,
 		map_size,
 		map_size
@@ -184,11 +182,10 @@ static void RenderMap(Render_data* const rend_data, Player* const p){
 	double rotation = RadToDeg(p->direction);
 	SDL_SetRenderViewport(rend_data->renderer, &rect);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_map), NULL, NULL);
-	SDL_SetRenderDrawColor(rend_data->renderer, 192, 0, 0, 0);
+	SDL_SetRenderDrawColor(rend_data->renderer, 192, 0, 0, 255);
 	pc_rect.x = p->position.x * (map_size / WORLD_W) - half(MINIMAP_PC_SIZE);
 	pc_rect.y = p->position.y * (map_size / WORLD_H) - half(MINIMAP_PC_SIZE);
 	SDL_RenderFillRect(rend_data->renderer, &pc_rect);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_nesw), NULL, &destination_rect0a);
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_arrow), NULL, &destination_rect0b, rotation, NULL, SDL_FLIP_NONE);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 }
@@ -222,21 +219,20 @@ void RenderTextInfo(Render_data* const rend_data, const Uint64 tps, Game_data* c
 	SDL_RenderDebugTextFormat(rend, x, 70, "blade charge: %f", 1.0F - (g_d->champions.array + g_d->human_indx)->blade.charge);
 	SDL_RenderDebugTextFormat(rend, x, 80, "fatigue: %d", (g_d->champions.array + g_d->human_indx)->fatigue_points);
 	SDL_RenderDebugTextFormat(rend, x, 90, "hp: %d", (g_d->champions.array + g_d->human_indx)->hit_points);
-	SDL_RenderDebugTextFormat(rend, x, 100, "coins: %d", (g_d->champions.array + g_d->human_indx)->coins);
 	SDL_RenderDebugTextFormat(rend, x, 110, "boxes: %d", g_d->boxes.num);
-	SDL_RenderDebugTextFormat(rend, x, 120, "keys: %d", g_d->keys);
 	SDL_RenderDebugTextFormat(rend, x, 130, "keys needed: %d", g_d->needed_keys);
 	SDL_RenderDebugTextFormat(rend, x, 140, "player segment: x: %d y: %d", (g_d->champions.array + g_d->human_indx)->segment->indx.x, (g_d->champions.array + g_d->human_indx)->segment->indx.y);
 	SDL_RenderDebugTextFormat(rend, x, 150, "selected scroll: %d", (g_d->champions.array + g_d->human_indx)->selected_scroll);
 	SDL_RenderDebugTextFormat(rend, x, 160, "selected scroll num: %d", *((g_d->champions.array + g_d->human_indx)->scrolls + (g_d->champions.array + g_d->human_indx)->selected_scroll));
 	SDL_RenderDebugTextFormat(rend, x, 170, "selected scroll cost: %d", ScrollCost((g_d->champions.array + g_d->human_indx)->selected_scroll));
-
+	RenderMap(rend_data, g_d->champions.array + g_d->human_indx);
 }
 
-static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
+static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, const Game_data* const gd){
+	const float BAR_H = BAR_H_CALC;
 	const SDL_FRect rect_armo = {
 		BAR_X,
-		AREAA_Y + FRAME_W,
+		AREAA_Y + BAR_H + FRAME_W * 2.0F,
 		((1.0F - p->armour.multipl) / (1.0F - p->max_armour.multipl)) * BAR_W,
 		SMALL_BAR_H
 	};
@@ -248,65 +244,35 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 	};
 	const SDL_FRect rectHP = {
 		BAR_X,
-		rect_marmo.y + SMALL_BAR_H + FRAME_W * 2.0F,
+		rect_armo.y + BAR_H * 2.0F + FRAME_W * 5.0F,
 		(float)p->hit_points / (float)p->max_h_p * BAR_W,
 		BAR_H
 	};
-	const SDL_FRect rectMP = {
-		rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + BAR_H + FRAME_W * 5.0F,
-		rend_data->window_h - 32.0F - FRAME_W * 3.0F,
-		BAR_W,
-		32.0F
+	const SDL_FPoint MP_position = {
+		RIGHT_AREA_X + FRAME_W * 2.0F,
+		AREA_MP_Y + BAR_H + FRAME_W * 2.0F
 	};
 	const SDL_FRect rectFP = {
 		BAR_X,
-		rectHP.y + BAR_H + FRAME_W * 2.0F,
+		rectHP.y + BAR_H * 2.0F + FRAME_W * 5.0F,
 		(float)p->fatigue_points / (float)p->max_fatigue * BAR_W,
 		BAR_H
 	};
-	const SDL_FRect empty_bar_rects[] = {
-		{
-			rect_armo.x + rect_armo.w,
-			rect_armo.y,
-			BAR_W - rect_armo.w,
-			rect_armo.h
-		}, {
-			rect_marmo.x + rect_marmo.w,
-			rect_marmo.y,
-			BAR_W - rect_marmo.w,
-			rect_marmo.h
-		}, {
-			rectHP.x + rectHP.w,
-			rectHP.y,
-			BAR_W - rectHP.w,
-			rectHP.h
-		}, {
-			rectFP.x + rectFP.w,
-			rectFP.y,
-			BAR_W - rectFP.w,
-			rectFP.h
-		}, {
-			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + BAR_H + FRAME_W * 5.0F,
-			rend_data->window_h - 32.0F - FRAME_W * 3.0F,
-			BAR_W,
-			32.0F
-		}
-	};
-	for(unsigned int i = 0U; i < 5U; ++i){
-		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_bar_rects + i, 0.0F, NULL, SDL_FLIP_VERTICAL);
-	}
-	SDL_SetRenderDrawColor(rend_data->renderer, 128U, 128U, 128U, 0U);
-	SDL_RenderFillRect(rend_data->renderer, &rect_armo);
-	SDL_SetRenderDrawColor(rend_data->renderer, 128U, 128U, 255U, 0U);
-	SDL_RenderFillRect(rend_data->renderer, &rect_marmo);
-	SDL_SetRenderDrawColor(rend_data->renderer, 255U, 0U, 0U, 0U);
-	SDL_RenderFillRect(rend_data->renderer, &rectHP);
-	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 255U, 0U, 0U);
-	SDL_RenderFillRect(rend_data->renderer, &rectFP);
-	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 208U, 255U, 255U);
-	SDL_SetRenderScale(rend_data->renderer, 2.0F, 4.0F);
-	SDL_RenderDebugTextFormat(rend_data->renderer, (rectMP.x + 1.0F) * 0.5F, (rectMP.y + 1.0F) * 0.25F, "%d", p->magic_points);
-	SDL_SetRenderScale(rend_data->renderer, 1.0F, 1.0F);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_bar), 128U, 128U, 128U);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_bar), NULL, &rect_armo);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_bar), 128U, 128U, 255U);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_bar), NULL, &rect_marmo);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_bar), 255U, 0U, 0U);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_bar), NULL, &rectHP);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_bar), 0U, 255U, 0U);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_bar), NULL, &rectFP);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_chars), 0U, 208U, 255U);
+	RenderInt(rend_data, MP_position.x + 4.0F, MP_position.y, MP_BAR_H, p->magic_points);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_chars), 255U, 0U, 127U);
+	RenderInt(rend_data, MP_position.x + 4.0F, MP_position.y + MP_BAR_H, MP_BAR_H, ScrollCost(p->selected_scroll));
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_chars), 255U, 255U, 255U);
+	RenderInt(rend_data, KEYS_NUM_X, KEYS_NUM_Y, BAR_H, gd->keys);
+	RenderInt(rend_data, KEYS_NUM_X, COINS_NUM_Y, half(BAR_H), p->coins);
 	if(p->blade.charge != PC_BLADE_CHARGE_BASE){
 		const SDL_FRect rect_cha = {
 			half(rend_data->window_w) - half(PLAYER_SIZE),
@@ -320,69 +286,68 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p){
 			(1.0F - p->blade.charge) * (rect_cha.w - 2.0F),
 			8.0F
 		};
-		SDL_SetRenderDrawColor(rend_data->renderer, 255U, 255U, 255U, 0U);
+		const Uint8 red = (Uint8)((1.0F - p->blade.charge) * 255.0F);
+		const Uint8 green = (Uint8)(p->blade.charge * 255.0F);
+		SDL_SetRenderDrawColor(rend_data->renderer, red / 4, green / 4, 0U, 255U);
 		SDL_RenderRect(rend_data->renderer, &rect_cha);
-		SDL_SetRenderDrawColor(rend_data->renderer, (Uint8)((1.0F - p->blade.charge) * 255.0F), (Uint8)(p->blade.charge * 255.0F), 0U, 0U);
-		SDL_RenderFillRect(rend_data->renderer, &rect_chb);
+		SDL_SetTextureColorMod(*(rend_data->textures + tx_bar), red, green, 0U);
+		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_bar), NULL, &rect_chb);
 	}
 }
 
-void RenderMainMenu(Render_data* const rend_data){
-	static float angle = 0.0F;
-	angle += 0.02F;
-	if(angle >= SDL_PI_F * 2.0F){
-		angle = 0.0F;
-	}
-	Uint8 colour = (Uint8)((sine(angle) + 1.0F) * 127.5F);
-	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 0U);
+void RenderMainMenu(Render_data* const rend_data, const float angle){
+	Uint8 alpha = (Uint8)((sine(angle) + 1.0F) * 127.5F);
+	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
-	SDL_SetRenderDrawColor(rend_data->renderer, colour, colour, colour, 255U);
-	SDL_SetRenderScale(rend_data->renderer, 4.0F, 4.0F);
-	SDL_RenderDebugText(rend_data->renderer, rend_data->window_w * 0.25F * 0.25F, half(rend_data->window_h) * 0.25F, "Press SPACE");
-	SDL_SetRenderScale(rend_data->renderer, 1.0F, 1.0F);
+	SDL_SetTextureAlphaMod(*(rend_data->textures + tx_chars), alpha);
+	RenderText(rend_data, rend_data->window_w * 0.25F, half(rend_data->window_h) - 36.0F, 72.0F, (Uint8[])MENU_TEXT);
 	SDL_RenderPresent(rend_data->renderer);
 }
 
-void RenderGame(Render_data* const rend_data, Game_data* const g_d){
-	SetSineCosine(rend_data, g_d->champions.array + g_d->human_indx);
+void RenderGame(Render_data* const rend_data, Game_data* const g_d, const int event_code){
+	Player* const p = g_d->champions.array + g_d->human_indx;
+	SetSineCosine(rend_data, p);
 	RenderBackground(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
-	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 0);
-	SDL_RenderFillRect(rend_data->renderer, NULL);
-	RenderTerrain(rend_data, g_d);
-	RenderStaticThings(rend_data, g_d);
-	if(!((g_d->champions.array + g_d->human_indx)->flags & range_mode)){
-		RenderHumanPlayerBlade(rend_data, &(g_d->champions.array + g_d->human_indx)->blade);
-	}else{
-		RenderHumanPlayerScroll(rend_data, (bool)((g_d->champions.array + g_d->human_indx)->flags & attack));
-	}
-	Player* players_to_rend[g_d->champions.num - 1U];
-	SDL_FPoint players_rend_points[g_d->champions.num - 1U];
-	unsigned int indx = 0U;
-	for(unsigned int i = 0U; i < g_d->champions.num; ++i){
-		if(i == g_d->human_indx){
-			continue;
+	if(event_code == 0){
+		RenderTerrain(rend_data, g_d);
+		RenderStaticThings(rend_data, g_d);
+		if(!(p->flags & range_mode)){
+			RenderHumanPlayerBlade(rend_data, &p->blade);
+		}else{
+			RenderHumanPlayerScroll(rend_data, (bool)(p->flags & attack));
 		}
-		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y, g_d->champions.array + g_d->human_indx, &point, &g_d->world)){
-			*(players_to_rend + indx) = g_d->champions.array + i;
-			*(players_rend_points + indx++) = point;
+		Player* players_to_rend[g_d->champions.num - 1U];
+		SDL_FPoint players_rend_points[g_d->champions.num - 1U];
+		unsigned int indx = 0U;
+		for(unsigned int i = 0U; i < g_d->champions.num; ++i){
+			if(i == g_d->human_indx){
+				continue;
+			}
+			SDL_FPoint point;
+			if(GetRenderPointFromTrue(rend_data, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y, p, &point, &g_d->world)){
+				*(players_to_rend + indx) = g_d->champions.array + i;
+				*(players_rend_points + indx++) = point;
+			}
 		}
+		RenderPlayersBladesAndScrolls(rend_data, p->direction, players_to_rend, players_rend_points, indx);
+		RenderBeings(rend_data, g_d);
+		RenderProjectiles(rend_data, g_d);
+		RenderHumanPlayer(rend_data);
+		RenderPlayers(rend_data, p->direction, players_to_rend, players_rend_points, indx);
+		if(p->flags & block){
+			RenderHumanPlayerBarrier(rend_data, p);
+		}
+		RenderBarriers(rend_data, p->direction, players_to_rend, players_rend_points, indx);
+		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
+		RenderGunSight(rend_data);
+	}else if(event_code == event_manage_scrolls){
+		RenderScrollsManagement(rend_data, p);
 	}
-	RenderPlayersBladesAndScrolls(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
-	RenderBeings(rend_data, g_d);
-	RenderProjectiles(rend_data, g_d);
-	RenderHumanPlayer(rend_data);
-	RenderPlayers(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
-	if((g_d->champions.array + g_d->human_indx)->flags & block){
-		RenderHumanPlayerBarrier(rend_data, g_d->champions.array + g_d->human_indx);
-	}
-	RenderBarriers(rend_data, (g_d->champions.array + g_d->human_indx)->direction, players_to_rend, players_rend_points, indx);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
-	RenderGunSight(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
-	RenderMap(rend_data, g_d->champions.array + g_d->human_indx);
-	RenderPlayerStatus(rend_data, g_d->champions.array + g_d->human_indx);
+	RenderDirectionArrow(rend_data, RadToDeg(p->direction));
+	RenderPlayerStatus(rend_data, p, g_d);
+	RenderQuickScrolls(rend_data, p);
 }
 
 static inline void SetSineCosine(Render_data* const rend_data, Player* const p){
@@ -526,6 +491,7 @@ void DrawMap(Render_data* const rend_data, World* const w){
 
 static inline void RenderHumanPlayer(Render_data* const rend_data){
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &(SDL_FRect)PC_RECT);
+		
 }
 
 static inline void RenderHumanPlayerBarrier(Render_data* const rend_data, const Player* const p){
@@ -630,16 +596,16 @@ static void	RenderBarriers(Render_data* const rend_data, const float human_playe
 
 static inline Placement GetBeingWeaponPlacement(const Being* const b){
     if(b->status == being_strike || b->status == being_strike_being){
-        if(b->status_ticks_left > 0){
+        if(b->status_ticks_left <= BEING_ATTACK_STEPS){
             const int step = BEING_ATTACK_STEPS - b->status_ticks_left;
+			return GetWeaponPlacement(&(Placement)BEING_WEAPON_ATTACK_PLCMNT, &(Placement)BEING_WEAPON_BASE_PLCMNT, step, BEING_ATTACK_STEPS);
+        }
+        if(b->status_ticks_left <= BEING_ATTACK_STEPS * 2){
+            const int step = BEING_ATTACK_STEPS * 2 - b->status_ticks_left;
             return GetWeaponPlacement(&(Placement)BEING_WEAPON_PREPARE_PLCMNT, &(Placement)BEING_WEAPON_ATTACK_PLCMNT, step, BEING_ATTACK_STEPS);
         }
-        if(b->status_ticks_left <= -BEING_ATTACK_STEPS){
-            const int step = b->status_ticks_left + BEING_ATTACK_STEPS + BEING_ATTACK_STEPS;
-            return GetWeaponPlacement(&(Placement)BEING_WEAPON_BASE_PLCMNT, &(Placement)BEING_WEAPON_PREPARE_PLCMNT, step, BEING_ATTACK_STEPS);
-        }
-        const int step = b->status_ticks_left + BEING_ATTACK_STEPS;
-		return GetWeaponPlacement(&(Placement)BEING_WEAPON_ATTACK_PLCMNT, &(Placement)BEING_WEAPON_BASE_PLCMNT, step, BEING_ATTACK_STEPS);
+        const int step = BEING_ATTACK_STEPS * 3 - b->status_ticks_left;
+		return GetWeaponPlacement(&(Placement)BEING_WEAPON_BASE_PLCMNT, &(Placement)BEING_WEAPON_PREPARE_PLCMNT, step, BEING_ATTACK_STEPS);
     }else if(b->status == being_shoot || b->status == being_shoot_being){
 		if(b->status_ticks_left < BEING_ATTACK_STEPS / 2){
 			const int step = BEING_ATTACK_STEPS / 2 - b->status_ticks_left;
@@ -668,147 +634,8 @@ static inline Placement GetWeaponPlacement(Placement* const start, Placement* co
 	};
 }
 
-static void RenderBackground(Render_data* const rend_data){
-	const float frame_w = FRAME_W;
-	const SDL_FRect rects[16] = {
-		{
-			frame_w,
-			frame_w,
-			rend_data->viewfinder_rect.x - frame_w * 2.0F,
-			rend_data->window_h - frame_w * 2.0
-		}, {
-			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w,
-			frame_w,
-			rend_data->viewfinder_rect.x - frame_w * 2.0F,
-			rend_data->window_h - frame_w * 2.0
-		}, {//
-			rend_data->viewfinder_rect.x - frame_w * 2.0F,
-			0.0F,
-			frame_w,
-			frame_w
-		}, {
-			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w,
-			0.0F,
-			frame_w,
-			frame_w
-		}, {
-			rend_data->viewfinder_rect.x - frame_w * 2.0F,
-			rend_data->viewfinder_rect.y + rend_data->viewfinder_rect.h,
-			frame_w,
-			frame_w
-		}, {
-			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w,
-			rend_data->viewfinder_rect.y + rend_data->viewfinder_rect.h,
-			frame_w,
-			frame_w
-		}, {//
-			0.0F,
-			0.0F,
-			frame_w,
-			frame_w
-		}, {
-			0.0F + rend_data->window_w - frame_w,
-			0.0F,
-			frame_w,
-			frame_w
-		}, {
-			0.0F,
-			0.0F + rend_data->window_h - frame_w,
-			frame_w,
-			frame_w
-		}, {
-			0.0F + rend_data->window_w - frame_w,
-			0.0F + rend_data->window_h - frame_w,
-			frame_w,
-			frame_w
-		}, {//
-			frame_w,
-			0.0F,
-			rend_data->viewfinder_rect.x - frame_w * 3.0F,
-			frame_w
-		}, {
-			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w * 2.0F,
-			0.0F,
-			rend_data->viewfinder_rect.x - frame_w * 3.0F,
-			frame_w
-		}, {
-			frame_w,
-			rend_data->window_h - frame_w,
-			rend_data->viewfinder_rect.x - frame_w * 3.0F,
-			frame_w
-		}, {
-			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + frame_w * 2.0F,
-			rend_data->window_h - frame_w,
-			rend_data->viewfinder_rect.x - frame_w * 3.0F,
-			frame_w
-		}, {//
-			0.0F,
-			frame_w,
-			frame_w,
-			rend_data->window_h - frame_w * 2.0F
-		}, {
-			rend_data->window_w - frame_w,
-			frame_w,
-			frame_w,
-			rend_data->window_h - frame_w * 2.0F
-		}
-	};
-	const SDL_FRect src_rects[6] = {
-		{0.0F, 0.0F, 512.0F, 1024.0F},
-		{512.0F, 0.0F, 512.0F, 1024.0F},
-		{0.0F, 0.0F, 8.0F, 8.0F},
-		{8.0F, 0.0F, 8.0F, 8.0F},
-		{0.0F, 8.0F, 8.0F, 8.0F},
-		{8.0F, 8.0F, 8.0F, 8.0F}
-	};
-	SDL_FRect frames[] = {
-		{
-			ICON_X - FRAME_W,
-			AREAA_Y,
-			BAR_H + FRAME_W * 2.0F,
-			BAR_H + FRAME_W * 2.0F
-		}, {
-			BAR_X - FRAME_W,
-			AREAA_Y,
-			BAR_W + FRAME_W * 2.0F,
-			BAR_H + FRAME_W * 2.0F
-		}, {
-			rend_data->viewfinder_rect.x + rend_data->viewfinder_rect.w + BAR_H + FRAME_W * 4.0F,
-			rend_data->window_h - 32.0F - FRAME_W * 4.0F,
-			BAR_W + FRAME_W * 2.0F,
-			32.0F + FRAME_W * 2.0F
-		}
-	};
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects, rects);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects + 1, rects + 1);
-
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 2, 180.0, NULL, SDL_FLIP_NONE);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 3, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 4, 0.0, NULL, SDL_FLIP_HORIZONTAL);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 5);
-
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 6);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 8, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 9, 180.0, NULL, SDL_FLIP_NONE);
-
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 10, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 11, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 12);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 13);
-
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 14, 0.0, NULL, SDL_FLIP_HORIZONTAL);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 15);
-
-	RenderFrame(rend_data, &(SDL_FRect)VIEWFINDER_FRAME, frame_w);
-
-	for(unsigned int i = 0U; i < 3U; ++i){
-		RenderFrame(rend_data, frames, FRAME_W);
-		RenderFrame(rend_data, frames + 1, FRAME_W);
-		frames->y += BAR_H + FRAME_W * 2.0F;
-		(frames + 1)->y = frames->y;
-	}
-	RenderFrame(rend_data, frames + 2, FRAME_W);
+static inline void RenderBackground(Render_data* const rend_data){
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_background), NULL, NULL);
 }
 
 static void RenderFrame(Render_data* const rend_data, const SDL_FRect* const frame, const float width){
@@ -868,4 +695,540 @@ static void RenderFrame(Render_data* const rend_data, const SDL_FRect* const fra
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 1, rects + 5, 0.0, NULL, SDL_FLIP_VERTICAL);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 6);
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+}
+
+static void RenderDirectionArrow(Render_data* const rend_data, const double rotation){
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_arrow), NULL, &(SDL_FRect){
+		RIGHT_AREA_X + FRAME_W + 10.0F,
+		FRAME_W * 2.0F + 10.0F,
+		30.0F,
+		30.0F
+	}, rotation, NULL, SDL_FLIP_NONE);
+}
+
+static void RenderQuickScrolls(Render_data* const rend_data, const Player* const p){
+	const float BAR_H = BAR_H_CALC;
+	const float Q_SCROLL_SIZE = Q_SCROLL_SIZE_CALC;
+	const float shift_scroll = Q_SCROLL_SIZE + FRAME_W * 2.5F;
+	SDL_FRect scroll_rect = {
+		RIGHT_AREA_X + FRAME_W * 1.5F,
+		AREA_Q_SCROLLS_Y,
+		Q_SCROLL_SIZE,
+		Q_SCROLL_SIZE
+	};
+	for(unsigned int i = 0U; i < 3U; ++i){
+		scroll_rect.x = RIGHT_AREA_X + FRAME_W * 1.5F;
+		for(unsigned int j = 0U; j < 3U; ++j){
+			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &(SDL_FRect){
+				(*(p->scrolls_quick_access + i * 3 + j) % TX_ICONS_IN_ROW) * ICON_TX_SIZE,
+				ICON_SCRL_0_Y + (*(p->scrolls_quick_access + i * 3 + j) / TX_ICONS_IN_ROW) * ICON_TX_SIZE,
+				ICON_TX_SIZE,
+				ICON_TX_SIZE
+			}, &scroll_rect);
+			SDL_SetTextureColorMod(*(rend_data->textures + tx_chars), 255U, 0U, 0U);
+			RenderInt(rend_data, scroll_rect.x + 1.0F, scroll_rect.y - 1.0F, 16.0F, (i * 3 + j + 2) % 10);
+			SDL_SetTextureColorMod(*(rend_data->textures + tx_chars), 255U, 255U, 255U);
+			RenderInt(rend_data, scroll_rect.x + 1.0F, scroll_rect.y + Q_SCROLL_SIZE - 15.0F, 16.0F, *(p->scrolls + *(p->scrolls_quick_access + i * 3 + j)));
+			scroll_rect.x += shift_scroll;
+		}
+		scroll_rect.y += shift_scroll;
+	}
+	for(unsigned int i = 0U; i < 9U; ++i){
+		if(p->selected_scroll == *(p->scrolls_quick_access + i)){
+			SDL_SetRenderDrawColor(rend_data->renderer, 255, 0, 0, 255);
+			SDL_RenderRect(rend_data->renderer, &(SDL_FRect){
+				RIGHT_AREA_X + FRAME_W * 1.5F + shift_scroll * (i % 3),
+				AREA_Q_SCROLLS_Y + shift_scroll * (i / 3),
+				Q_SCROLL_SIZE,
+				Q_SCROLL_SIZE
+			});
+			break;
+		}
+	}
+}
+
+static void RenderScrollsManagement(Render_data* const rend_data, const Player* const pc){
+	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
+	const float scrolls_num_text_height = icon_size * 0.25F;
+	SDL_FRect dst_rect = {
+		FRAME_W,
+		icon_size + FRAME_W * 3.0F,
+		icon_size,
+		icon_size
+	};
+	SDL_FPoint dst_point_scrolls_num = {
+		FRAME_W + 4.0F,
+		icon_size * 1.75F + FRAME_W * 3.0F 
+	};
+	const float shift = icon_size + FRAME_W;
+	const SDL_FRect menu_ptr_rect = {
+		FRAME_W + shift * (pc->help_data.menu_position % ICONS_IN_VIEWF_ROW),
+		icon_size + FRAME_W * 3.0F + shift * (pc->help_data.menu_position / ICONS_IN_VIEWF_ROW),
+		icon_size,
+		icon_size
+	};
+	SDL_FRect quick_scroll_rect = {
+		FRAME_W + shift * (*pc->scrolls_quick_access % ICONS_IN_VIEWF_ROW),
+		icon_size + FRAME_W * 3.0F + shift * (*pc->scrolls_quick_access / ICONS_IN_VIEWF_ROW),
+		icon_size,
+		icon_size
+	};
+	const SDL_FRect selection_rect = {
+		FRAME_W + shift * (pc->selected_scroll % ICONS_IN_VIEWF_ROW),
+		icon_size + FRAME_W * 3.0F + shift * (pc->selected_scroll / ICONS_IN_VIEWF_ROW),
+		icon_size,
+		icon_size
+	};
+	for(unsigned int i = 0U; i < ICONS_IN_VIEWF_ROW - 2U; ++i){
+		dst_rect.x = FRAME_W;
+		dst_point_scrolls_num.x = FRAME_W + 4.0;
+		for(unsigned int j = 0U; j < ICONS_IN_VIEWF_ROW; ++j){
+			SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &(SDL_FRect){
+				((i * ICONS_IN_VIEWF_ROW + j) % TX_ICONS_IN_ROW) * ICON_TX_SIZE,
+				ICON_SCRL_0_Y + ((i * ICONS_IN_VIEWF_ROW + j) / TX_ICONS_IN_ROW) * ICON_TX_SIZE,
+				ICON_TX_SIZE,
+				ICON_TX_SIZE
+			}, &dst_rect);
+			RenderInt(rend_data, dst_point_scrolls_num.x, dst_point_scrolls_num.y, scrolls_num_text_height, *(pc->scrolls + i * ICONS_IN_VIEWF_ROW + j));
+			dst_rect.x += shift;
+			dst_point_scrolls_num.x += shift;
+		}
+		dst_rect.y += shift;
+		dst_point_scrolls_num.y += shift;
+	}
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_menu_ptr), 31U, 127U, 255U);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_chars), 255U, 0U, 0U);
+	for(unsigned int i = 0U; i < 9U; ++i){
+		quick_scroll_rect.x = FRAME_W + shift * (*(pc->scrolls_quick_access + i) % ICONS_IN_VIEWF_ROW);
+		quick_scroll_rect.y = icon_size + FRAME_W * 3.0F + shift * (*(pc->scrolls_quick_access + i) / ICONS_IN_VIEWF_ROW);
+		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_menu_ptr), NULL, &quick_scroll_rect);
+		RenderInt(rend_data, quick_scroll_rect.x + 4.0F, quick_scroll_rect.y, scrolls_num_text_height, (i + 2) % 10);
+	}
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_menu_ptr), 255U, 255U, 255U);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_chars), 255U, 255U, 255U);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_menu_ptr), NULL, &menu_ptr_rect);
+	SDL_SetRenderDrawColor(rend_data->renderer, 255, 0, 0, 255);
+	SDL_RenderRect(rend_data->renderer, &selection_rect);
+	Uint8 text[] = TEST_TEXT;
+	RenderText(rend_data, FRAME_W, rend_data->viewfinder - 80.0F, 32.0F, text);
+}
+
+static void DrawBackgroud(Render_data* const rend_data){
+	if(*(rend_data->textures + tx_background) != NULL){
+		SDL_DestroyTexture(*(rend_data->textures + tx_background));
+	}
+	*(rend_data->textures + tx_background) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, rend_data->window_w, rend_data->window_h);
+	if(!(*(rend_data->textures + tx_background))){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_SetRenderTarget(rend_data->renderer, *(rend_data->textures + tx_background));
+	const SDL_FRect nesw_rect = {
+		RIGHT_AREA_X + FRAME_W,
+		FRAME_W * 2.0F,
+		50.0F,
+		50.0F
+	};
+	const SDL_FRect rects[16] = {
+		{
+			FRAME_W,
+			FRAME_W,
+			SIDE_AREA_WIDTH,
+			rend_data->window_h - FRAME_W * 2.0
+		}, {
+			RIGHT_AREA_X,
+			FRAME_W,
+			SIDE_AREA_WIDTH,
+			rend_data->window_h - FRAME_W * 2.0
+		}, {//
+			SIDE_AREA_WIDTH,
+			0.0F,
+			FRAME_W,
+			FRAME_W
+		}, {
+			RIGHT_AREA_X,
+			0.0F,
+			FRAME_W,
+			FRAME_W
+		}, {
+			SIDE_AREA_WIDTH,
+			rend_data->viewfinder_rect.y + rend_data->viewfinder_rect.h,
+			FRAME_W,
+			FRAME_W
+		}, {
+			RIGHT_AREA_X,
+			rend_data->viewfinder_rect.y + rend_data->viewfinder_rect.h,
+			FRAME_W,
+			FRAME_W
+		}, {//
+			0.0F,
+			0.0F,
+			FRAME_W,
+			FRAME_W
+		}, {
+			0.0F + rend_data->window_w - FRAME_W,
+			0.0F,
+			FRAME_W,
+			FRAME_W
+		}, {
+			0.0F,
+			0.0F + rend_data->window_h - FRAME_W,
+			FRAME_W,
+			FRAME_W
+		}, {
+			0.0F + rend_data->window_w - FRAME_W,
+			0.0F + rend_data->window_h - FRAME_W,
+			FRAME_W,
+			FRAME_W
+		}, {//
+			FRAME_W,
+			0.0F,
+			rend_data->viewfinder_rect.x - FRAME_W * 3.0F,
+			FRAME_W
+		}, {
+			RIGHT_AREA_X + FRAME_W,
+			0.0F,
+			rend_data->viewfinder_rect.x - FRAME_W * 3.0F,
+			FRAME_W
+		}, {
+			FRAME_W,
+			rend_data->window_h - FRAME_W,
+			rend_data->viewfinder_rect.x - FRAME_W * 3.0F,
+			FRAME_W
+		}, {
+			RIGHT_AREA_X + FRAME_W,
+			rend_data->window_h - FRAME_W,
+			rend_data->viewfinder_rect.x - FRAME_W * 3.0F,
+			FRAME_W
+		}, {//
+			0.0F,
+			FRAME_W,
+			FRAME_W,
+			rend_data->window_h - FRAME_W * 2.0F
+		}, {
+			rend_data->window_w - FRAME_W,
+			FRAME_W,
+			FRAME_W,
+			rend_data->window_h - FRAME_W * 2.0F
+		}
+	};
+	const SDL_FRect src_rects[6] = {
+		{0.0F, 0.0F, 512.0F, 1024.0F},
+		{512.0F, 0.0F, 512.0F, 1024.0F},
+		{0.0F, 0.0F, 8.0F, 8.0F},
+		{8.0F, 0.0F, 8.0F, 8.0F},
+		{0.0F, 8.0F, 8.0F, 8.0F},
+		{8.0F, 8.0F, 8.0F, 8.0F}
+	};
+	const float BAR_H = BAR_H_CALC;
+	const float Q_SCROLL_SIZE = Q_SCROLL_SIZE_CALC;
+	SDL_FRect frames[] = {
+		{
+			ICON_X - FRAME_W,
+			AREAA_Y - FRAME_W,
+			BAR_H + FRAME_W * 2.0F,
+			BAR_H + FRAME_W * 2.0F
+		}, {
+			BAR_X - FRAME_W,
+			AREAA_Y + BAR_H + FRAME_W,
+			BAR_W + FRAME_W * 2.0F,
+			BAR_H + FRAME_W * 2.0F
+		}, {
+			RIGHT_AREA_X + FRAME_W,
+			AREA_MP_Y - FRAME_W,
+			BAR_H + FRAME_W * 2.0F,
+			BAR_H + FRAME_W * 2.0F
+		}, {
+			RIGHT_AREA_X + FRAME_W,
+			AREA_MP_Y + BAR_H + FRAME_W,
+			BAR_W + FRAME_W * 2.0F,
+			MP_BAR_H * 2.0F + FRAME_W * 2.0F
+		}, {
+			RIGHT_AREA_X + FRAME_W * 0.5F,
+			AREA_Q_SCROLLS_Y - FRAME_W,
+			Q_SCROLL_SIZE + FRAME_W * 2.0F,
+			Q_SCROLL_SIZE + FRAME_W * 2.0F
+		}, {
+			nesw_rect.x - FRAME_W,
+			nesw_rect.y - FRAME_W,
+			nesw_rect.w + FRAME_W * 2.0F,
+			nesw_rect.h + FRAME_W * 2.0F
+		}, {
+			ICON_X + BAR_H + FRAME_W,
+			KEY_ICON_FRAME_Y,
+			BAR_W - BAR_H,
+			BAR_H + FRAME_W * 2.0F
+		}
+	};
+	SDL_FRect empty_areas[] = {
+		{
+			ICON_X,
+			AREAA_Y,
+			BAR_H,
+			BAR_H
+		}, {
+			RIGHT_AREA_X + FRAME_W * 2.0F,
+			AREA_MP_Y,
+			BAR_H,
+			BAR_H
+		}, {
+			RIGHT_AREA_X + FRAME_W * 2.0F,
+			AREA_MP_Y + BAR_H + FRAME_W * 2.0F,
+			BAR_W,
+			MP_BAR_H
+		}, {
+			RIGHT_AREA_X + FRAME_W * 1.5F,
+			AREA_Q_SCROLLS_Y,
+			Q_SCROLL_SIZE,
+			Q_SCROLL_SIZE
+		}
+	};
+	const SDL_FRect empty_bar_rects[] = {
+		{
+			BAR_X,
+			AREAA_Y + BAR_H + FRAME_W * 2.0F,
+			BAR_W,
+			SMALL_BAR_H
+		}, {
+			BAR_X,
+			AREAA_Y + BAR_H + FRAME_W * 2.0F + SMALL_BAR_H,
+			BAR_W,
+			SMALL_BAR_H
+		}, {
+			BAR_X,
+			AREAA_Y + BAR_H * 3.0F + FRAME_W * 7.0F,
+			BAR_W,
+			BAR_H
+		}, {
+			BAR_X,
+			AREAA_Y + BAR_H * 5.0F + FRAME_W * 12.0F,
+			BAR_W,
+			BAR_H
+		}, {
+			BAR_X,
+			KEY_ICON_FRAME_Y + FRAME_W,
+			BAR_W ,
+			BAR_H
+		}, {
+			BAR_X,
+			KEY_ICON_FRAME_Y + FRAME_W * 4.0F + BAR_H,
+			BAR_W,
+			BAR_H
+		}
+	};
+	SDL_FRect icon_scr_rect = FIRST_ICON_SRC_RECT;
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects, rects);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects + 1, rects + 1);
+
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 2, 180.0, NULL, SDL_FLIP_NONE);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 3, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 4, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 5);
+
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 6);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 8, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 9, 180.0, NULL, SDL_FLIP_NONE);
+
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 10, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 11, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 12);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 13);
+
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 14, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 15);
+
+	RenderFrame(rend_data, &(SDL_FRect)VIEWFINDER_FRAME, FRAME_W);
+	RenderPortrait(rend_data);
+	const float shift_bar = BAR_H * 2.0F + FRAME_W * 5.0F;
+	const float shift_scroll = Q_SCROLL_SIZE + FRAME_W * 2.5F;
+	icon_scr_rect.x = ICON_TX_SIZE * ic_arm;
+	for(unsigned int i = 0U; i < 3U; ++i){
+		RenderFrame(rend_data, frames, FRAME_W);
+		RenderFrame(rend_data, frames + 1, FRAME_W);
+		SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
+		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas, 0.0F, NULL, SDL_FLIP_VERTICAL);
+		SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas);
+		icon_scr_rect.x += ICON_TX_SIZE;
+		frames->y += shift_bar;
+		(frames + 1)->y += shift_bar;
+		empty_areas->y += shift_bar;
+	}
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_bar_rects + 4, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_bar_rects + 5, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	empty_areas->y = KEY_ICON_FRAME_Y + FRAME_W;
+	icon_scr_rect.x = ICON_TX_SIZE * ic_key;
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas);
+	empty_areas->y += BAR_H + FRAME_W * 3.0F;
+	icon_scr_rect.x = ICON_TX_SIZE * ic_coin;
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+	frames->y = KEY_ICON_FRAME_Y;
+	RenderFrame(rend_data, frames, FRAME_W);
+	RenderFrame(rend_data, frames + 6, FRAME_W);
+	(frames + 6)->y += BAR_H + FRAME_W * 3.0F;
+	RenderFrame(rend_data, frames + 6, FRAME_W);
+	frames->y +=  BAR_H + FRAME_W * 3.0F;
+	RenderFrame(rend_data, frames, FRAME_W);
+	RenderFrame(rend_data, frames + 2, FRAME_W);
+	RenderFrame(rend_data, frames + 3, FRAME_W);
+	RenderFrame(rend_data, frames + 5, FRAME_W);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 1, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	(empty_areas + 2)->y += MP_BAR_H;
+	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+	icon_scr_rect.x = ICON_TX_SIZE * ic_mp;
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas + 1);
+	for(unsigned int i = 0U; i < 3U; ++i){
+		(frames + 4)->x = RIGHT_AREA_X + FRAME_W * 0.5F;
+		(empty_areas + 3)->x = RIGHT_AREA_X + FRAME_W * 1.5F;
+		for(unsigned int j = 0U; j < 3U; ++j){
+			RenderFrame(rend_data, frames + 4, FRAME_W);
+			SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 3, 0.0F, NULL, SDL_FLIP_VERTICAL);
+			SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+			(frames + 4)->x += shift_scroll;
+			(empty_areas + 3)->x += shift_scroll;
+		}
+		(frames + 4)->y += shift_scroll;
+		(empty_areas + 3)->y += shift_scroll;
+	}
+	for(unsigned int i = 0U; i < 4U; ++i){
+		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_bar_rects + i, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	}
+	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 255);
+	SDL_RenderFillRect(rend_data->renderer, &(SDL_FRect){
+		rend_data->viewfinder_rect.x,
+		rend_data->viewfinder_rect.y,
+		rend_data->viewfinder_rect.w,
+		rend_data->viewfinder_rect.h
+	});
+	SDL_RenderFillRect(rend_data->renderer, &nesw_rect);
+	icon_scr_rect.x = ICON_TX_SIZE * ic_directions;
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, &nesw_rect);
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
+}
+
+static void RenderPortrait(Render_data* const rend_data){
+	const SDL_FRect portrait_frame_rect = {
+		SIDE_AREA_WIDTH < PORTRAIT_H ? PORTRAIT_Y - FRAME_W : FRAME_W + half(SIDE_AREA_WIDTH) - half(PORTRAIT_H),
+		PORTRAIT_Y - FRAME_W,
+		SIDE_AREA_WIDTH < PORTRAIT_H ? SIDE_AREA_WIDTH - FRAME_W * 2.0F : PORTRAIT_H,
+		SIDE_AREA_WIDTH < PORTRAIT_H ? SIDE_AREA_WIDTH - FRAME_W * 2.0F : PORTRAIT_H
+	};
+	const SDL_FRect portrait_rect = {
+		portrait_frame_rect.x + FRAME_W,
+		portrait_frame_rect.y + FRAME_W,
+		portrait_frame_rect.w - FRAME_W * 2.0F,
+		portrait_frame_rect.h - FRAME_W * 2.0F,
+	};
+	RenderFrame(rend_data, &portrait_frame_rect, FRAME_W);
+	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 255);
+	SDL_RenderFillRect(rend_data->renderer, &portrait_rect);
+	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icon), NULL, &portrait_rect);
+}
+
+static SDL_FPoint GetCharacterXPositionAndWidth(const int character_num){
+	const SDL_FPoint x_positions[] = CHARACTERS_X_AND_W;
+	return *(x_positions + character_num);
+}
+
+static inline unsigned int GetCharacterRow(const int character_num){
+	if(character_num >= ROW_5_CHARS){
+		return 6U;
+	}
+	if(character_num >= ROW_4_CHARS){
+		return 5U;
+	}
+	if(character_num >= ROW_3_CHARS){
+		return 4U;
+	}
+	if(character_num >= ROW_2_CHARS){
+		return 3U;
+	}
+	if(character_num >= ROW_1_CHARS){
+		return 2U;
+	}
+	if(character_num >= ROW_0_CHARS){
+		return 1U;
+	}
+	return 0U;
+}
+
+static void RenderText(Render_data* const rend_data, float x, const float y, const float size, const Uint8* char_nums){
+	do{
+		const SDL_FPoint x_and_width = GetCharacterXPositionAndWidth(*char_nums);
+		const float size_factor = size / CHARS_ROW_HEIGHT;
+		const float char_width = x_and_width.y * size_factor;
+		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_chars), &(SDL_FRect){
+			x_and_width.x,
+			GetCharacterRow(*char_nums) * CHARS_ROW_HEIGHT,
+			x_and_width.y,
+			CHARS_ROW_HEIGHT
+		}, &(SDL_FRect){
+			x,
+			y,
+			char_width,
+			CHARS_ROW_HEIGHT * size_factor
+		});
+		x += char_width + 1.0F;
+		++char_nums;
+	}while(*char_nums != char_end);
+}
+
+static void RenderInt(Render_data* const rend_data, const float x, const float y, const float size, int num){
+	const Uint8 cipher_nums[] = CIPHER_NUMS;
+	unsigned int text_len = 1U;
+	int tmp = 10;
+	while(num >= tmp){
+		++text_len;
+		tmp *= 10;
+	}
+	Uint8 char_nums[text_len + 1U];
+	for(unsigned int i = 0U; i < text_len; ++i){
+		tmp /= 10;
+		unsigned int cipher = num / tmp;
+		*(char_nums + i) = *(cipher_nums + cipher);
+		num %= tmp;
+	}
+	*(char_nums + text_len) = char_end;
+	RenderText(rend_data, x, y, size, char_nums);
+}
+
+extern inline void ResetTextTextureAlpha(Render_data* const rend_data){
+	SDL_SetTextureAlphaMod(*(rend_data->textures + tx_chars), 255U);
+}
+
+void SetSelectetScrollMouseSelection(const Render_data* const rend_data, Player* const p){
+	const int num = GetMousePointedPositionNum(rend_data);
+	if(num >= 0){
+		p->selected_scroll = num;
+	}
+}
+
+void SetPointedScrollMouseSelection(const Render_data* const rend_data, Player* const p){
+	const int num = GetMousePointedPositionNum(rend_data);
+	if(num >= 0){
+		p->help_data.menu_position = num;
+	}
+}
+
+int GetMousePointedPositionNum(const Render_data* const rend_data){
+	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
+	const float shift = icon_size + FRAME_W;
+	const SDL_FRect manage_scrolls_rect = MANAGE_SCROLLS_RECT;
+	SDL_FPoint mouse;
+	SDL_GetMouseState(&mouse.x, &mouse.y);
+	if(SDL_PointInRectFloat(&mouse, &manage_scrolls_rect)){
+		const unsigned int num = (unsigned int)((mouse.x - manage_scrolls_rect.x) / shift) + (unsigned int)((mouse.y - manage_scrolls_rect.y) / shift) * ICONS_IN_VIEWF_ROW;
+		if(num < SCROLLS_NUM){
+			return num;
+		}
+		return SCROLLS_NUM - 1U;
+	}
+	return -1;
 }

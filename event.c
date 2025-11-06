@@ -4,8 +4,9 @@
 #include <event.h>
 #include <enum.h>
 #include <render.h>
+#include <Player.h>
 
-bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_data){
+int EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_data){
 	while(SDL_PollEvent(e)){
 		if(e->type == SDL_EVENT_KEY_DOWN){
 			switch(e->key.scancode){
@@ -27,6 +28,18 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->flags ^= range_mode; break;
 			case KEY_TMP:
 				p->flags ^= tmp0; break;
+			case KEY_TMP1:
+				p->flags ^= tmp1; break;
+			case KEY_FULLSCR:
+				SDL_SetWindowFullscreen(rend_data->window, true);
+				SDL_SyncWindow(rend_data->window);
+				ResetRenderData(rend_data);
+				break;
+			case KEY_WINDOWED:
+				SDL_SetWindowFullscreen(rend_data->window, false);
+				SDL_SyncWindow(rend_data->window);
+				ResetRenderData(rend_data);
+				break;
 			case SDL_SCANCODE_1:
 				p->flags &= ~(range_mode);
 				break;
@@ -42,6 +55,9 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 				p->flags |= range_mode;
 				p->selected_scroll = *(p->scrolls_quick_access + (int)e->key.scancode - 31);
 				break;
+			case KEY_MANAGE_SCROLLS:
+				SDL_SetWindowRelativeMouseMode(rend_data->window, false);
+				return event_manage_scrolls;
 			default: break;
 			}
 		}else if(e->type == SDL_EVENT_KEY_UP){
@@ -61,7 +77,7 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 			case KEY_ACTION:
 				p->flags &= ~(action); break;
 			case SDL_SCANCODE_ESCAPE:
-				return true;
+				return 1;
 			default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
@@ -88,10 +104,10 @@ bool EventsService(SDL_Event* const e, Player* const p, Render_data* const rend_
 		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
 			p->direction += e->motion.xrel * ((e->motion.y / (float)rend_data->window_h + 0.125F) * ROTATION_SPEED);
 		}else if(e->type == SDL_EVENT_QUIT){
-			return true;
+			return 1;
 		}
 	}
-	return false;
+	return 0;
 }
 
 int MenuEventsService(SDL_Event* const e, Render_data* const rend_data){
@@ -110,4 +126,54 @@ int MenuEventsService(SDL_Event* const e, Render_data* const rend_data){
 		}
 	}
 	return menu_unknown;
+}
+
+int ManageScrollsEventsService(SDL_Event* const e, Player* const p, Render_data* const rend_data){
+	while(SDL_PollEvent(e)){
+		if(e->type == SDL_EVENT_KEY_DOWN){
+			switch(e->key.scancode){
+			case KEY_SELECT:
+			case SDL_SCANCODE_RETURN:
+				p->selected_scroll = p->help_data.menu_position; break;
+			case KEY_MOVE_RIGHT:
+			case SDL_SCANCODE_RIGHT:
+				++p->help_data.menu_position; break;
+			case KEY_MOVE_LEFT:
+			case SDL_SCANCODE_LEFT:
+				--p->help_data.menu_position; break;
+			case KEY_MOVE_BACK:
+			case SDL_SCANCODE_DOWN:
+				p->help_data.menu_position += ICONS_IN_VIEWF_ROW; break;
+			case KEY_MOVE_FORWARD:
+			case SDL_SCANCODE_UP:
+				p->help_data.menu_position -= ICONS_IN_VIEWF_ROW; break;
+			case SDL_SCANCODE_2:
+			case SDL_SCANCODE_3:
+			case SDL_SCANCODE_4:
+			case SDL_SCANCODE_5:
+			case SDL_SCANCODE_6:
+			case SDL_SCANCODE_7:
+			case SDL_SCANCODE_8:
+			case SDL_SCANCODE_9:
+			case SDL_SCANCODE_0:
+				SetQuickScroll(p, (int)e->key.scancode - 31); break;
+			case KEY_MANAGE_SCROLLS:
+				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+				return 0;
+			default: break;
+			}
+		}else if(e->type == SDL_EVENT_KEY_UP){
+			switch (e->key.scancode){
+			case SDL_SCANCODE_ESCAPE:
+				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+				return 0;
+			default: break;
+			}
+		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+			SetSelectetScrollMouseSelection(rend_data, p); break;
+		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
+			SetPointedScrollMouseSelection(rend_data, p); break;
+		}
+	}
+	return event_manage_scrolls;
 }

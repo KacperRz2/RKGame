@@ -17,13 +17,13 @@ typedef struct Segment_beings Segment_beings;
 typedef struct Projectile Projectile;
 typedef struct Projectiles_array Projectiles_array;
 //World
+typedef struct Key_location Key_location;
 typedef struct Segment Segment;
 typedef struct World World;
 //Player
 typedef struct Block_times Block_times;
 typedef struct Player Player;
 typedef struct Players Players;
-
 //Game
 typedef struct Game_data Game_data;
 typedef struct Box_element Box_element;
@@ -152,6 +152,10 @@ struct Projectiles_array{
 	Uint16 num;
 };
 //World
+struct Key_location{
+	Uint8 x;
+	Uint8 y;
+};
 struct Segment{
 	Uint8 flags;
 	Segment_beings beings;
@@ -165,6 +169,7 @@ struct World{
 	SDL_FPoint portalA;
 	SDL_FPoint portalB;
 	SDL_FPoint door;
+	Key_location key_locations[MAX_KEYS];
 };
 //Player
 struct Block_times{
@@ -201,6 +206,9 @@ struct Player{
 	Uint8 scrolls_quick_access[QUICK_SCROLLS];
 	Uint8 effects_num;
 	Lasting_effect effects[MAX_PC_EFFECTS];
+	union help_data{
+		Uint8 menu_position;
+	}help_data;
 };
 struct Players{
 	Player* array;

@@ -34,5 +34,6 @@ static void PlayerGainArmour(Player* const, const float);
 void UpdatePlayers(Game_data* const);
 static void UpdateCPUPlayerFlags(Game_data* const, const unsigned int);
 static Being* BeingNear(Segment* s, Game_data* const);
+void SetQuickScroll(Player* const, int);
 
 #endif

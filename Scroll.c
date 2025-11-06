@@ -19,6 +19,10 @@ extern inline void UseScroll(Game_data* const g_d){
     (*(effect + (g_d->champions.array + g_d->human_indx)->selected_scroll))(g_d);
 }
 
+Uint8 GetRandomScroll(){
+    return SDL_rand(scroll_empty);
+}
+
 void effect0(Game_data* const g_d){
     Segment* s = GetSegment(&g_d->world, (g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y);
     for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){

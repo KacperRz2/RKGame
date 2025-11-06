@@ -252,25 +252,15 @@ static inline void UpdateBeingStrikeAlly(Being* const b, float const distance_sq
         const float distance = SDL_sqrtf(distance_squared);
         MoveBackStrikingBeing(b, distance, distance_x, distance_y, gd);
     }
-    if(b->status_ticks_left > 0){
-        if(b->status_ticks_left == 1){
-            const float b_sine = SineSafe(b->direction);
-            const float b_cosine = CosiSafe(b->direction);
-            const SDL_FPoint dangerous_point = GetHBladeAttackHittingPoint(b, b_sine, b_cosine);
-            if(CircleMeetsBeing(dangerous_point.x, dangerous_point.y, BEING_HIT_CIRCLE_DIAMET, b->target.being)){
-                DamageAlly(b->target.being, &b->impact, gd->beings.array);
-            }
-            b->status_ticks_left = -(BEING_ATTACK_STEPS - 1);
-            return;
+    if(b->status_ticks_left == BEING_ATTACK_STEPS + 1){
+        const float b_sine = SineSafe(b->direction);
+        const float b_cosine = CosiSafe(b->direction);
+        const SDL_FPoint dangerous_point = GetHBladeAttackHittingPoint(b, b_sine, b_cosine);
+        if(CircleMeetsBeing(dangerous_point.x, dangerous_point.y, BEING_HIT_CIRCLE_DIAMET, b->target.being)){
+            DamageAlly(b->target.being, &b->impact, gd->beings.array);
         }
-        --b->status_ticks_left;
-        return;
     }
-    if(b->status_ticks_left == -BEING_ATTACK_STEPS){
-        b->status_ticks_left = BEING_ATTACK_STEPS;
-        return;
-    }
-    ++b->status_ticks_left;
+    --b->status_ticks_left;
 }
 
 static inline void UpdateBeingStrike(Being* const b, Player* const p, float const distance_squared, float const distance_x, float const distance_y, Game_data* const gd){
@@ -285,29 +275,19 @@ static inline void UpdateBeingStrike(Being* const b, Player* const p, float cons
         const float distance = SDL_sqrtf(distance_squared);
         MoveBackStrikingBeing(b, distance, distance_x, distance_y, gd);
     }
-    if(b->status_ticks_left > 0){
-        if(b->status_ticks_left == 1){
-            const float b_sine = SineSafe(b->direction);
-            const float b_cosine = CosiSafe(b->direction);
-            const SDL_FPoint dangerous_point = GetHBladeAttackHittingPoint(b, b_sine, b_cosine);
-            if(CircleMeetsPlayer(dangerous_point.x, dangerous_point.y, BEING_HIT_CIRCLE_DIAMET, p)){
-                if(p->flags & block && (sine(p->direction) * b_sine) + (-cosi(p->direction) * -b_cosine) <= 0){
-                    HitBarrier(p, &b->impact);
-                }else{
-                    DamagePlayer(p, &b->impact);
-                }
+    if(b->status_ticks_left == BEING_ATTACK_STEPS + 1){
+        const float b_sine = SineSafe(b->direction);
+        const float b_cosine = CosiSafe(b->direction);
+        const SDL_FPoint dangerous_point = GetHBladeAttackHittingPoint(b, b_sine, b_cosine);
+        if(CircleMeetsPlayer(dangerous_point.x, dangerous_point.y, BEING_HIT_CIRCLE_DIAMET, p)){
+            if(p->flags & block && (sine(p->direction) * b_sine) + (-cosi(p->direction) * -b_cosine) <= 0){
+                HitBarrier(p, &b->impact);
+            }else{
+                DamagePlayer(p, &b->impact);
             }
-            b->status_ticks_left = -(BEING_ATTACK_STEPS - 1);
-            return;
         }
-        --b->status_ticks_left;
-        return;
     }
-    if(b->status_ticks_left == -BEING_ATTACK_STEPS){
-        b->status_ticks_left = BEING_ATTACK_STEPS;
-        return;
-    }
-    ++b->status_ticks_left;
+    --b->status_ticks_left;
 }
 
 static inline void StartBeingSearch(Being* const b, const int duration){
@@ -804,7 +784,7 @@ static inline void UpdateBeingAttackAlly(Being* const b, Game_data* const gd, co
         if(distance_squared < pow2(attack_range)){
             if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
                 b->status = being_strike_being;
-                b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
+                b->status_ticks_left = BEING_ATTACK_STEPS * 3;
                 return;
             }else{
                 b->status = being_shoot_being;
@@ -814,7 +794,7 @@ static inline void UpdateBeingAttackAlly(Being* const b, Game_data* const gd, co
         }
     }else if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
         b->status = being_strike_being;
-        b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
+        b->status_ticks_left = BEING_ATTACK_STEPS * 3;
         return;
     }
     const float distance = SDL_sqrtf(distance_squared);
@@ -864,7 +844,7 @@ static inline void UpdateBeing0(Being* const b, Game_data* const g_d){
         GetBeingDistances(b, &p->position, &distance_x, &distance_y, &distance_squared);
         if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
             b->status = being_strike;
-            b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
+            b->status_ticks_left = BEING_ATTACK_STEPS * 3;
         }else if(AllyNear(b, g_d)){
             UpdateBeingAttackAlly(b, g_d, 0.0F);
         }else if(IsClearSightWithKnownDistance(&b->position, p->segment, &g_d->world, distance_x, distance_y, distance_squared)){
@@ -946,7 +926,7 @@ static inline void UpdateBeing1(Being* const b, Game_data* const g_d){
         if(distance_squared < pow2(BEING_SHOOT_DISTANCE)){
             if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
                 b->status = being_strike;
-                b->status_ticks_left = -(BEING_ATTACK_STEPS * 2);
+                b->status_ticks_left = BEING_ATTACK_STEPS * 3;
                 return;
             }else{
                 if(AllyNear(b, g_d)){
