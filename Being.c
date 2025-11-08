@@ -38,6 +38,23 @@ void DestroyBeings(Beings_array* const bs){
     bs->num = 0U;
 }
 
+extern inline void TryCreateIdleBeing(Game_data* const gd, const Uint8 type_id, const float x, const float y, Player* const target){
+    Segment* const s = GetSegment(&gd->world, x, y);
+    if(!s || s->beings.num >= MAX_SEGM_BEINGS || gd->beings.num >= MAX_BEINGS_NUM){
+        return;
+    }
+    AddBeingToArray(&gd->beings, type_id, x, y, s, target);
+}
+
+extern inline bool TryCreateHostileBeing(Game_data* const gd, const Uint8 type_id, const float x, const float y, Player* const target){
+    Segment* const s = GetSegment(&gd->world, x, y);
+    if(s->beings.num >= MAX_SEGM_BEINGS || gd->beings.num >= MAX_BEINGS_NUM){
+        return false;
+    }
+    AddBeingToArray(&gd->beings, type_id, x, y, s, target);
+    return true;
+}
+
 extern inline void AddBeingToArray(Beings_array* const bs, const Uint8 type_id, const float x, const float y, Segment* const s, Player* const target){
     Being* b = (bs->array + *(bs->indices + bs->num++));
     b->position = (SDL_FPoint){x, y};
@@ -45,7 +62,7 @@ extern inline void AddBeingToArray(Beings_array* const bs, const Uint8 type_id, 
     b->target.player = target;
     if(IsAlly(b)){
         AddBeingToSegment(s, b, &s->ally_beings);
-        b->target_last_seen_at = (struct position){b->target.player->position.x, b->target.player->position.y};
+        b->target_last_seen_at = (position16){b->target.player->position.x, b->target.player->position.y};
     }else{
         AddBeingToSegment(s, b, &s->beings);
         b->target_last_seen_at.x = 0.0F;
@@ -388,7 +405,7 @@ static inline void StartBeingFollow(Being* const b, const int duration, const fl
     b->special_move_shift = (SDL_FPoint){distance_x / velocity_xy, distance_y / velocity_xy};
     b->status = being_follow;
     b->status_ticks_left = duration;
-    b->target_last_seen_at = (struct position){b->target.player->position.x, b->target.player->position.y};
+    b->target_last_seen_at = (position16){b->target.player->position.x, b->target.player->position.y};
 }
 
 static inline void UpdateBeingFollow(Being* const b, float const distance_squared, float const distance_x, float const distance_y, Game_data* const gd){
@@ -451,7 +468,11 @@ static inline void HaltBeing(Being* const b, const int time){
 }
 
 static inline bool IsAlly(const Being* const b){
-    if(b->type_id > being_1){
+    return TypeIsAlly(b->type_id);
+}
+
+static inline bool TypeIsAlly(const Uint8 type_id){
+    if(type_id > being_1){
         return true;
     }
     return false;
@@ -933,7 +954,7 @@ static inline void UpdateBeing1(Being* const b, Game_data* const g_d){
                     UpdateBeingAttackAlly(b, g_d, BEING_SHOOT_DISTANCE);
                     return;
                 }else if(IsClearSightWithKnownDistance(&b->position, p->segment, &g_d->world, distance_x, distance_y, distance_squared)){
-                    b->target_last_seen_at = (struct position){b->target.player->position.x, b->target.player->position.y};
+                    b->target_last_seen_at = (position16){b->target.player->position.x, b->target.player->position.y};
                     b->status = being_shoot;
                     b->status_ticks_left = BEING_RELOAD;
                     return;
@@ -976,7 +997,7 @@ static inline void UpdateAlly0(Being* const b, Game_data* const g_d){
     if(b->status == being_idle){
         const bool plr_in_sight = IsClearSight(&b->position, &(g_d->champions.array + g_d->human_indx)->position, (g_d->champions.array + g_d->human_indx)->segment, &g_d->world);
         if(plr_in_sight){
-            b->target_last_seen_at = (struct position){(g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y};
+            b->target_last_seen_at = (position16){(g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y};
         }
         if(FindAllyTarget(b, g_d)){
             b->status = being_attack_being;

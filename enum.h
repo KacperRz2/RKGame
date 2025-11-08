@@ -62,7 +62,7 @@ enum scroll_type{
 enum being_type{
     being_0,
     being_1,
-    being_2,
+    ally_0,
     being_3,
     being_4,
     being_5,
@@ -83,7 +83,7 @@ enum pc_effect{
 };
 
 enum game_effect{
-    game_effect_0,
+    game_effect_horde_attack,
     game_effect_1,
     game_no_effect
 };
@@ -99,6 +99,10 @@ enum segment_flags{
     segment_known = 1 << 1
 };
 
+enum game_flags{
+    gamef_horde_attack = 1 << 0
+};
+
 enum event{
     event_manage_scrolls = 2
 };
@@ -111,7 +115,7 @@ enum game_update{
 enum character{
     Ż,Ź,Ś,Ć,s0,Ń,Ó,J,Q,s1,Z,s2,Ą,L,
     Ę,Ł,S,C,D,E,s3,s4,j,T,s5,s6,s7,s8,f,B,s9,
-    V,W,s10,G,H,N,U,s11,s12,n3,n8,b,dot,
+    V,W,s10,G,H,N,U,exclam_m,s12,n3,n8,b,dot,
     h,l,I,M,O,P,R,Y,s14,ł,n1,n2,n6,n7,a,
     k,A,F,K,X,ź,ż,n0,n4,n5,n9,d,ń,ć,ó,i,
     ś,q,g,p,y,ą,ę,s15,t,z,m,n,o,r,s,v,w,

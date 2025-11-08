@@ -5,6 +5,7 @@
 #define FULL_ANGLE			        (SDL_PI_F * 2.0F)
 #define pow2(x)                     ((x) * (x))
 #define half(x)                     ((x) * (0.5F))
+#define human(game_data_ptr)        (game_data_ptr->champions.array + game_data_ptr->human_indx)
 #define BIG_SEGMENTS_X              29U
 #define BIG_SEGMENT_SEGMENTS_X      16U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
@@ -125,6 +126,12 @@
 #define MAX_KEYS                    16U
 #define MAX_MAPS                    32U
 #define SMALL_PLAN_SIZE             (BIG_SEGMENTS_X / 4)
+#define HORDE_ATTACK_START_TICKS    0x1000
+#define HORDE_ATTACK_POINTS         8
+#define BIG_SEGMENT_SIZE            (SEGMENT_SIZE * BIG_SEGMENT_SEGMENTS_X)
+#define HUGE_SEGMENTS_X             7
+#define HUGE_SEGMENT_SIZE           ((WORLD_SIZE - SEGMENT_SIZE * 2.0F) / (float)HUGE_SEGMENTS_X)
+#define MAX_POPULATION_NUM          0x20
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -167,6 +174,9 @@
                                         EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
                                         EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
                                         EffectEmpty\
+                                    }
+#define GAME_LASTING_EFFECTS        {\
+                                        HordeAttack\
                                     }
 #define BEING_TYPES                 {\
                                         {\

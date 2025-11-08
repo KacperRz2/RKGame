@@ -8,6 +8,7 @@ typedef struct Impact Impact;
 typedef struct Render_data Render_data;
 typedef struct Lasting_effect Lasting_effect;
 typedef struct Armour Armour;
+typedef struct position16 position16;
 //Being
 typedef struct Being_type Being_type;
 typedef struct Being Being;
@@ -80,6 +81,10 @@ struct Armour{
 	float magic_multipl;
 	float unstability;
 };
+struct position16{
+	_Float16 x;
+	_Float16 y;
+};
 //Being
 struct Being_type{
 	float size;
@@ -99,10 +104,7 @@ struct Being{
 		Player* player;
 		Being* being;
 	}target;
-	struct position{
-		_Float16 x;
-		_Float16 y;
-	}target_last_seen_at;
+	position16 target_last_seen_at;
 	Uint8 indx;
 	Uint8 type_id;
 	Sint8 status;
@@ -164,6 +166,7 @@ struct Segment{
 };
 struct World{
 	Segment*** segments;
+	Uint64 plan[BIG_SEGMENTS_X];
 	float width;
 	float height;
 	SDL_FPoint portalA;
@@ -228,6 +231,7 @@ struct Boxes{
 	Uint16 num;
 };
 struct Game_data{
+	Uint8 flags;
 	Players champions;
 	Beings_array beings;
 	Projectiles_array projectiles;
@@ -239,6 +243,10 @@ struct Game_data{
 	Sint16 enemy_morale;
 	Uint8 effects_num;
 	Lasting_effect effects[MAX_GAME_EFFECTS];
+	union horde_data{
+		SDL_FPoint creation_points[HORDE_ATTACK_POINTS];
+		unsigned int ticks_from_attack;
+	}horde_data;
 };
 // int a = sizeof(Segment);
 #endif

@@ -7,6 +7,8 @@ float BeingSize(Being* const);
 static void AddBeingToSegment(Segment* const, Being* const, Segment_beings* const);
 static void RemoveBeingFromSegment(Being* const, Segment_beings* const, Being* const);
 void DestroyBeings(Beings_array* const);
+void TryCreateIdleBeing(Game_data* const, const Uint8, const float, const float, Player* const);
+bool TryCreateHostileBeing(Game_data* const, const Uint8, const float, const float, Player* const);
 void AddBeingToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
 static void GetBeingDistances(const Being* const, const SDL_FPoint* const, float* const, float* const, float* const);
 static void MoveBeing(Being* const, const float, const float);
@@ -46,6 +48,7 @@ static void SetBeingPositionIfAllowed(Being* const, float const, float const, Ga
 
 static SDL_FPoint GetHBladeAttackHittingPoint(Being* const, const float, const float);
 static void HaltBeing(Being* const, const int);
+static bool TypeIsAlly(const Uint8);
 static bool IsAlly(const Being* const);
 
 void UpdateBeings(Game_data* const);

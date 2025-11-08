@@ -9,6 +9,29 @@
 #include <Projectile.h>
 #include <Being.h>
 #include <game.h>
+#include <function.h>
+
+static inline void PopulateBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){
+	if(IsVoidBigSeg(gd->world.plan, x, y) || IsInPopulatedBigSeg(gd->world.plan, x, y)){
+		return;
+	}
+	MarkAsPopulatedBigSeg(gd->world.plan, x, y);
+	for(unsigned int i = 0U; i < MAX_POPULATION_NUM; ++i){
+		TryCreateIdleBeing(gd, SDL_rand(2), BigSegPosition(x) + SDL_randf() * BIG_SEGMENT_SIZE, BigSegPosition(y) + SDL_randf() * BIG_SEGMENT_SIZE, human(gd));
+	}
+}
+
+static inline void PlayerInUncoveredHugeSeg(Game_data* const gd){
+	const unsigned int seg_x = GetBigSegCoordinate((gd->champions.array + gd->human_indx)->position.x);
+	const unsigned int seg_y = GetBigSegCoordinate((gd->champions.array + gd->human_indx)->position.y);
+	if(!IsInUncoveredBigSeg(gd->world.plan, seg_x, seg_y)){
+		UncoverBigSeg(gd->world.plan, seg_x, seg_y);
+		PopulateBigSeg(gd, seg_x + 1U, seg_y);
+		PopulateBigSeg(gd, seg_x, seg_y + 1U);
+		PopulateBigSeg(gd, seg_x - 1U, seg_y);
+		PopulateBigSeg(gd, seg_x, seg_y - 1U);
+	}
+}
 
 int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
     int option = menu_unknown;
@@ -79,12 +102,13 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 }
 
 static void SetGameData(Game_data* const g_d){
+	g_d->flags = 0x0U;
 	g_d->champions.array = (Player*)SDL_malloc(sizeof(Player) * MAX_PLAYERS_NUM);
 	g_d->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
 	g_d->champions.num = 0U;
 	g_d->boxes.num = 0U;
 	g_d->human_indx = 0U;
-	CreateWorld(g_d, WORLD_W, WORLD_H);
+	CreateWorld(g_d);
 	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	g_d->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
 	g_d->beings.indices = (Uint16*)SDL_malloc(sizeof(Uint16) * MAX_BEINGS_NUM);
@@ -97,6 +121,7 @@ static void SetGameData(Game_data* const g_d){
 	g_d->projectiles.num = 0U;
 	g_d->keys = 0U;
 	g_d->effects_num = 0U;
+	g_d->horde_data.ticks_from_attack = 0U;
 }
 
 static void ClearGameData(Game_data* const g_d){
@@ -125,8 +150,19 @@ static void RareEventsService(Game_data* const g_d){
 	}else if(check_queue == 3 && g_d->keys >= g_d->needed_keys && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - g_d->world.door.x) < half(DOOR_SIZE) && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - g_d->world.door.y) < half(DOOR_SIZE) && ((g_d->champions.array + g_d->human_indx)->flags & action)){
 		(g_d->champions.array + g_d->human_indx)->hit_points = 0;
 	 	(g_d->champions.array + g_d->human_indx)->flags &= ~(action);
+	}else if(check_queue == 4){
+		if(!(g_d->flags & gamef_horde_attack)){
+			if(g_d->horde_data.ticks_from_attack > HORDE_ATTACK_START_TICKS + SDL_rand(HORDE_ATTACK_START_TICKS * 16)){
+				AddGameEffect(g_d, (Lasting_effect){game_effect_horde_attack, HORDE_ATTACK_START_TICKS});
+				g_d->flags |= gamef_horde_attack;
+			}else{
+				++g_d->horde_data.ticks_from_attack;
+			}
+		}
+	}else if(check_queue == 5){
+		PlayerInUncoveredHugeSeg(g_d);
 	}
-	check_queue = (check_queue + 1) % 4;
+	check_queue = (check_queue + 1) % 6;
 }
 
 extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const float position_y){
@@ -264,6 +300,7 @@ static int UpdateGame(Game_data* const gd){
 		gd->human_indx = (gd->human_indx + 1U) % gd->champions.num;
 	}
 	//TEST
+	UpdateGameEffects(gd);
 	UpdatePlayers(gd);
 	UpdateProjectiles(gd);
 	if(ticks_to_update_beings == 0U){
@@ -277,4 +314,82 @@ static int UpdateGame(Game_data* const gd){
 		return update_defeated;
 	}
 	return update_ok;
+}
+
+static inline SDL_FPoint GetRandomBeingCreationPoint(Game_data* const gd){
+	const float angle = SDL_randf() * FULL_ANGLE;
+    const float shift_x = SineSafe(angle);
+    const float shift_y = -CosiSafe(angle);
+	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
+	const float help_to_y = shift_y < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
+	SDL_FPoint control_point_old = (gd->champions.array + gd->human_indx)->position;
+	SDL_FPoint control_point = control_point_old;
+	while(1){
+		const float help_x = SDL_fmodf(control_point.x, SEGMENT_SIZE);
+		const float help_y = SDL_fmodf(control_point.y, SEGMENT_SIZE);
+		const float shifts_to_next_seg_x = (help_to_x - help_x) / shift_x;
+		const float shifts_to_next_seg_y = (help_to_y - help_y) / shift_y;
+		const float multipl = (shifts_to_next_seg_x < shifts_to_next_seg_y ? shifts_to_next_seg_x : shifts_to_next_seg_y);
+		control_point.x += shift_x * multipl;
+		control_point.y += shift_y * multipl;
+		if(GetSegment(&gd->world, control_point.x, control_point.y) == NULL){
+			control_point.x = control_point_old.x + shift_x * multipl * 0.875F;
+			control_point.y = control_point_old.y + shift_y * multipl * 0.875F;
+			if(GetSegment(&gd->world, control_point.x, control_point.y) == NULL){
+				return control_point_old;
+			}
+			return control_point;
+		}
+		control_point_old = control_point;
+	}
+}
+
+static inline void AddLastingEffect(Lasting_effect* const effects, const Lasting_effect effect, const int effects_num){
+	*(effects + effects_num) = effect;
+}
+
+static inline void RemoveLastingEffect(Lasting_effect* const effects, const int indx, const int effects_num){
+	*(effects + indx) = *(effects + effects_num - 1);
+}
+
+static void AddGameEffect(Game_data* const gd, const Lasting_effect effect){
+	AddLastingEffect(gd->effects, effect, gd->effects_num++);
+}
+
+static void RemoveGameEffect(Game_data* const gd, const int indx){
+	RemoveLastingEffect(gd->effects, indx, gd->effects_num--);
+}
+
+static inline void UpdateGameEffects(Game_data* const gd){
+	for(unsigned int i = 0U; i < gd->effects_num; ++i){
+		UpdateGameEffect(gd, i);
+	}
+}
+
+static inline void UpdateGameEffect(Game_data* const gd, const int effect_indx){
+    const void (*effect[])(Game_data* const, const int) = GAME_LASTING_EFFECTS;
+    (*(effect + (gd->effects + effect_indx)->id))(gd, (gd->effects + effect_indx)->ticks_left--);
+	if((gd->effects + effect_indx)->ticks_left < 1){
+		RemoveGameEffect(gd, effect_indx);
+	}
+}
+
+void HordeAttack(Game_data* const gd, const int ticks_left){
+	if(ticks_left == HORDE_ATTACK_START_TICKS){
+		for(unsigned int i = 0U; i < HORDE_ATTACK_POINTS; ++i){
+			*(gd->horde_data.creation_points + i) = GetRandomBeingCreationPoint(gd);
+		}
+	}else if(ticks_left < 2){
+		gd->flags &= ~(gamef_horde_attack);
+		gd->horde_data.ticks_from_attack = 0U;
+	}else if(ticks_left < (HORDE_ATTACK_START_TICKS / 8 * 7) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / 16)){
+		const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
+		unsigned int point_indx1 = point_indx;
+		do{
+			if(TryCreateHostileBeing(gd, SDL_rand(2), (gd->horde_data.creation_points + point_indx1)->x, (gd->horde_data.creation_points + point_indx1)->y, gd->champions.array + gd->human_indx)){
+				break;
+			}
+			point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
+		}while(point_indx1 != point_indx);
+	}
 }

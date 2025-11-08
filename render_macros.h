@@ -42,6 +42,8 @@
 #define KEYS_NUM_Y                  (KEY_ICON_FRAME_Y + FRAME_W + 1.0F)
 #define COINS_NUM_Y                 (KEY_ICON_FRAME_Y + BAR_H * 1.25F + FRAME_W * 4.0F + 1.0F)
 #define SCROLLS_MANAG_ICON_SIZE     ((rend_data->viewfinder - FRAME_W) / (float)ICONS_IN_VIEWF_ROW - FRAME_W)
+#define SEGMENT_TX_SIZE             (SEGMENT_SIZE * 1.5F)
+#define MAX_UNSEEN_SEG              (pow2((unsigned int)(VIEWFINDER_SIZE / SEGMENT_SIZE) + 1U))
 
 #define BEINGS_TEXTURES             {\
                                         tx_being,\
@@ -180,8 +182,9 @@
                                     shift * 5\
                                 }
 #define CIPHER_NUMS             {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
-#define TEST_TEXT               {T,e,s,t,sp,t,e,x,t,dot,char_end}
-#define MENU_TEXT               {P,r,e,s,s,sp,S,P,A,C,E,char_end}
+#define TEST_TEXT               {T,e,s,t,sp,t,e,k,s,t,dot,char_end}
+#define MENU_TEXT               {N,a,c,i,ś,n,i,j,sp,S,P,A,C,E,char_end}
+#define HORDE_ALERT             {H,o,r,d,a,exclam_m,char_end}
 
 enum texture_num{
     tx_pc,

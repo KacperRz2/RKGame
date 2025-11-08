@@ -9,10 +9,37 @@
 #include <game.h>
 #include <scroll.h>
 
-void CreateWorld(Game_data* const g_d, const float x, const float y){
+extern inline unsigned int GetBigSegCoordinate(const float x){
+	return (unsigned int)((x - SEGMENT_SIZE) / BIG_SEGMENT_SIZE);
+}
+
+extern inline bool IsInUncoveredBigSeg(const Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+	return (bool)((*(wrld_plan + y) & ((1 << (x * 2U)) | (1 << (x * 2U + 1U)))) == ((1 << (x * 2U)) | (1 << (x * 2U + 1U))));
+}
+
+extern inline bool IsInPopulatedBigSeg(const Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+	return (bool)(*(wrld_plan + y) & (1 << (x * 2U + 1U)));
+}
+
+extern inline void UncoverBigSeg(Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+	*(wrld_plan + y) |= (1 << (x * 2U)) | (1 << (x * 2U + 1U));
+}
+
+extern inline void MarkAsPopulatedBigSeg(Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+	*(wrld_plan + y) |= (1 << (x * 2U + 1U));
+}
+
+extern inline bool IsVoidBigSeg(const Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+	return (bool)(((*(wrld_plan + y) & ((1 << (x * 2U)) | (1 << (x * 2U + 1U)))) == (1 << (x * 2U))) || x >= BIG_SEGMENTS_X || y >= BIG_SEGMENTS_X);
+}
+
+void CreateWorld(Game_data* const g_d){
 	bool world_plan_base[BIG_SEGMENTS_X][BIG_SEGMENTS_X] = WORLD_BASE;
 	int small_wordl_plan[SMALL_PLAN_SIZE][SMALL_PLAN_SIZE] = WORLD_SMALL_BASE;
 	World* const world = &g_d->world;
+	for(unsigned int i = 0U; i < BIG_SEGMENTS_X; ++i){
+		*(world->plan + i) = 0x0;
+	}
 	Uint64 seed = 2ULL;
 	SDL_srand(seed);
 	SDL_Point portal0;
@@ -96,12 +123,12 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 				|| ((fields + indx)->x - 1 >= 0 && (fields + indx)->x - 1 < 7 && *(*(small_wordl_plan + (fields + indx)->x - 1) + (fields + indx)->y) == small_plan_unconnected)
 				|| ((fields + indx)->y - 1 >= 0 && (fields + indx)->y - 1 < 7 && *(*(small_wordl_plan + (fields + indx)->x) + (fields + indx)->y - 1) == small_plan_unconnected)
 			){
-				SDL_LogInfo(SDL_LOG_CATEGORY_RENDER, "WORLD ERROR");
+				SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "WORLD ERROR");
 				exit(-100);
 			}
 			--indx;
 			if(indx < 0){
-				SDL_LogInfo(SDL_LOG_CATEGORY_ERROR, "indx < 0");
+				SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "indx < 0");
 				exit(-101);
 			}
 			try = 0b0000;
@@ -251,8 +278,8 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 			}
 		}
 	}
-	world->width = x;
-	world->height = y;
+	world->width = WORLD_W;
+	world->height = WORLD_H;
 	world->segments = (Segment***)SDL_malloc(sizeof(Segment**) * SEGMENTS_X);
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 		*(world->segments + c) = (Segment**)SDL_malloc(sizeof(Segment*) * SEGMENTS_Y);
@@ -267,7 +294,10 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 			if(*(*(world_plan_base + bigc) + bigr) == true){
 				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X + 1U; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++c){
 					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X + 1U; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++r){
-						if(!(c == bigc * BIG_SEGMENT_SEGMENTS_X + 1U || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X || r == bigr * BIG_SEGMENT_SEGMENTS_X + 1U || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X) || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U){
+						if(!(c == bigc * BIG_SEGMENT_SEGMENTS_X + 1U || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X || r == bigr * BIG_SEGMENT_SEGMENTS_X + 1U
+							|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X) || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
+							|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
+							|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U){
 							*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
 							(*(*(world->segments + c) + r))->indx.x = c;
 							(*(*(world->segments + c) + r))->indx.y = r;
@@ -285,6 +315,7 @@ void CreateWorld(Game_data* const g_d, const float x, const float y){
 						*(*(world->segments + c) + r) = NULL;
 					}
 				}
+				*(world->plan + bigr) |= 1 << (bigc * 2U);
 			}
 		}
 	}
@@ -327,34 +358,16 @@ extern inline Segment* GetSegmentByIndxSafe(const World* const world, const int 
 }
 
 void StartLevel(Game_data* const g_d){
-	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
-	for(unsigned int r = 0U; r < SEGMENTS_Y; ++r){
-			if(*(*(g_d->world.segments + c) + r) != NULL){
-				(*(*(g_d->world.segments + c) + r))->beings.num = 0U;//reset segments
-				(*(*(g_d->world.segments + c) + r))->ally_beings.num = 0U;
-			}
-		}
-	}
-	g_d->beings.num = 0U;
-	SDL_FPoint start_position = GetStartPosition(&g_d->world);
+	const SDL_FPoint start_position = GetStartPosition(&g_d->world);
 	for(unsigned int i = 0U; i < START_PLAYERS_NUM; ++i){
 		CreatePlayer((g_d->champions.array + i), start_position.x, start_position.y);
 		(g_d->champions.array + i)->segment = GetSegment(&g_d->world, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y);
 		(g_d->champions.array + i)->last_seen_in = (g_d->champions.array + i)->segment;
 		++g_d->champions.num;
 	}
-	Uint64 start_time = SDL_GetTicks();
-	while (g_d->beings.num < MAX_START_BEINGS_NUM - 64U){//test beings
-		float x = (float)(SDL_rand((Sint32)(WORLD_W - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
-		float y = (float)(SDL_rand((Sint32)(WORLD_H - SEGMENT_SIZE * 4.0F))) + SEGMENT_SIZE * 2.0F;
-		if(SDL_fabsf(start_position.x - x) > 1000.0F && SDL_fabsf(start_position.y - y) > 1000.0F && SDL_fabsf(start_position.x - x) < WORLD_W * 0.25F && SDL_fabsf(start_position.y - y) < WORLD_H * 0.25F){
-			Segment* s = GetSegment(&g_d->world, x, y);
-			if(s != NULL && s->beings.num < MAX_SEGM_BEINGS){
-				AddBeingToArray(&g_d->beings, (unsigned int)SDL_rand(2), x, y, s, g_d->champions.array + g_d->human_indx);
-			}
-		}
-		if(SDL_GetTicks() - start_time > 1500U) break;
-	}
+	const unsigned int seg_x = GetBigSegCoordinate(start_position.x);
+	const unsigned int seg_y = GetBigSegCoordinate(start_position.y);
+	MarkAsPopulatedBigSeg(g_d->world.plan, seg_x, seg_y);
 }
 
 static SDL_FPoint GetStartPosition(World* const w){
@@ -389,6 +402,10 @@ extern inline float SegmentCenterX(const Segment* const s){
 
 extern inline float SegmentCenterY(const Segment* const s){
 	return (s->indx.y + 0.5F) * SEGMENT_SIZE;
+}
+
+extern inline float BigSegPosition(const unsigned int x){
+	return x * BIG_SEGMENT_SIZE + SEGMENT_SIZE;
 }
 
 static float GetDoorPositionXorY(const unsigned int small_plan_position){
@@ -464,7 +481,7 @@ extern inline bool SegmentInSight(const SDL_FPoint* const from, const SDL_FPoint
 	p0 = (SDL_FPoint){to.x, to.y + SEGMENT_SIZE - 1.0F};
 	p1 = (SDL_FPoint){to.x + SEGMENT_SIZE - 1.0F, to.y + SEGMENT_SIZE - 1.0F};
 	p2 = (SDL_FPoint){to.x + SEGMENT_SIZE - 1.0F, to.y};
-	return (IsClearSightPlus(from, &to, to_s, w) || IsClearSightPlus(from, &p0, to_s, w) || IsClearSightPlus(from, &p1, to_s, w) || IsClearSightPlus(from, &p2, to_s, w));
+	return (IsClearSight(from, &to, to_s, w) || IsClearSight(from, &p0, to_s, w) || IsClearSight(from, &p1, to_s, w) || IsClearSight(from, &p2, to_s, w));
 }
 
 static inline bool IsClearSightPlus(const SDL_FPoint* const from, const SDL_FPoint* const to, const Segment* const to_s, const World* const w){
@@ -534,7 +551,5 @@ static void FillBoxes(Game_data* const gd){
 			}
 			(gd->boxes.array + *(boxes_with_map + i))->elements->value = key;
 		}
-		// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "keys: %u", gd->needed_keys);
-		// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "maps: %u", maps_num);
 	}while(gd->needed_keys < KEYS_NUM);
 }
