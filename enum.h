@@ -8,13 +8,13 @@ enum control{
     left = 1 << 3,
     dodge = 1 << 4,
     run = 1 << 5,
-    tmp0 = 1 << 6,
-    attack = 1 << 7,
+    attack = 1 << 6,
+    cast = 1 << 7,
     block = 1 << 8,
     action = 1 << 9,
     range_mode = 1 << 10,
-    cast = 1 << 11,
-    tmp1 = 1 << 13
+    stunned = 1 << 11,
+    tmp = 1 << 12
 };
 
 enum being_status{
@@ -30,7 +30,8 @@ enum being_status{
     being_stunned,
     being_fly,
     being_search,
-    being_attack_being
+    being_attack_being,
+    being_void
 };
 
 enum menu_option{
@@ -53,32 +54,33 @@ enum scroll_type{
     scroll_1,
     scroll_2,
     scroll_3,
-    scroll_4,
+    scroll_slow,
     scroll_5,
     scroll_6,
     scroll_empty = 34
 };
 
 enum being_type{
-    being_0,
-    being_1,
-    ally_0,
-    being_3,
-    being_4,
-    being_5,
-    being_6,
-    being_7
+    being_weak,
+    being_ordinary,
+    being_ranger,
+    being_elite,
+    being_elite_ranger,
+    being_commander,
+    being_warlock,
+    ally_ordinary
 };
 
 enum being_effect{
-    being_effect_0,
-    being_effect_1,
+    being_effect_slow,
+    being_effect_commander,
+    being_effect_bonus,
     being_no_effect
 };
 
 enum pc_effect{
-    pc_effect_0,
-    pc_effect_1,
+    pc_effect_slow,
+    pc_effect_hpregen,
     pc_no_effect
 };
 
@@ -86,6 +88,12 @@ enum game_effect{
     game_effect_horde_attack,
     game_effect_1,
     game_no_effect
+};
+
+enum visual_effect_type{
+    visual_effect_static,
+    visual_effect_moving,
+    visual_effect_2
 };
 
 enum projectile_type{
@@ -121,6 +129,48 @@ enum character{
     ś,q,g,p,y,ą,ę,s15,t,z,m,n,o,r,s,v,w,
     c,e,u,x,s16,s17,s18,s19,s20,s21,s22,s23,s24,s25,s26,s27,s28,s29,sp,
     char_end
+};
+
+enum texture_num{
+    tx_icon,
+    tx_viewfinder,
+    tx_pc_blade,
+    tx_icons,
+    tx_arrow,
+    tx_being_blade,
+    tx_terrain,
+    tx_gunsightpart,
+    tx_damage_test,
+    tx_portal,
+    tx_door,
+    tx_box,
+    tx_barrier,
+    tx_stun,
+    tx_scroll,
+    tx_weapon,
+    tx_creation_point,
+    tx_bar,
+    tx_chars,
+    tx_menu_ptr,
+    tx_weapon1,
+    tx_bonus_effect,
+    tx_curse_effect,
+    tx_void,
+    tx_pc,
+    tx_being_weak,
+    tx_being_ordinary,
+    tx_being_ranger,
+    tx_being_elite,
+    tx_being_elite_ranger,
+    tx_being_commander,
+    tx_being_warlock,
+    tx_being_ally_ordinary,
+    tx_projectile,
+    tx_h_projectile,
+    tx_h_projectile1,
+    tx_map,
+    tx_background,
+    txs_num
 };
 
 #endif

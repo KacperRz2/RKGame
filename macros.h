@@ -24,12 +24,14 @@
 #define PLAYER_VELOCITY		        0x0.Ap+0F
 #define RUN_MULTIPL		            2.0F
 #define BLOCK_VELOCITY_MULTIP		0.5F
+#define DODGE_VELOCITY_MULTIP		(PC_DODGE_VELOCITY / PLAYER_VELOCITY)
 #define ROTATION_SPEED		        3.90625e-3F
 #define FRAME_TIME			        0x400000ULL
 #define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
 #define MAX_PROJECTILES_NUM	        0x4000U
 #define MAX_SEGM_BEINGS		        0x10U
 #define MAX_BEINGS_NUM		        0x4000U
+#define MAX_VISUAL_EFFECTS_NUM		0x400U
 #define MAX_PLAYERS_NUM		        0x4U
 #define START_PLAYERS_NUM		    0x1U
 #define ANGLE_PARTS		            512
@@ -43,7 +45,6 @@
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
-#define TEXTURES_NUM		        31
 
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
@@ -62,7 +63,7 @@
 #define BEING_HALT_DISTANCE         70.0F
 #define BEING_MIN_DISTANCE          64.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
-#define UPDATE_BEINGS_INTERVAL      1U
+#define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
 #define PC_HP                       3000
 #define PC_FATIGUE                  1000
@@ -84,7 +85,7 @@
 #define PC_ARMOUR_REGEN_BLOCK       0x2000
 #define PC_ARMOUR_GAIN_INTERVAL     0x100
 #define TEST_DAMAGE                 100
-#define TEST_PENETRATION            3U
+#define TEST_PENETRATION            1U
 #define PC_BLADE_CHECKPOINTS        2U
 #define PC_BLADE_CHARGE_BASE        0xF.Fp-4F
 #define PC_BLADE_CHARGE_MODIFIER    0xF.F8p-4F
@@ -96,7 +97,7 @@
 #define PC_BLADE_AFTER_BLOCK_STEPS  512
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
 #define BLADE_HANDLER_POSITION      0.85F
-#define PC_SHOOT_RELOAD             64
+#define PC_SHOOT_RELOAD             192
 #define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x40U)
 #define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
 #define TEST_BEING_DMG_CLOSE        2
@@ -126,12 +127,15 @@
 #define MAX_KEYS                    16U
 #define MAX_MAPS                    32U
 #define SMALL_PLAN_SIZE             (BIG_SEGMENTS_X / 4)
-#define HORDE_ATTACK_START_TICKS    0x1000
+#define HORDE_ATTACK_START_TICKS    0x800
 #define HORDE_ATTACK_POINTS         8
 #define BIG_SEGMENT_SIZE            (SEGMENT_SIZE * BIG_SEGMENT_SEGMENTS_X)
 #define HUGE_SEGMENTS_X             7
 #define HUGE_SEGMENT_SIZE           ((WORLD_SIZE - SEGMENT_SIZE * 2.0F) / (float)HUGE_SEGMENTS_X)
 #define MAX_POPULATION_NUM          0x20
+#define COMMANDER_EFFECT_TICKS      1024
+#define HP_REGEN_TICKS              1024
+#define SLOW_EFFECT_TICKS           1024
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -167,7 +171,7 @@
                                         effect1,\
                                         effect2,\
                                         effect3,\
-                                        effect4,\
+                                        slow,\
                                         effect5,\
                                         effect6,\
                                         EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
@@ -178,26 +182,75 @@
 #define GAME_LASTING_EFFECTS        {\
                                         HordeAttack\
                                     }
+#define BEING_LASTING_EFFECTS       {\
+                                        SlowBeing,\
+                                        CommanderAura,\
+                                        CommanderIsNear\
+                                    }
+#define PLAYER_LASTING_EFFECTS      {\
+                                        SlowPlayer,\
+                                        PlayerHPRegeneration\
+                                    }
 #define BEING_TYPES                 {\
                                         {\
                                             32,\
                                             PLAYER_VELOCITY * 2.5F,\
                                             1000,\
                                             {0.0F, 1.0F, 1.0F, 1.5F},\
-                                            {20.0F, 0.0F, 0.0F, 0.5F},\
-                                            UpdateBeing0\
+                                            {10.0F, 0.0F, 0.0F, 0.25F},\
+                                            UpdateBeingOrdinary\
+                                        },\
+                                        {\
+                                            34,\
+                                            PLAYER_VELOCITY * 2.0F,\
+                                            2000,\
+                                            {15.0F, 0.875F, 1.0F, 1.0F},\
+                                            {20.0F, 0.125F, 0.0F, 0.5F},\
+                                            UpdateBeingOrdinary\
+                                        },\
+                                        {\
+                                            36,\
+                                            PLAYER_VELOCITY * 1.5F,\
+                                            1000,\
+                                            {10.0F, 0.875F, 1.0F, 1.0F},\
+                                            {20.0F, 0.125F, 1.0F, 0.25F},\
+                                            UpdateBeingRanger\
+                                        },\
+                                        {\
+                                            40,\
+                                            PLAYER_VELOCITY * 1.875F,\
+                                            2000,\
+                                            {20.0F, 0.25F, 0.875F, 0.5F},\
+                                            {30.0F, 0.5F, 5.0F, 0.75F},\
+                                            UpdateBeingOrdinary\
                                         },\
                                         {\
                                             48,\
-                                            PLAYER_VELOCITY * 1.5F,\
+                                            PLAYER_VELOCITY * 1.375F,\
                                             2000,\
-                                            {10.0F, 0.75F, 0.25F, 0.5F},\
+                                            {15.0F, 0.5F, 0.5F, 0.5F},\
                                             {20.0F, 0.5F, 10.0F, 0.25F},\
-                                            UpdateBeing1\
+                                            UpdateBeingRanger\
                                         },\
                                         {\
                                             32,\
-                                            PLAYER_VELOCITY * 2.5F,\
+                                            PLAYER_VELOCITY * 2.0F,\
+                                            4000,\
+                                            {25.0F, 0.125F, 0.875F, 0.25F},\
+                                            {1.0F, 0.875F, 0.0F, 0.5F},\
+                                            UpdateBeingCommander\
+                                        },\
+                                        {\
+                                            40,\
+                                            PLAYER_VELOCITY * 1.5F,\
+                                            2000,\
+                                            {10.0F, 0.875F, 0.125F, 0.5F},\
+                                            {5.0F, 0.875F, 20.0F, 0.25F},\
+                                            UpdateBeingWarlock\
+                                        },\
+                                        {\
+                                            34,\
+                                            PLAYER_VELOCITY * 2.25F,\
                                             1000,\
                                             {0.0F, 1.0F, 1.0F, 1.5F},\
                                             {128.0F, 0.125F, 16.0F, 0.5F},\
@@ -207,7 +260,7 @@
 #define PC_BLADE_IMPACT             {1200.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
 #define PC_RANGE_IMPACT             {10.0F, 0.5F, 350.0F, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
-#define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}
+#define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}//absorption, multipl, magic_multipl, unstability
 #define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.25F}
 #define PROJECTILES_UPDATE_FUNC     {\
                                         UpdatePCProjectile,\
@@ -238,7 +291,15 @@
                                         {{-1.0F, 24.0F}, 0.0F},\
                                         {{0.0F, 25.0F}, 0.0F}\
                                     }
-
+#define BEINGS_INCIDENCES           {\
+                                        200,\
+                                        200+80,\
+                                        200+80+50,\
+                                        200+80+50+40,\
+                                        200+80+50+40+20,\
+                                        200+80+50+40+20+3,\
+                                        200+80+50+40+20+3+4\
+                                    }
 #define WORLD_BASE              {\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\

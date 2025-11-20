@@ -3,13 +3,18 @@
 
 static void UpdateBeing(Being* const, Game_data* const);
 float BeingSize(Being* const);
+float BeingVelocity(Being* const);
 
+unsigned int GetRandomBeingId();
 static void AddBeingToSegment(Segment* const, Being* const, Segment_beings* const);
 static void RemoveBeingFromSegment(Being* const, Segment_beings* const, Being* const);
 void DestroyBeings(Beings_array* const);
 void TryCreateIdleBeing(Game_data* const, const Uint8, const float, const float, Player* const);
 bool TryCreateHostileBeing(Game_data* const, const Uint8, const float, const float, Player* const);
-void AddBeingToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
+void AddIdleBeingToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
+void AddHordeBeingToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
+static Being* AddBeingToArray(Beings_array* const, const Uint8, const float, const float, Player* const);
+static void SetBeingTypeData(Being* const);
 static void GetBeingDistances(const Being* const, const SDL_FPoint* const, float* const, float* const, float* const);
 static void MoveBeing(Being* const, const float, const float);
 static void SetBeingPosition(Being* const, const float, const float);
@@ -29,7 +34,7 @@ static void StartBeingSearch(Being* const, const int);
 static void StartBeingFollow(Being* const, const int, float const, float const, float const);
 
 static bool BeingCollideWithBeing(Being* const, const float, const float, const float);
-static bool ResolveBeingCollisionInNewSegment(Being* const, Segment* const, float* const, float* const, const float, const float, Being* const);
+static bool ResolveBeingCollisionInNewSegment(Game_data* const, Being* const, Segment* const, float* const, float* const, const float, const float);
 static void TurnBeingWalk(Being* const);
 
 static void UpdateBeingWalk(Being* const, Game_data* const);
@@ -52,6 +57,7 @@ static bool TypeIsAlly(const Uint8);
 static bool IsAlly(const Being* const);
 
 void UpdateBeings(Game_data* const);
+void UpdateBeingsEffects(Game_data* const);
 
 bool DamageBeing(Being* const, const Impact* const, Being* const);
 bool DamageAlly(Being* const, const Impact* const, Being* const);
@@ -59,21 +65,32 @@ void StunBeing(Being* const, const int);
 void CatapultBeing(Being* const, const float, const float, const int);
 static void FindTargetForBeing(Being* const, Players* const);
 static bool IdleBeingCollision(Being* const, Game_data* const);
-static bool HasTargetForAlly(const int, const int, Being* const, Game_data* const);
+static bool HasTargetForAlly(const unsigned int, const unsigned int, Being* const, Game_data* const);
 static bool FindAllyTargetFar(Being* const, Game_data* const, const int);
 static bool FindAllyTarget(Being* const, Game_data* const);
 static void TurnBlockedAlly(Being* const, Game_data* const);
 static bool AllyNear(Being* const, Game_data* const);
 static bool FindBeingTargetFar(Being* const, Game_data* const, const int);
-static bool HasAllyForBeingTarget(const int, const int, Being* const, Game_data* const);
+static bool HasAllyForBeingTarget(const unsigned int, const unsigned int, Being* const, Game_data* const);
 
 static void StartAllyFollow(Being* const, const int);
 static void UpdateAllyFollow(Being* const, Game_data* const);
 static void UpdateAllyWalk(Being* const, Game_data* const);
 static void UpdateAllySearch(Being* const, Game_data* const);
 
-static void UpdateBeing0(Being* const, Game_data* const);
-static void UpdateBeing1(Being* const, Game_data* const);
+void AddBeingEffect(Being* const, const Lasting_effect);
+static void RemoveBeingEffect(Being* const, const int);
+static void UpdateBeingEffects(Game_data* const, Being* const);
+static void UpdateBeingEffect(Game_data* const, Being* const, const int);
+int BeingHasEffect(Being* const, const int);
+void SlowBeing(Game_data* const, Being* const, const int);
+void CommanderAura(Game_data* const, Being* const, const int);
+void CommanderIsNear(Game_data* const, Being* const, const int);
+
+static void UpdateBeingOrdinary(Being* const, Game_data* const);
+static void UpdateBeingRanger(Being* const, Game_data* const);
+static void UpdateBeingCommander(Being* const, Game_data* const);
+static void UpdateBeingWarlock(Being* const, Game_data* const);
 static void UpdateAlly0(Being* const, Game_data* const);
 
 #endif

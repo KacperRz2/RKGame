@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
-#include <types.h>
 #include <enum.h>
+#include <types.h>
 #include <event.h>
 #include <render.h>
 #include <World.h>
@@ -17,13 +17,13 @@ static inline void PopulateBigSeg(Game_data* const gd, const unsigned int x, con
 	}
 	MarkAsPopulatedBigSeg(gd->world.plan, x, y);
 	for(unsigned int i = 0U; i < MAX_POPULATION_NUM; ++i){
-		TryCreateIdleBeing(gd, SDL_rand(2), BigSegPosition(x) + SDL_randf() * BIG_SEGMENT_SIZE, BigSegPosition(y) + SDL_randf() * BIG_SEGMENT_SIZE, human(gd));
+		TryCreateIdleBeing(gd, GetRandomBeingId(), BigSegPosition(x) + SDL_randf() * BIG_SEGMENT_SIZE, BigSegPosition(y) + SDL_randf() * BIG_SEGMENT_SIZE, human(gd));
 	}
 }
 
-static inline void PlayerInUncoveredHugeSeg(Game_data* const gd){
-	const unsigned int seg_x = GetBigSegCoordinate((gd->champions.array + gd->human_indx)->position.x);
-	const unsigned int seg_y = GetBigSegCoordinate((gd->champions.array + gd->human_indx)->position.y);
+static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
+	const unsigned int seg_x = GetBigSegCoordinate(human(gd)->position.x);
+	const unsigned int seg_y = GetBigSegCoordinate(human(gd)->position.y);
 	if(!IsInUncoveredBigSeg(gd->world.plan, seg_x, seg_y)){
 		UncoverBigSeg(gd->world.plan, seg_x, seg_y);
 		PopulateBigSeg(gd, seg_x + 1U, seg_y);
@@ -52,6 +52,7 @@ int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
 
 void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Game_data game_data;
+	game_data.rend_data_ptr = rend_data;
 	SetGameData(&game_data);
 	DrawMap(rend_data, &game_data.world);
 	int tps = 0;
@@ -79,7 +80,7 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 		if(now > prev_frame_time + FRAME_TIME){
 			prev_frame_time = now;
             RenderGame(rend_data, &game_data, quit);
-			if((game_data.champions.array + game_data.human_indx)->flags & tmp1){
+			if((game_data.champions.array + game_data.human_indx)->flags & tmp){
 				RenderTextInfo(rend_data, tps, &game_data);
 			}
 			SDL_RenderPresent(rend_data->renderer);
@@ -101,66 +102,70 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	ClearGameData(&game_data);
 }
 
-static void SetGameData(Game_data* const g_d){
-	g_d->flags = 0x0U;
-	g_d->champions.array = (Player*)SDL_malloc(sizeof(Player) * MAX_PLAYERS_NUM);
-	g_d->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
-	g_d->champions.num = 0U;
-	g_d->boxes.num = 0U;
-	g_d->human_indx = 0U;
-	CreateWorld(g_d);
-	g_d->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
-	g_d->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
-	g_d->beings.indices = (Uint16*)SDL_malloc(sizeof(Uint16) * MAX_BEINGS_NUM);
-	if(g_d->projectiles.array == NULL || g_d->beings.array == NULL || g_d->champions.array == NULL || g_d->boxes.array == NULL || g_d->beings.indices == NULL){SDL_Quit(); exit(1);}
+static void SetGameData(Game_data* const gd){
+	gd->flags = 0x0U;
+	gd->champions.array = (Player*)SDL_malloc(sizeof(Player) * MAX_PLAYERS_NUM);
+	gd->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
+	gd->champions.num = 0U;
+	gd->boxes.num = 0U;
+	gd->human_indx = 0U;
+	CreateWorld(gd);
+	gd->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
+	gd->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
+	gd->beings.indices = (Uint16*)SDL_malloc(sizeof(Uint16) * MAX_BEINGS_NUM);
+	gd->rend_data_ptr->visual_effects.array = (Visual_effect*)SDL_malloc(sizeof(Visual_effect) * MAX_VISUAL_EFFECTS_NUM);
+	if(gd->projectiles.array == NULL || gd->beings.array == NULL || gd->champions.array == NULL || gd->boxes.array == NULL || gd->beings.indices == NULL || gd->rend_data_ptr->visual_effects.array == NULL){SDL_Quit(); exit(1);}
 	for(unsigned int i = 0U; i < MAX_BEINGS_NUM; ++i){
-		*(g_d->beings.indices + i) = i;
-		(g_d->beings.array + i)->main_indx = i;
+		*(gd->beings.indices + i) = i;
+		(gd->beings.array + i)->main_indx = i;
 	}
-	g_d->beings.num = 0U;
-	g_d->projectiles.num = 0U;
-	g_d->keys = 0U;
-	g_d->effects_num = 0U;
-	g_d->horde_data.ticks_from_attack = 0U;
+	gd->beings.num = 0U;
+	gd->projectiles.num = 0U;
+	gd->rend_data_ptr->visual_effects.num = 0U;
+	gd->keys = 0U;
+	gd->effects_num = 0U;
+	gd->horde_data.ticks_from_attack = 0U;
 }
 
-static void ClearGameData(Game_data* const g_d){
-	DestroyBoxes(&g_d->boxes);
-	DestroyBeings(&g_d->beings);
-    DestroyProjectiles(&g_d->projectiles);
-	SDL_free(g_d->champions.array);
-	g_d->champions.num = 0U;
-	DestroyWorld(&g_d->world);
+static void ClearGameData(Game_data* const gd){
+	DestroyBoxes(&gd->boxes);
+	DestroyBeings(&gd->beings);
+    DestroyProjectiles(&gd->projectiles);
+	SDL_free(gd->champions.array);
+	SDL_free(gd->rend_data_ptr->visual_effects.array);
+	gd->champions.num = 0U;
+	gd->rend_data_ptr->visual_effects.num = 0U;
+	DestroyWorld(&gd->world);
 }
 
-static void RareEventsService(Game_data* const g_d){
+static void RareEventsService(Game_data* const gd){
 	static int check_queue = 0;
-	if(check_queue == 0 && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - g_d->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - g_d->world.portalA.y) < half(DOOR_SIZE) && ((g_d->champions.array + g_d->human_indx)->flags & action)){
-		SetPlayerPosition(g_d->champions.array + g_d->human_indx, g_d->world.portalB.x, g_d->world.portalB.y);
-	 	(g_d->champions.array + g_d->human_indx)->flags &= ~(action);
-	}else if(check_queue == 1 && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - g_d->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - g_d->world.portalB.y) < half(DOOR_SIZE) && ((g_d->champions.array + g_d->human_indx)->flags & action)){
-		SetPlayerPosition(g_d->champions.array + g_d->human_indx, g_d->world.portalA.x, g_d->world.portalA.y);
-	 	(g_d->champions.array + g_d->human_indx)->flags &= ~(action);
-	}else if(check_queue == 2 && ((g_d->champions.array + g_d->human_indx)->flags & action) && g_d->boxes.num > 0U){
-		int box_indx = GetNearbyBoxIndx(g_d);
+	if(check_queue == 0 && SDL_fabsf(human(gd)->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
+		SetPlayerPosition(human(gd), gd->world.portalB.x, gd->world.portalB.y);
+	 	human(gd)->flags &= ~(action);
+	}else if(check_queue == 1 && SDL_fabsf(human(gd)->position.x - gd->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalB.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
+		SetPlayerPosition(human(gd), gd->world.portalA.x, gd->world.portalA.y);
+	 	human(gd)->flags &= ~(action);
+	}else if(check_queue == 2 && (human(gd)->flags & action) && gd->boxes.num > 0U){
+		int box_indx = GetNearbyBoxIndx(gd);
 		if(box_indx != -1){
-			LootBox(g_d, box_indx);
-	 		(g_d->champions.array + g_d->human_indx)->flags &= ~(action);
+			LootBox(gd, box_indx);
+	 		human(gd)->flags &= ~(action);
 		}
-	}else if(check_queue == 3 && g_d->keys >= g_d->needed_keys && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - g_d->world.door.x) < half(DOOR_SIZE) && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - g_d->world.door.y) < half(DOOR_SIZE) && ((g_d->champions.array + g_d->human_indx)->flags & action)){
-		(g_d->champions.array + g_d->human_indx)->hit_points = 0;
-	 	(g_d->champions.array + g_d->human_indx)->flags &= ~(action);
+	}else if(check_queue == 3 && gd->keys >= gd->needed_keys && SDL_fabsf(human(gd)->position.x - gd->world.door.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.door.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
+		human(gd)->hit_points = 0;
+	 	human(gd)->flags &= ~(action);
 	}else if(check_queue == 4){
-		if(!(g_d->flags & gamef_horde_attack)){
-			if(g_d->horde_data.ticks_from_attack > HORDE_ATTACK_START_TICKS + SDL_rand(HORDE_ATTACK_START_TICKS * 16)){
-				AddGameEffect(g_d, (Lasting_effect){game_effect_horde_attack, HORDE_ATTACK_START_TICKS});
-				g_d->flags |= gamef_horde_attack;
+		if(!(gd->flags & gamef_horde_attack)){
+			if(gd->horde_data.ticks_from_attack > HORDE_ATTACK_START_TICKS * 2 + SDL_rand(HORDE_ATTACK_START_TICKS * 32)){
+				AddGameEffect(gd, (Lasting_effect){game_effect_horde_attack, HORDE_ATTACK_START_TICKS});
+				gd->flags |= gamef_horde_attack;
 			}else{
-				++g_d->horde_data.ticks_from_attack;
+				++gd->horde_data.ticks_from_attack;
 			}
 		}
 	}else if(check_queue == 5){
-		PlayerInUncoveredHugeSeg(g_d);
+		PlayerInUncoveredBigSeg(gd);
 	}
 	check_queue = (check_queue + 1) % 6;
 }
@@ -184,7 +189,7 @@ extern inline void AddToBox(Box* const bx, const unsigned int slot, const int ty
 	(bx->elements + slot)->value = value;
 }
 
-static inline void FreeBoxPlaceInArray(Boxes* const bxs, const unsigned int indx){//make room for new box
+static inline void FreeBoxPlaceInArray(Boxes* const bxs, const unsigned int indx){
 	for(unsigned int i = bxs->num; i > indx; --i){
 		*(bxs->array + i) = *(bxs->array + i - 1U);
 	}
@@ -195,29 +200,29 @@ static void DestroyBoxes(Boxes* const bxs){
 	bxs->num = 0U;
 }
 
-static int GetNearbyBoxIndx(Game_data* const g_d){
+static int GetNearbyBoxIndx(Game_data* const gd){
 	int left = 0;
-	int right = g_d->boxes.num;
+	int right = gd->boxes.num;
 	int center;
 	int new_center = (right - left) / 2 + left;
 	do{
 		center = new_center;
-		if(SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
+		if(SDL_fabsf(human(gd)->position.x - (gd->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
 			do{
-				if(SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+				if(SDL_fabsf(human(gd)->position.y - (gd->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
 					return center;
 				}
 				++center;
-			}while(center < g_d->boxes.num && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
+			}while(center < gd->boxes.num && SDL_fabsf(human(gd)->position.x - (gd->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
 			center = new_center - 1;
-			while(center >= 0 && SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.x - (g_d->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
-				if(SDL_fabsf((g_d->champions.array + g_d->human_indx)->position.y - (g_d->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+			while(center >= 0 && SDL_fabsf(human(gd)->position.x - (gd->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
+				if(SDL_fabsf(human(gd)->position.y - (gd->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
 					return center;
 				}
 				--center;
 			};
 			return -1;
-		}else if((g_d->champions.array + g_d->human_indx)->position.x > (g_d->boxes.array + center)->location.x){
+		}else if(human(gd)->position.x > (gd->boxes.array + center)->location.x){
 			left = center;
 		}else{
 			right = center;
@@ -227,39 +232,39 @@ static int GetNearbyBoxIndx(Game_data* const g_d){
 	return -1;
 }
 
-static inline void LootBox(Game_data* const g_d, const unsigned int box_indx){
-	Box_element* elem = (g_d->boxes.array + box_indx)->elements;
+static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
+	Box_element* elem = (gd->boxes.array + box_indx)->elements;
 	int element_type;
 	bool empty = true;
 	while(1){
 		element_type = elem->type;
 		if(element_type == box_scroll){
-			if(*((g_d->champions.array + g_d->human_indx)->scrolls + elem->value) < 255U){
-				++(*((g_d->champions.array + g_d->human_indx)->scrolls + elem->value));
+			if(*(human(gd)->scrolls + elem->value) < 255U){
+				++(*(human(gd)->scrolls + elem->value));
 				elem->type = box_clear;
 			}else{
 				SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "No space for scroll %u!", elem->value);
 				empty = false;
 			}
 		}else if(element_type == box_coins){
-			(g_d->champions.array + g_d->human_indx)->coins += (int)elem->value;
+			human(gd)->coins += (int)elem->value;
 			elem->type = box_clear;
 		}else if(element_type == box_key){
-			g_d->keys += (int)elem->value;
+			gd->keys += (int)elem->value;
 			elem->type = box_clear;
 		}else if(element_type == box_map){
-			Key_location* kl = g_d->world.key_locations + elem->value;
+			Key_location* kl = gd->world.key_locations + elem->value;
 			SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "Key location: x: %u, y: %u!", kl->x, kl->y);
 			elem->type = box_clear;
 		}else if(element_type == box_mp){
-			(g_d->champions.array + g_d->human_indx)->magic_points += (int)elem->value;
+			human(gd)->magic_points += (int)elem->value;
 			elem->value = 0U;
 			break;
 		}
 		++elem;
 	}
 	if(empty){
-		DestroyBoxInArray(&g_d->boxes, box_indx);
+		DestroyBoxInArray(&gd->boxes, box_indx);
 	}
 }
 
@@ -292,28 +297,27 @@ extern inline float CalculateStunPower(const Impact* const impact, const Armour*
 }
 
 static int UpdateGame(Game_data* const gd){
-	static unsigned int ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
-	//TEST
-	if((gd->champions.array + gd->human_indx)->flags & tmp0){
-		(gd->champions.array + gd->human_indx)->flags = 0U;
-		(gd->champions.array + gd->human_indx)->selected_scroll = scroll_empty;
-		gd->human_indx = (gd->human_indx + 1U) % gd->champions.num;
-	}
-	//TEST
-	UpdateGameEffects(gd);
+	static unsigned int ticks_to_rare_update = RARE_UPDATE_INTERVAL;
 	UpdatePlayers(gd);
 	UpdateProjectiles(gd);
-	if(ticks_to_update_beings == 0U){
+	if(ticks_to_rare_update == 0U){
 		UpdateBeings(gd);
-		ticks_to_update_beings = UPDATE_BEINGS_INTERVAL;
+		ticks_to_rare_update = RARE_UPDATE_INTERVAL;
 	}else{
 		RareEventsService(gd);
-		--ticks_to_update_beings;
+		UpdateEffects(gd);
+		--ticks_to_rare_update;
 	}
-	if((gd->champions.array + gd->human_indx)->hit_points < 1){
+	if(human(gd)->hit_points < 1){
 		return update_defeated;
 	}
 	return update_ok;
+}
+
+static inline void UpdateEffects(Game_data* const gd){
+	UpdateGameEffects(gd);
+	UpdateBeingsEffects(gd);
+	UpdatePlayersEffects(gd);
 }
 
 static inline SDL_FPoint GetRandomBeingCreationPoint(Game_data* const gd){
@@ -322,7 +326,7 @@ static inline SDL_FPoint GetRandomBeingCreationPoint(Game_data* const gd){
     const float shift_y = -CosiSafe(angle);
 	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
 	const float help_to_y = shift_y < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
-	SDL_FPoint control_point_old = (gd->champions.array + gd->human_indx)->position;
+	SDL_FPoint control_point_old = human(gd)->position;
 	SDL_FPoint control_point = control_point_old;
 	while(1){
 		const float help_x = SDL_fmodf(control_point.x, SEGMENT_SIZE);
@@ -332,10 +336,10 @@ static inline SDL_FPoint GetRandomBeingCreationPoint(Game_data* const gd){
 		const float multipl = (shifts_to_next_seg_x < shifts_to_next_seg_y ? shifts_to_next_seg_x : shifts_to_next_seg_y);
 		control_point.x += shift_x * multipl;
 		control_point.y += shift_y * multipl;
-		if(GetSegment(&gd->world, control_point.x, control_point.y) == NULL){
+		if(GetSegmentUnsafe(&gd->world, control_point.x, control_point.y) == NULL){
 			control_point.x = control_point_old.x + shift_x * multipl * 0.875F;
 			control_point.y = control_point_old.y + shift_y * multipl * 0.875F;
-			if(GetSegment(&gd->world, control_point.x, control_point.y) == NULL){
+			if(GetSegmentUnsafe(&gd->world, control_point.x, control_point.y) == NULL){
 				return control_point_old;
 			}
 			return control_point;
@@ -344,16 +348,18 @@ static inline SDL_FPoint GetRandomBeingCreationPoint(Game_data* const gd){
 	}
 }
 
-static inline void AddLastingEffect(Lasting_effect* const effects, const Lasting_effect effect, const int effects_num){
+extern inline void AddLastingEffect(Lasting_effect* const effects, const Lasting_effect effect, const int effects_num){
 	*(effects + effects_num) = effect;
 }
 
-static inline void RemoveLastingEffect(Lasting_effect* const effects, const int indx, const int effects_num){
+extern inline void RemoveLastingEffect(Lasting_effect* const effects, const int indx, const int effects_num){
 	*(effects + indx) = *(effects + effects_num - 1);
 }
 
 static void AddGameEffect(Game_data* const gd, const Lasting_effect effect){
-	AddLastingEffect(gd->effects, effect, gd->effects_num++);
+	if(gd->effects_num < MAX_GAME_EFFECTS){
+		AddLastingEffect(gd->effects, effect, gd->effects_num++);
+	}
 }
 
 static void RemoveGameEffect(Game_data* const gd, const int indx){
@@ -382,11 +388,11 @@ void HordeAttack(Game_data* const gd, const int ticks_left){
 	}else if(ticks_left < 2){
 		gd->flags &= ~(gamef_horde_attack);
 		gd->horde_data.ticks_from_attack = 0U;
-	}else if(ticks_left < (HORDE_ATTACK_START_TICKS / 8 * 7) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / 16)){
+	}else if((ticks_left < (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / 16)) || (ticks_left >= (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand(ticks_left / 16))){
 		const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
 		unsigned int point_indx1 = point_indx;
 		do{
-			if(TryCreateHostileBeing(gd, SDL_rand(2), (gd->horde_data.creation_points + point_indx1)->x, (gd->horde_data.creation_points + point_indx1)->y, gd->champions.array + gd->human_indx)){
+			if(TryCreateHostileBeing(gd, GetRandomBeingId(), (gd->horde_data.creation_points + point_indx1)->x, (gd->horde_data.creation_points + point_indx1)->y, human(gd))){
 				break;
 			}
 			point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;

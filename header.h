@@ -5,8 +5,8 @@
 #include <SDL3/SDL_main.h>
 #include <macros.h>
 
-#include <types.h>
 #include <enum.h>
+#include <types.h>
 #include <render.h>
 #include <game.h>
 

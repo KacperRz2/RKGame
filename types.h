@@ -5,6 +5,8 @@
 typedef struct Blade Blade;
 typedef struct Placement Placement;
 typedef struct Impact Impact;
+typedef struct Visual_effect Visual_effect;
+typedef struct Visual_effects Visual_effects;
 typedef struct Render_data Render_data;
 typedef struct Lasting_effect Lasting_effect;
 typedef struct Armour Armour;
@@ -59,6 +61,18 @@ struct Blade{
 	Uint16 idle_ticks;
 	float charge;	
 };
+struct Visual_effect{
+	SDL_FPoint position;
+	Uint16 ticks_left;
+	Uint16 start_ticks;
+	Uint16 size;
+	Uint8 type;
+	Uint8 tx_num;
+};
+struct Visual_effects{
+	Visual_effect* array;
+	Uint16 num;
+};
 struct Render_data{
 	float viewfinder;
 	SDL_FRect visible_rect;
@@ -67,9 +81,11 @@ struct Render_data{
 	Uint16 window_h;
 	float sin_player_direction;
 	float cos_player_direction;
+	unsigned int counter;
+	Visual_effects visual_effects;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-	SDL_Texture* textures[TEXTURES_NUM];
+	SDL_Texture* textures[txs_num];
 };
 struct Lasting_effect{
 	Uint8 id;
@@ -162,7 +178,7 @@ struct Segment{
 	Uint8 flags;
 	Segment_beings beings;
 	Segment_beings ally_beings;
-	struct coordinates {Sint16 x; Sint16 y;} indx;
+	struct coordinates {Uint16 x; Uint16 y;} indx;
 };
 struct World{
 	Segment*** segments;
@@ -247,6 +263,7 @@ struct Game_data{
 		SDL_FPoint creation_points[HORDE_ATTACK_POINTS];
 		unsigned int ticks_from_attack;
 	}horde_data;
+	Render_data* rend_data_ptr;
 };
 // int a = sizeof(Segment);
 #endif

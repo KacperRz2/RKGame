@@ -1,36 +1,29 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
 #include <render_macros.h>
+#include <enum.h>
 #include <types.h>
 #include <render.h>
 #include <function.h>
-#include <enum.h>
 #include <World.h>
 #include <Scroll.h>
 #include <Being.h>
 
-const unsigned int beings_textures[] = BEINGS_TEXTURES;
-const unsigned int beings_weapon_textures[] = BEINGS_WEAPON_TEXTURES;
-const unsigned int projectile_textures[] = PROJECTILE_TEXTURES;
-
 int GraphicsInitiation(Render_data* const rend_data){
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
-	const char* const texture_files[TEXTURE_FILES_NUM] = TEXTURE_FILES_NAMES;
+	const char* const texture_files[] = TEXTURE_FILES_NAMES;
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
-
 	if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
 		return 3;
 	}
-
 	if(!SDL_CreateWindowAndRenderer("KacWindow", rend_data->window_w, rend_data->window_h, SDL_WINDOW_BORDERLESS, &rend_data->window, &rend_data->renderer)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
 		return 3;
 	}
-
-	for(int i = 0; i < TEXTURE_FILES_NUM; ++i){
-		SDL_asprintf(&bmp_path, "%sdata/%s", SDL_GetBasePath(), *(texture_files + i));
+	for(int i = 0; i < SDL_arraysize(texture_files); ++i){
+		SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), *(texture_files + i));
 		surface = SDL_LoadBMP(bmp_path);
 		if(!surface){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -42,17 +35,197 @@ int GraphicsInitiation(Render_data* const rend_data){
 			return 3;
 		}
 	}
-	SDL_free(bmp_path);
-	SDL_DestroySurface(surface);
-
+	DrawBeings(rend_data, surface, bmp_path);
+	DrawColouredThings(rend_data, surface, bmp_path);
 	SDL_SetWindowRelativeMouseMode(rend_data->window, true);
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
 	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
-	DrawBackgroud(rend_data);
+	DrawBackgroud(rend_data, surface, bmp_path);
+	SDL_free(bmp_path);
+	SDL_DestroySurface(surface);
+	SDL_SetTextureBlendMode(texture(tx_barrier), SDL_BLENDMODE_ADD);
+	SDL_SetTextureBlendMode(texture(tx_bonus_effect), SDL_BLENDMODE_ADD);
 	return 0;
 }
 
+extern inline void AddVisalEffect(Visual_effects* const ves, const Visual_effect* const ve){
+	if(ves->num < MAX_VISUAL_EFFECTS_NUM){
+		*(ves->array + ves->num++) = *ve;
+	}else{
+		*(ves->array + SDL_rand(MAX_VISUAL_EFFECTS_NUM)) = *ve;
+	}
+}
+
+static inline void RemoveVisalEffect(Visual_effects* const ves, const Uint16 indx){
+	if(indx != ves->num - 1U){
+		*(ves->array + indx) = *(ves->array + ves->num - 1);
+	}
+	--ves->num;
+}
+
+static void RenderVisualEffects(Render_data* const rend_data, Game_data* const gd){
+    for(unsigned int i = 0U; i < rend_data->visual_effects.num; ++i){
+		Visual_effect* ve = rend_data->visual_effects.array + i;
+		if(ve->type == visual_effect_static){
+			SDL_FPoint rend_point;
+			// Segment* seg = GetSegmentUnsafe(&gd->world, ve->position.x, ve->position.y);
+			if(GetExtendedRenderPointFromTrue(rend_data, ve->position.x, ve->position.y, half(ve->size), human(gd), &rend_point)){
+				if(ve->ticks_left < ve->start_ticks * 3 / 4){
+					SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0.75F));
+				}else{
+					SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.75F));
+				}
+				SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
+					rend_point.x - half(ve->size),
+					rend_point.y - half(ve->size),
+					ve->size,
+					ve->size
+				});
+				SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 1.0F);
+			}
+		}
+		if(--ve->ticks_left < 1U){
+			RemoveVisalEffect(&rend_data->visual_effects, i--);
+		}
+	}
+}
+
+extern inline void AddDamageVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
+	AddVisalEffect(ves, &DAMAGE_VIS_EFFECT(*position));
+}
+
+extern inline void AddBonusVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
+	AddVisalEffect(ves, &BONUS_VIS_EFFECT(*position));
+}
+
+extern inline void AddCurseVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
+	AddVisalEffect(ves, &CURSE_VIS_EFFECT(*position));
+}
+
+extern inline void AddDeadVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
+	AddVisalEffect(ves, &DEAD_VIS_EFFECT(*position));
+}
+
+static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
+	texture(tx_pc) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BEING_TEXURE_SIZE, BEING_TEXURE_SIZE);
+	if(!texture(tx_pc)){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PC_TX0_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_Texture* tx_pc_0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!tx_pc_0){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PC_TX1_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_Texture* tx_pc_1 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!tx_pc_1){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	const unsigned int beings_textures[] = BEINGS_TEXTURES;
+	for(unsigned int i = 0U; i < SDL_arraysize(beings_textures); ++i){
+		texture(*(beings_textures + i)) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BEING_TEXURE_SIZE, BEING_TEXURE_SIZE);
+		if(!texture(*(beings_textures + i))){
+			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
+			exit(-1);
+		}
+	}
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE0_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_Texture* tx_being_0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!tx_being_0){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE1_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_Texture* tx_being_1 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!tx_being_1){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	
+	DrawBeing(rend_data, texture(tx_pc), tx_pc_0, tx_pc_1, PC_RGB_0, PC_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_weak), tx_being_0, tx_being_1, BEING0_RGB_0, BEING0_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_ordinary), tx_being_0, tx_being_1, BEING1_RGB_0, BEING1_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_ranger), tx_being_0, tx_being_1, BEING2_RGB_0, BEING2_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_elite), tx_being_0, tx_being_1, BEING3_RGB_0, BEING3_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_elite_ranger), tx_being_0, tx_being_1, BEING4_RGB_0, BEING4_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_commander), tx_being_0, tx_being_1, BEING5_RGB_0, BEING5_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_warlock), tx_being_0, tx_being_1, BEING6_RGB_0, BEING6_RGB_1);
+	DrawBeing(rend_data, texture(tx_being_ally_ordinary), tx_being_0, tx_being_1, ALLY0_RGB_0, ALLY0_RGB_1);
+	SDL_DestroyTexture(tx_pc_0);
+	SDL_DestroyTexture(tx_pc_1);
+	SDL_DestroyTexture(tx_being_0);
+	SDL_DestroyTexture(tx_being_1);
+}
+
+static void DrawColouredThings(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
+	const unsigned int projectile_textures[] = PROJECTILE_TEXTURES;
+	for(unsigned int i = 0U; i < SDL_arraysize(projectile_textures); ++i){
+		texture(*(projectile_textures + i)) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, PROJECTILE_TEXURE_SIZE, PROJECTILE_TEXURE_SIZE);
+		if(!texture(*(projectile_textures + i))){
+			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
+			exit(-1);
+		}
+	}
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PROJECTILE_TX_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_Texture* tx_projectile_0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!tx_projectile_0){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	DrawColouredThing(rend_data, texture(tx_projectile), tx_projectile_0, PROJECTILE0_RGBA);
+	DrawColouredThing(rend_data, texture(tx_h_projectile), tx_projectile_0, PROJECTILE1_RGBA);
+	DrawColouredThing(rend_data, texture(tx_h_projectile1), tx_projectile_0, PROJECTILE1_RGBA);
+	SDL_DestroyTexture(tx_projectile_0);
+}
+
+static void DrawBeing(Render_data* const rend_data, SDL_Texture* const being_tx, SDL_Texture* const tx_0, SDL_Texture* const tx_1, const Uint8* const RGB_0, const Uint8* const RGB_1){
+	SDL_SetRenderTarget(rend_data->renderer, being_tx);
+	SDL_SetTextureColorMod(tx_0, *RGB_0, *(RGB_0 + 1), *(RGB_0 + 2));
+	SDL_SetTextureColorMod(tx_0, *RGB_0, *(RGB_0 + 1), *(RGB_0 + 2));
+	SDL_SetTextureColorMod(tx_1, *RGB_1, *(RGB_1 + 1), *(RGB_1 + 2));
+	SDL_RenderTexture(rend_data->renderer, tx_1, NULL, NULL);
+	SDL_RenderTexture(rend_data->renderer, tx_0, NULL, NULL);
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
+}
+
+static void DrawColouredThing(Render_data* const rend_data, SDL_Texture* const target, SDL_Texture* const tx, const Uint8* const RGBA){
+	SDL_SetRenderTarget(rend_data->renderer, target);
+	SDL_SetTextureColorMod(tx, *RGBA, *(RGBA + 1), *(RGBA + 2));
+	SDL_SetTextureAlphaMod(tx, *(RGBA + 3));
+	SDL_RenderTexture(rend_data->renderer, tx, NULL, NULL);
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
+}
+
 void SetRenderData(Render_data* const rend_data){
+	rend_data->counter = 0U;
 	rend_data->window = NULL;
 	rend_data->renderer = NULL;
 	rend_data->window_w = WINDOW_START_W;
@@ -72,7 +245,11 @@ void ResetRenderData(Render_data* const rend_data){
 	rend_data->visible_rect = (SDL_FRect)VISIBLE_RECT;
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
 	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
-	DrawBackgroud(rend_data);
+	SDL_Surface* surface = NULL;
+	char* bmp_path = NULL;
+	DrawBackgroud(rend_data, surface, bmp_path);
+	SDL_free(bmp_path);
+	SDL_DestroySurface(surface);
 }
 
 static void RenderHumanPlayerBlade(Render_data* const rend_data, Blade* const blade){
@@ -85,10 +262,11 @@ static void RenderHumanPlayerBlade(Render_data* const rend_data, Blade* const bl
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(blade->placement.direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
 }
 
-static void RenderProjectiles(Render_data* const rend_data, Game_data* const g_d){
-	for(Projectile* pr = g_d->projectiles.array; pr != (g_d->projectiles.array + g_d->projectiles.num); ++pr){
+static void RenderProjectiles(Render_data* const rend_data, Game_data* const gd){
+	const unsigned int projectile_textures[] = PROJECTILE_TEXTURES;
+	for(Projectile* pr = gd->projectiles.array; pr != (gd->projectiles.array + gd->projectiles.num); ++pr){
 		SDL_FPoint point;
-		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, g_d->champions.array + g_d->human_indx, &point, &g_d->world)){
+		if(GetRenderPointFromTrue(rend_data, pr->position.x, pr->position.y, human(gd), &point, &gd->world)){
 			const SDL_FRect rect = { 
 				point.x - half(BULLET_SIZE),
 				point.y - half(BULLET_SIZE),
@@ -100,43 +278,56 @@ static void RenderProjectiles(Render_data* const rend_data, Game_data* const g_d
 	}
 }
 
-static void RenderBeings(Render_data* const rend_data, Game_data* const g_d){
-    for(unsigned int i = 0U; i < g_d->beings.num; ++i){
-		Being* b = (g_d->beings.array + *(g_d->beings.indices + i));
-		SDL_FPoint point;
-		if((b->segment->flags & segment_in_sight) && GetRenderPointFromTrue(rend_data, b->position.x, b->position.y, g_d->champions.array + g_d->human_indx, &point, &g_d->world)){
-			const SDL_FRect rect = {
-				point.x - half(BeingSize(b)),
-				point.y - half(BeingSize(b)),
-				BeingSize(b),
-				BeingSize(b)
-			};
-			if(b->status == being_attack_being){
-				b->direction = arctan2(b->position.y - b->target.being->position.y, b->position.x - b->target.being->position.x) - SDL_PI_F * 0.5F;
-			}else if(b->status == being_fly){
-				b->direction = b->rend_fly_help_data.start_angle + FULL_ANGLE * (1.0F - (float)b->status_ticks_left / (float)b->rend_fly_help_data.ticks);
-			}else if(b->status <= being_strike){
-				b->direction = arctan2(b->position.y - b->target.player->position.y, b->position.x - b->target.player->position.x) - SDL_PI_F * 0.5F;
-			}else if(b->status <= being_strike_being){
-				b->direction = arctan2(b->position.y - b->target.being->position.y, b->position.x - b->target.being->position.x) - SDL_PI_F * 0.5F;
-			}else if(b->status == being_search){
-				b->direction = arctan2(-b->special_move_shift.y, -b->special_move_shift.x) - SDL_PI_F * 0.5F;
-			}
-			const float being_direction = b->direction - (g_d->champions.array + g_d->human_indx)->direction;
-			const float sine = SineSafe(being_direction);
-			const float cosine = CosiSafe(being_direction);
-			const Placement weapon = GetBeingWeaponPlacement(b);
-			const SDL_FRect rect_blade = {
-				point.x + (weapon.position.x * cosine + weapon.position.y * sine) - half(BLADE_SIZE),
-				point.y + (weapon.position.x * sine - weapon.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION,
-				BLADE_SIZE,
-				BLADE_SIZE
-			};
-			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_weapon_textures + b->type_id)), NULL, &rect_blade, (double)RadToDeg(weapon.direction + being_direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
-			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + *(beings_textures + b->type_id)), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
-			if(b->status == being_stunned){
-				SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_stun), NULL, &rect, -(double)b->status_ticks_left, NULL, SDL_FLIP_NONE);
-			}
+static inline void RenderBeing(Render_data* const rend_data, Game_data* const gd, Being* const bg, const unsigned int tex_body, const unsigned int tex_weapon){
+	SDL_FPoint point;
+	if(GetRenderPointFromTrue(rend_data, bg->position.x, bg->position.y, human(gd), &point, &gd->world)){
+		const SDL_FRect rect = {
+			point.x - half(BeingSize(bg)),
+			point.y - half(BeingSize(bg)),
+			BeingSize(bg),
+			BeingSize(bg)
+		};
+		if(bg->status == being_attack_being){
+			bg->direction = arctan2(bg->position.y - bg->target.being->position.y, bg->position.x - bg->target.being->position.x) - SDL_PI_F * 0.5F;
+		}else if(bg->status == being_fly){
+			bg->direction = bg->rend_fly_help_data.start_angle + FULL_ANGLE * (1.0F - (float)bg->status_ticks_left / (float)bg->rend_fly_help_data.ticks);
+		}else if(bg->status <= being_strike){
+			bg->direction = arctan2(bg->position.y - bg->target.player->position.y, bg->position.x - bg->target.player->position.x) - SDL_PI_F * 0.5F;
+		}else if(bg->status <= being_strike_being){
+			bg->direction = arctan2(bg->position.y - bg->target.being->position.y, bg->position.x - bg->target.being->position.x) - SDL_PI_F * 0.5F;
+		}else if(bg->status == being_search){
+			bg->direction = arctan2(-bg->special_move_shift.y, -bg->special_move_shift.x) - SDL_PI_F * 0.5F;
+		}
+		const float being_direction = bg->direction - human(gd)->direction;
+		const float sine = SineSafe(being_direction);
+		const float cosine = CosiSafe(being_direction);
+		const Placement weapon = GetBeingWeaponPlacement(bg);
+		const SDL_FRect rect_blade = {
+			point.x + (weapon.position.x * cosine + weapon.position.y * sine) - half(BLADE_SIZE),
+			point.y + (weapon.position.x * sine - weapon.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION,
+			BLADE_SIZE,
+			BLADE_SIZE
+		};
+		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tex_weapon), NULL, &rect_blade, (double)RadToDeg(weapon.direction + being_direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
+		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tex_body), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
+		if(bg->status == being_stunned){
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_stun), NULL, &rect, (double)(rend_data->counter * 2U), NULL, SDL_FLIP_NONE);
+		}
+	}
+}
+
+static void RenderBeings(Render_data* const rend_data, Game_data* const gd, Segment** const segs, const unsigned int segs_num){
+	const unsigned int beings_textures[] = BEINGS_TEXTURES;
+	const unsigned int beings_weapon_textures[] = BEINGS_WEAPON_TEXTURES;
+    for(unsigned int k = 0U; k < segs_num; ++k){
+		const Segment* const seg = *(segs + k);
+		for(unsigned int i = 0U; i < seg->beings.num; ++i){
+			Being* const bg = (gd->beings.array + *(seg->beings.beings_ind + i));
+			RenderBeing(rend_data, gd, bg, *(beings_textures + bg->type_id), *(beings_weapon_textures + bg->type_id));
+		}
+		for(unsigned int i = 0U; i < seg->ally_beings.num; ++i){
+			Being* const bg = (gd->beings.array + *(seg->ally_beings.beings_ind + i));
+			RenderBeing(rend_data, gd, bg, *(beings_textures + bg->type_id), *(beings_weapon_textures + bg->type_id));
 		}
 	}
 }
@@ -167,12 +358,6 @@ static void RenderMap(Render_data* const rend_data, Player* const p){
 		MINIMAP_PC_SIZE,
 		MINIMAP_PC_SIZE
 	};
-	RenderFrame(rend_data, &(SDL_FRect){
-		rect.x - FRAME_W,
-		rect.y - FRAME_W,
-		rect.w + FRAME_W * 2.0F,
-		rect.h + FRAME_W * 2.0F
-	}, FRAME_W);
 	double rotation = RadToDeg(p->direction);
 	SDL_SetRenderViewport(rend_data->renderer, &rect);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_map), NULL, NULL);
@@ -187,7 +372,7 @@ static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const fl
 	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
 	float dy = true_point_y - human_player->position.y;
 	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
-	if(!(GetSegment(w, true_point_x, true_point_y)->flags & segment_in_sight)) return false;
+	if(!(GetSegmentUnsafe(w, true_point_x, true_point_y)->flags & segment_in_sight)) return false;
 	*rend_point = (SDL_FPoint){
 		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
 		PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction)
@@ -196,28 +381,28 @@ static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const fl
 	return false;
 }
 
-void RenderTextInfo(Render_data* const rend_data, const Uint64 tps, Game_data* const g_d){
+void RenderTextInfo(Render_data* const rend_data, const Uint64 tps, Game_data* const gd){
 	SDL_Renderer* const rend = rend_data->renderer;
 	const float x = rend_data->viewfinder_rect.x + 2.0F;
 	SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
-	SDL_RenderDebugTextFormat(rend, x, 10, "position: %.2f %.2f", (g_d->champions.array + g_d->human_indx)->position.x, (g_d->champions.array + g_d->human_indx)->position.y);
-	SDL_RenderDebugTextFormat(rend, x, 20, "direction: %.2f", (g_d->champions.array + g_d->human_indx)->direction);
+	SDL_RenderDebugTextFormat(rend, x, 10, "position: %.2f %.2f", human(gd)->position.x, human(gd)->position.y);
+	SDL_RenderDebugTextFormat(rend, x, 20, "direction: %.2f", human(gd)->direction);
 
 	SDL_RenderDebugTextFormat(rend, x, 30, "ticks per sec.: %d", tps);
 	SDL_RenderDebugTextFormat(rend, x, 40, "max FPS: ~%u", (1000000000ULL / FRAME_TIME));
 
-	SDL_RenderDebugTextFormat(rend, x, 50, "beings: %u", g_d->beings.num);
-	SDL_RenderDebugTextFormat(rend, x, 60, "projectiles: %d", g_d->projectiles.num);
-	SDL_RenderDebugTextFormat(rend, x, 70, "blade charge: %f", 1.0F - (g_d->champions.array + g_d->human_indx)->blade.charge);
-	SDL_RenderDebugTextFormat(rend, x, 80, "fatigue: %d", (g_d->champions.array + g_d->human_indx)->fatigue_points);
-	SDL_RenderDebugTextFormat(rend, x, 90, "hp: %d", (g_d->champions.array + g_d->human_indx)->hit_points);
-	SDL_RenderDebugTextFormat(rend, x, 110, "boxes: %d", g_d->boxes.num);
-	SDL_RenderDebugTextFormat(rend, x, 130, "keys needed: %d", g_d->needed_keys);
-	SDL_RenderDebugTextFormat(rend, x, 140, "player segment: x: %d y: %d", (g_d->champions.array + g_d->human_indx)->segment->indx.x, (g_d->champions.array + g_d->human_indx)->segment->indx.y);
-	SDL_RenderDebugTextFormat(rend, x, 150, "selected scroll: %d", (g_d->champions.array + g_d->human_indx)->selected_scroll);
-	SDL_RenderDebugTextFormat(rend, x, 160, "selected scroll num: %d", *((g_d->champions.array + g_d->human_indx)->scrolls + (g_d->champions.array + g_d->human_indx)->selected_scroll));
-	SDL_RenderDebugTextFormat(rend, x, 170, "selected scroll cost: %d", ScrollCost((g_d->champions.array + g_d->human_indx)->selected_scroll));
-	RenderMap(rend_data, g_d->champions.array + g_d->human_indx);
+	SDL_RenderDebugTextFormat(rend, x, 50, "beings: %u", gd->beings.num);
+	SDL_RenderDebugTextFormat(rend, x, 60, "projectiles: %d", gd->projectiles.num);
+	SDL_RenderDebugTextFormat(rend, x, 70, "blade charge: %f", 1.0F - human(gd)->blade.charge);
+	SDL_RenderDebugTextFormat(rend, x, 80, "fatigue: %d", human(gd)->fatigue_points);
+	SDL_RenderDebugTextFormat(rend, x, 90, "hp: %d", human(gd)->hit_points);
+	SDL_RenderDebugTextFormat(rend, x, 110, "boxes: %d", gd->boxes.num);
+	SDL_RenderDebugTextFormat(rend, x, 130, "keys needed: %d", gd->needed_keys);
+	SDL_RenderDebugTextFormat(rend, x, 140, "player segment: x: %d y: %d", human(gd)->segment->indx.x, human(gd)->segment->indx.y);
+	SDL_RenderDebugTextFormat(rend, x, 150, "selected scroll: %d", human(gd)->selected_scroll);
+	SDL_RenderDebugTextFormat(rend, x, 160, "selected scroll num: %d", *(human(gd)->scrolls + human(gd)->selected_scroll));
+	SDL_RenderDebugTextFormat(rend, x, 170, "selected scroll cost: %d", ScrollCost(human(gd)->selected_scroll));
+	RenderMap(rend_data, human(gd));
 }
 
 static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, const Game_data* const gd){
@@ -288,7 +473,7 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, co
 }
 
 void RenderMainMenu(Render_data* const rend_data, const float angle){
-	Uint8 alpha = (Uint8)((sine(angle) + 1.0F) * 127.5F);
+	Uint8 alpha = (Uint8)((SineUnsafe(angle) + 1.0F) * 127.5F);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetTextureAlphaMod(*(rend_data->textures + tx_chars), alpha);
@@ -296,62 +481,69 @@ void RenderMainMenu(Render_data* const rend_data, const float angle){
 	SDL_RenderPresent(rend_data->renderer);
 }
 
-void RenderGame(Render_data* const rend_data, Game_data* const g_d, const int event_code){
-	Player* const p = g_d->champions.array + g_d->human_indx;
+void RenderGame(Render_data* const rend_data, Game_data* const gd, const int event_code){
+	Player* const p = human(gd);
+	++rend_data->counter;
 	SetSineCosine(rend_data, p);
 	RenderBackground(rend_data);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
 	if(event_code == 0){
-		RenderTerrain(rend_data, g_d);
-		RenderStaticThings(rend_data, g_d);
+		Segment* beings_segs[MAX_UNSEEN_SEG];
+		unsigned int beings_segs_num = 0U;
+		RenderTerrain(rend_data, gd, beings_segs, &beings_segs_num);
+		RenderStaticThings(rend_data, gd);
 		if(!(p->flags & range_mode)){
 			RenderHumanPlayerBlade(rend_data, &p->blade);
 		}else{
 			RenderHumanPlayerScroll(rend_data, (bool)(p->flags & attack));
 		}
-		Player* players_to_rend[g_d->champions.num - 1U];
-		SDL_FPoint players_rend_points[g_d->champions.num - 1U];
+		Player* players_to_rend[gd->champions.num - 1U];
+		SDL_FPoint players_rend_points[gd->champions.num - 1U];
 		unsigned int indx = 0U;
-		for(unsigned int i = 0U; i < g_d->champions.num; ++i){
-			if(i == g_d->human_indx){
+		for(unsigned int i = 0U; i < gd->champions.num; ++i){
+			if(i == gd->human_indx){
 				continue;
 			}
 			SDL_FPoint point;
-			if(GetRenderPointFromTrue(rend_data, (g_d->champions.array + i)->position.x, (g_d->champions.array + i)->position.y, p, &point, &g_d->world)){
-				*(players_to_rend + indx) = g_d->champions.array + i;
+			if(GetRenderPointFromTrue(rend_data, (gd->champions.array + i)->position.x, (gd->champions.array + i)->position.y, p, &point, &gd->world)){
+				*(players_to_rend + indx) = gd->champions.array + i;
 				*(players_rend_points + indx++) = point;
 			}
 		}
 		RenderPlayersBladesAndScrolls(rend_data, p->direction, players_to_rend, players_rend_points, indx);
-		RenderBeings(rend_data, g_d);
-		RenderProjectiles(rend_data, g_d);
+		RenderBeings(rend_data, gd, beings_segs, beings_segs_num);
+		RenderProjectiles(rend_data, gd);
 		RenderHumanPlayer(rend_data);
+		if(human(gd)->flags & stunned){
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_stun), NULL, &(SDL_FRect)PC_RECT, (double)(rend_data->counter * 2U), NULL, SDL_FLIP_NONE);
+		}
 		RenderPlayers(rend_data, p->direction, players_to_rend, players_rend_points, indx);
 		if(p->flags & block){
 			RenderHumanPlayerBarrier(rend_data, p);
 		}
 		RenderBarriers(rend_data, p->direction, players_to_rend, players_rend_points, indx);
+		RenderVisualEffects(rend_data, gd);
 		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_viewfinder), NULL, NULL);//viewfinder
 		RenderGunSight(rend_data);
 	}else if(event_code == event_manage_scrolls){
 		RenderScrollsManagement(rend_data, p);
 	}
-	if(g_d->flags & gamef_horde_attack){
+	if(gd->flags & gamef_horde_attack){
 		RenderText(rend_data, 1.0F, 1.0F, 16.0F, (Uint8[])HORDE_ALERT);
 	}
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	RenderDirectionArrow(rend_data, RadToDeg(p->direction));
-	RenderPlayerStatus(rend_data, p, g_d);
+	RenderPlayerStatus(rend_data, p, gd);
 	RenderQuickScrolls(rend_data, p);
 }
 
 static inline void SetSineCosine(Render_data* const rend_data, Player* const p){
-	rend_data->sin_player_direction = sine(p->direction);
-	rend_data->cos_player_direction = cosi(p->direction);
+	rend_data->sin_player_direction = SineUnsafe(p->direction);
+	rend_data->cos_player_direction = CosiUnsafe(p->direction);
 }
 
 void ClearRenderData(Render_data* const rend_data){
-	for(int i = 0; i < TEXTURES_NUM; ++i){
+	for(int i = 0; i < txs_num; ++i){
 		SDL_DestroyTexture(*(rend_data->textures + i));
 	}
 	SDL_DestroyRenderer(rend_data->renderer);
@@ -359,9 +551,9 @@ void ClearRenderData(Render_data* const rend_data){
 	SDL_Quit();
 }
 
-static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
-	const SDL_FPoint corner_first = {(g_d->champions.array + g_d->human_indx)->position.x - (rend_data->viewfinder + SEGMENT_SIZE), (g_d->champions.array + g_d->human_indx)->position.y - (rend_data->viewfinder + SEGMENT_SIZE)};
-	const SDL_FPoint corner_last = {(g_d->champions.array + g_d->human_indx)->position.x + (rend_data->viewfinder + SEGMENT_SIZE), (g_d->champions.array + g_d->human_indx)->position.y + (rend_data->viewfinder + SEGMENT_SIZE)};
+static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Segment** const beings_segs, unsigned int* const beings_segs_num){
+	const SDL_FPoint corner_first = {human(gd)->position.x - (rend_data->viewfinder + SEGMENT_SIZE), human(gd)->position.y - (rend_data->viewfinder + SEGMENT_SIZE)};
+	const SDL_FPoint corner_last = {human(gd)->position.x + (rend_data->viewfinder + SEGMENT_SIZE), human(gd)->position.y + (rend_data->viewfinder + SEGMENT_SIZE)};
 	SDL_FPoint point = corner_first;
 	float shift_y = SDL_fmodf(point.y, SEGMENT_SIZE) + half(SEGMENT_SIZE);
 	point.x -= SDL_fmodf(point.x, SEGMENT_SIZE) + half(SEGMENT_SIZE);
@@ -371,22 +563,27 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 	while(point.x < corner_last.x){
 		while(point.y < corner_last.y){
 			SDL_FPoint rend_point;
-			if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, g_d->champions.array + g_d->human_indx, &rend_point)){
+			if(GetExtendedRenderPointFromTrue(rend_data, point.x, point.y, SEGMENT_SIZE * SQRT2DIV2, human(gd), &rend_point)){
 				if(point.x > 0.0F && point.y > 0.0F && point.x < WORLD_SIZE && point.y < WORLD_SIZE){
-					Segment* s = GetSegment(&g_d->world, point.x, point.y);
-					if(SegmentInSight(&(g_d->champions.array + g_d->human_indx)->position, &point, s, &g_d->world)){
-						s->flags |= segment_in_sight | segment_known;
-						SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &(SDL_FRect){
-							rend_point.x - half(SEGMENT_TX_SIZE),
-							rend_point.y - half(SEGMENT_TX_SIZE),
-							SEGMENT_TX_SIZE,
-							SEGMENT_TX_SIZE
-						}, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
-					}else if(s){
-						if(s->flags & segment_known){
-							*(unseen_seg_points + unseen_seg_num++) = (SDL_FPoint){rend_point.x - half(SEGMENT_TX_SIZE), rend_point.y - half(SEGMENT_TX_SIZE)};
+					Segment* seg = GetSegmentUnsafe(&gd->world, point.x, point.y);
+					if(seg){
+						if(SegmentInSight(&human(gd)->position, &point, seg, &gd->world)){
+							seg->flags |= segment_in_sight | segment_known;
+							if(seg->beings.num > 0U || seg->ally_beings.num > 0U){
+								*(beings_segs + (*beings_segs_num)++) = seg;
+							}
+							SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_terrain), NULL, &(SDL_FRect){
+								rend_point.x - half(SEGMENT_TX_SIZE),
+								rend_point.y - half(SEGMENT_TX_SIZE),
+								SEGMENT_TX_SIZE,
+								SEGMENT_TX_SIZE
+							}, -RadToDeg(human(gd)->direction), NULL, SDL_FLIP_NONE);
+						}else{
+							if(seg->flags & segment_known){
+								*(unseen_seg_points + unseen_seg_num++) = (SDL_FPoint){rend_point.x - half(SEGMENT_TX_SIZE), rend_point.y - half(SEGMENT_TX_SIZE)};
+							}
+							seg->flags &= ~(segment_in_sight);
 						}
-						s->flags &= ~(segment_in_sight);
 					}
 				}
 			}
@@ -402,21 +599,21 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const g_d){
 			(unseen_seg_points + i)->y,
 			SEGMENT_TX_SIZE,
 			SEGMENT_TX_SIZE
-		}, -RadToDeg((g_d->champions.array + g_d->human_indx)->direction), NULL, SDL_FLIP_NONE);
+		}, -RadToDeg(human(gd)->direction), NULL, SDL_FLIP_NONE);
 	}
 	SDL_SetTextureColorMod(*(rend_data->textures + tx_terrain), 255, 255, 255);
 }
 
-static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const float extension, const Player* const p, SDL_FPoint* const rend_point){
+static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const float extension, const Player* const pc, SDL_FPoint* const rend_point){
 	const SDL_FRect extended_view = {
 		rend_data->visible_rect.x - extension,
 		rend_data->visible_rect.y - extension,
 		rend_data->visible_rect.w + extension * 2.0F,
 		rend_data->visible_rect.h + extension * 2.0F
 	};
-	const float dx = true_point_x - p->position.x;
+	const float dx = true_point_x - pc->position.x;
 	if(SDL_fabsf(dx) > rend_data->viewfinder + extension) return false;
-	const float dy = true_point_y - p->position.y;
+	const float dy = true_point_y - pc->position.y;
 	if(SDL_fabsf(dy) > rend_data->viewfinder + extension) return false;
 	*rend_point = (SDL_FPoint){
 		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
@@ -446,12 +643,17 @@ static void RenderGunSight(Render_data* const rend_data){
 	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
 }
 
-static void RenderStaticThings(Render_data* const rend_data, Game_data* const g_d){
-	RenderStaticThing(rend_data, g_d->world.portalA.x, g_d->world.portalA.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal, &g_d->world);
-	RenderStaticThing(rend_data, g_d->world.portalB.x, g_d->world.portalB.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_portal, &g_d->world);
-	RenderStaticThing(rend_data, g_d->world.door.x, g_d->world.door.y, g_d->champions.array + g_d->human_indx, DOOR_SIZE, tx_door, &g_d->world);
-	for(unsigned int i = 0U; i < g_d->boxes.num; ++i){
-		RenderStaticThing(rend_data, (g_d->boxes.array + i)->location.x, (g_d->boxes.array + i)->location.y,g_d->champions.array + g_d->human_indx, BOX_SIZE, tx_box, &g_d->world);
+static void RenderStaticThings(Render_data* const rend_data, Game_data* const gd){
+	RenderStaticThing(rend_data, gd->world.portalA.x, gd->world.portalA.y, human(gd), DOOR_SIZE, tx_portal, &gd->world);
+	RenderStaticThing(rend_data, gd->world.portalB.x, gd->world.portalB.y, human(gd), DOOR_SIZE, tx_portal, &gd->world);
+	RenderStaticThing(rend_data, gd->world.door.x, gd->world.door.y, human(gd), DOOR_SIZE, tx_door, &gd->world);
+	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
+		RenderStaticThing(rend_data, (gd->boxes.array + i)->location.x, (gd->boxes.array + i)->location.y, human(gd), BOX_SIZE, tx_box, &gd->world);
+	}
+	if(gd->flags & gamef_horde_attack){
+		for(unsigned int i = 0U; i < HORDE_ATTACK_POINTS; ++i){
+			RenderStaticThingRotating(rend_data, (gd->horde_data.creation_points + i)->x, (gd->horde_data.creation_points + i)->y, human(gd), CREATION_POINT_SIZE, tx_creation_point, &gd->world, 4.0F);
+		}
 	}
 }
 
@@ -465,6 +667,19 @@ static void RenderStaticThing(Render_data* const rend_data, const float pos_x, c
 			size
 		};
 		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_num), NULL, &rect, (double)(-RadToDeg(p->direction)), NULL, SDL_FLIP_NONE);
+	}
+}
+
+static void RenderStaticThingRotating(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num, World* const w, const float speed){
+	SDL_FPoint point;
+	if(GetRenderPointFromTrue(rend_data, pos_x, pos_y, p, &point, w)){
+		const SDL_FRect rect = {
+			point.x - half(size),
+			point.y - half(size),
+			size,
+			size
+		};
+		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_num), NULL, &rect, (double)(-RadToDeg(p->direction) + rend_data->counter * speed), NULL, SDL_FLIP_NONE);
 	}
 }
 
@@ -489,7 +704,6 @@ void DrawMap(Render_data* const rend_data, World* const w){
 
 static inline void RenderHumanPlayer(Render_data* const rend_data){
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &(SDL_FRect)PC_RECT);
-		
 }
 
 static inline void RenderHumanPlayerBarrier(Render_data* const rend_data, const Player* const p){
@@ -560,6 +774,9 @@ static void	RenderPlayers(Render_data* const rend_data, const float human_player
 		rect_player.x = (points + i)->x - half(PLAYER_SIZE);
 		rect_player.y = (points + i)->y - half(PLAYER_SIZE);
 		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_pc), NULL, &rect_player, (double)RadToDeg((*(plys + i))->direction - human_player_direction), NULL, SDL_FLIP_NONE);
+		if((*(plys + i))->flags & stunned){
+			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_stun), NULL, &rect_player, (double)(rend_data->counter * 2U), NULL, SDL_FLIP_NONE);
+		}
 	}
 }
 
@@ -636,7 +853,7 @@ static inline void RenderBackground(Render_data* const rend_data){
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_background), NULL, NULL);
 }
 
-static void RenderFrame(Render_data* const rend_data, const SDL_FRect* const frame, const float width){
+static void RenderFrame(Render_data* const rend_data, SDL_Texture* const tx_backgr1, const SDL_FRect* const frame, const float width){
 	const SDL_FRect rects[8] = {
 		{
 			frame->x,
@@ -685,14 +902,14 @@ static void RenderFrame(Render_data* const rend_data, const SDL_FRect* const fra
 		{8.0F, 0.0F, 8.0F, 8.0F},
 		{0.0F, 8.0F, 8.0F, 8.0F}
 	};
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects + 1, 0.0, NULL, SDL_FLIP_HORIZONTAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects + 2, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects, rects + 3, 180.0, NULL, SDL_FLIP_NONE);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 1, rects + 4);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 1, rects + 5, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 6);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects, rects);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects, rects + 1, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects, rects + 2, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects, rects + 3, 180.0, NULL, SDL_FLIP_NONE);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects + 1, rects + 4);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 1, rects + 5, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects + 2, rects + 6);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 2, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
 }
 
 static void RenderDirectionArrow(Render_data* const rend_data, const double rotation){
@@ -810,7 +1027,7 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 	RenderText(rend_data, FRAME_W, rend_data->viewfinder - 80.0F, 32.0F, (Uint8[])TEST_TEXT);
 }
 
-static void DrawBackgroud(Render_data* const rend_data){
+static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
 	if(*(rend_data->textures + tx_background) != NULL){
 		SDL_DestroyTexture(*(rend_data->textures + tx_background));
 	}
@@ -819,6 +1036,30 @@ static void DrawBackgroud(Render_data* const rend_data){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
 		exit(-1);
 	}
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BACKGROUND_TX0_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_Texture* tx_backgr0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!tx_backgr0){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BACKGROUND_TX1_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_Texture* tx_backgr1 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!tx_backgr1){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_free(bmp_path);
+	SDL_DestroySurface(surface);
 	SDL_SetRenderTarget(rend_data->renderer, *(rend_data->textures + tx_background));
 	const SDL_FRect nesw_rect = {
 		RIGHT_AREA_X + FRAME_W,
@@ -1014,80 +1255,80 @@ static void DrawBackgroud(Render_data* const rend_data){
 		}
 	};
 	SDL_FRect icon_scr_rect = FIRST_ICON_SRC_RECT;
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects, rects);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), src_rects + 1, rects + 1);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr0, src_rects, rects);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr0, src_rects + 1, rects + 1);
 
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 2, 180.0, NULL, SDL_FLIP_NONE);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 3, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 4, 0.0, NULL, SDL_FLIP_HORIZONTAL);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 2, rects + 5);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 2, rects + 2, 180.0, NULL, SDL_FLIP_NONE);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 2, rects + 3, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 2, rects + 4, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects + 2, rects + 5);
 
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 6);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 8, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 5, rects + 9, 180.0, NULL, SDL_FLIP_NONE);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects + 5, rects + 6);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 5, rects + 7, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 5, rects + 8, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 5, rects + 9, 180.0, NULL, SDL_FLIP_NONE);
 
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 10, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 11, 0.0, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 12);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 3, rects + 13);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 3, rects + 10, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 3, rects + 11, 0.0, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects + 3, rects + 12);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects + 3, rects + 13);
 
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 14, 0.0, NULL, SDL_FLIP_HORIZONTAL);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr1), src_rects + 4, rects + 15);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, src_rects + 4, rects + 14, 0.0, NULL, SDL_FLIP_HORIZONTAL);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr1, src_rects + 4, rects + 15);
 
-	RenderFrame(rend_data, &(SDL_FRect)VIEWFINDER_FRAME, FRAME_W);
-	RenderPortrait(rend_data);
+	RenderFrame(rend_data, tx_backgr1, &(SDL_FRect)VIEWFINDER_FRAME, FRAME_W);
+	RenderPortrait(rend_data, tx_backgr1);
 	const float shift_bar = BAR_H * 2.0F + FRAME_W * 5.0F;
 	const float shift_scroll = Q_SCROLL_SIZE + FRAME_W * 2.5F;
 	icon_scr_rect.x = ICON_TX_SIZE * ic_arm;
 	for(unsigned int i = 0U; i < 3U; ++i){
-		RenderFrame(rend_data, frames, FRAME_W);
-		RenderFrame(rend_data, frames + 1, FRAME_W);
-		SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
-		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas, 0.0F, NULL, SDL_FLIP_VERTICAL);
-		SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+		RenderFrame(rend_data, tx_backgr1, frames, FRAME_W);
+		RenderFrame(rend_data, tx_backgr1, frames + 1, FRAME_W);
+		SDL_SetTextureColorMod(tx_backgr1, 127U, 127U, 127U);
+		SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas, 0.0F, NULL, SDL_FLIP_VERTICAL);
+		SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
 		SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas);
 		icon_scr_rect.x += ICON_TX_SIZE;
 		frames->y += shift_bar;
 		(frames + 1)->y += shift_bar;
 		empty_areas->y += shift_bar;
 	}
-	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_bar_rects + 4, 0.0F, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_bar_rects + 5, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	SDL_SetTextureColorMod(tx_backgr1, 127U, 127U, 127U);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_bar_rects + 4, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_bar_rects + 5, 0.0F, NULL, SDL_FLIP_VERTICAL);
 	empty_areas->y = KEY_ICON_FRAME_Y + FRAME_W;
 	icon_scr_rect.x = ICON_TX_SIZE * ic_key;
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas);
 	empty_areas->y += BAR_H + FRAME_W * 3.0F;
 	icon_scr_rect.x = ICON_TX_SIZE * ic_coin;
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas);
-	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+	SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
 	frames->y = KEY_ICON_FRAME_Y;
-	RenderFrame(rend_data, frames, FRAME_W);
-	RenderFrame(rend_data, frames + 6, FRAME_W);
+	RenderFrame(rend_data, tx_backgr1, frames, FRAME_W);
+	RenderFrame(rend_data, tx_backgr1, frames + 6, FRAME_W);
 	(frames + 6)->y += BAR_H + FRAME_W * 3.0F;
-	RenderFrame(rend_data, frames + 6, FRAME_W);
+	RenderFrame(rend_data, tx_backgr1, frames + 6, FRAME_W);
 	frames->y +=  BAR_H + FRAME_W * 3.0F;
-	RenderFrame(rend_data, frames, FRAME_W);
-	RenderFrame(rend_data, frames + 2, FRAME_W);
-	RenderFrame(rend_data, frames + 3, FRAME_W);
-	RenderFrame(rend_data, frames + 5, FRAME_W);
-	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 1, 0.0F, NULL, SDL_FLIP_VERTICAL);
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	RenderFrame(rend_data, tx_backgr1, frames, FRAME_W);
+	RenderFrame(rend_data, tx_backgr1, frames + 2, FRAME_W);
+	RenderFrame(rend_data, tx_backgr1, frames + 3, FRAME_W);
+	RenderFrame(rend_data, tx_backgr1, frames + 5, FRAME_W);
+	SDL_SetTextureColorMod(tx_backgr1, 127U, 127U, 127U);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas + 1, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
 	(empty_areas + 2)->y += MP_BAR_H;
-	SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
-	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
+	SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
 	icon_scr_rect.x = ICON_TX_SIZE * ic_mp;
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, empty_areas + 1);
 	for(unsigned int i = 0U; i < 3U; ++i){
 		(frames + 4)->x = RIGHT_AREA_X + FRAME_W * 0.5F;
 		(empty_areas + 3)->x = RIGHT_AREA_X + FRAME_W * 1.5F;
 		for(unsigned int j = 0U; j < 3U; ++j){
-			RenderFrame(rend_data, frames + 4, FRAME_W);
-			SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 127U, 127U, 127U);
-			SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_areas + 3, 0.0F, NULL, SDL_FLIP_VERTICAL);
-			SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr1), 255U, 255U, 255U);
+			RenderFrame(rend_data, tx_backgr1, frames + 4, FRAME_W);
+			SDL_SetTextureColorMod(tx_backgr1, 127U, 127U, 127U);
+			SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas + 3, 0.0F, NULL, SDL_FLIP_VERTICAL);
+			SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
 			(frames + 4)->x += shift_scroll;
 			(empty_areas + 3)->x += shift_scroll;
 		}
@@ -1095,24 +1336,26 @@ static void DrawBackgroud(Render_data* const rend_data){
 		(empty_areas + 3)->y += shift_scroll;
 	}
 	for(unsigned int i = 0U; i < 4U; ++i){
-		SDL_RenderTextureRotated(rend_data->renderer, *(rend_data->textures + tx_backgr1), &FRAME_PART_0, empty_bar_rects + i, 0.0F, NULL, SDL_FLIP_VERTICAL);
+		SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_bar_rects + i, 0.0F, NULL, SDL_FLIP_VERTICAL);
 	}
-	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr0), 15U, 0U, 0U);
-	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_backgr0), NULL, &(SDL_FRect){
+	SDL_SetTextureColorMod(tx_backgr0, 15U, 0U, 0U);
+	SDL_RenderTexture(rend_data->renderer, tx_backgr0, NULL, &(SDL_FRect){
 		rend_data->viewfinder_rect.x,
 		rend_data->viewfinder_rect.y,
 		rend_data->viewfinder_rect.w,
 		rend_data->viewfinder_rect.h
 	});
-	SDL_SetTextureColorMod(*(rend_data->textures + tx_backgr0), 255U, 255U, 255U);
+	SDL_SetTextureColorMod(tx_backgr0, 255U, 255U, 255U);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(rend_data->renderer, &nesw_rect);
 	icon_scr_rect.x = ICON_TX_SIZE * ic_directions;
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icons), &icon_scr_rect, &nesw_rect);
 	SDL_SetRenderTarget(rend_data->renderer, NULL);
+	SDL_DestroyTexture(tx_backgr0);
+	SDL_DestroyTexture(tx_backgr1);
 }
 
-static void RenderPortrait(Render_data* const rend_data){
+static void RenderPortrait(Render_data* const rend_data, SDL_Texture* const tx_backgr1){
 	const SDL_FRect portrait_frame_rect = {
 		SIDE_AREA_WIDTH < PORTRAIT_H ? PORTRAIT_Y - FRAME_W : FRAME_W + half(SIDE_AREA_WIDTH) - half(PORTRAIT_H),
 		PORTRAIT_Y - FRAME_W,
@@ -1125,7 +1368,7 @@ static void RenderPortrait(Render_data* const rend_data){
 		portrait_frame_rect.w - FRAME_W * 2.0F,
 		portrait_frame_rect.h - FRAME_W * 2.0F,
 	};
-	RenderFrame(rend_data, &portrait_frame_rect, FRAME_W);
+	RenderFrame(rend_data, tx_backgr1, &portrait_frame_rect, FRAME_W);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(rend_data->renderer, &portrait_rect);
 	SDL_RenderTexture(rend_data->renderer, *(rend_data->textures + tx_icon), NULL, &portrait_rect);

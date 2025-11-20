@@ -8,7 +8,7 @@ void effect0(Game_data* const);
 void effect1(Game_data* const);
 void effect2(Game_data* const);
 void effect3(Game_data* const);
-void effect4(Game_data* const);
+void slow(Game_data* const);
 void effect5(Game_data* const);
 void effect6(Game_data* const);
 void EffectEmpty(Game_data* const);

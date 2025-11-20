@@ -9,9 +9,9 @@ void MarkAsPopulatedBigSeg(Uint64* const, const unsigned int, const unsigned int
 bool IsVoidBigSeg(const Uint64* const, const unsigned int, const unsigned int);
 void CreateWorld(Game_data* const);
 void DestroyWorld(World* const);
-Segment* GetSegment(const World* const, const float, const float);
-Segment* GetSegmentByIndx(const World* const, const unsigned int, const unsigned int);
-Segment* GetSegmentByIndxSafe(const World* const, const int, const int);
+Segment* GetSegmentUnsafe(const World* const, const float, const float);
+Segment* GetSegmentByIndxUnsafe(const World* const, const unsigned int, const unsigned int);
+Segment* GetSegmentByIndxSafe(const World* const, const unsigned int, const unsigned int);
 void StartLevel(Game_data* const);
 static SDL_FPoint GetStartPosition(World* const);
 float SegmentPositionX(const Segment* const);
@@ -25,5 +25,9 @@ bool IsClearSightWithKnownDistance(const SDL_FPoint* const, const Segment* const
 bool SegmentInSight(const SDL_FPoint* const, const SDL_FPoint* const, const Segment* const, const World* const);
 static bool IsClearSightPlus(const SDL_FPoint* const, const SDL_FPoint* const, const Segment* const, const World* const);
 static void FillBoxes(Game_data* const);
+void GetNeighbourSegments(Segment** const, const World* const, const Segment* const);
+void GetNeighbourSegmentsFar(Segment** const, const World* const, const Segment* const, const int);
+void Get4NearestSegments(Segment** const, const World* const, const Segment* const, const float, const float);
+void Get2NearestSegments(Segment** const, const World* const, Segment* const, const float, const float);
 
 #endif

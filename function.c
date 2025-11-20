@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
+#include <enum.h>
 #include <types.h>
 #include <function.h>
 
@@ -7,11 +8,11 @@ extern inline float RadToDeg(const float angle){
 	return angle * (180.0F / SDL_PI_F);
 }
 
-extern inline float sine(const float a){
+extern inline float SineUnsafe(const float a){
     return *(si + (unsigned int)(a * RAD_TO_MINE));
 }
 
-extern inline float cosi(const float a){
+extern inline float CosiUnsafe(const float a){
     return *(co + (unsigned int)(a * RAD_TO_MINE));
 }
 extern inline float SineSafe(const float a){

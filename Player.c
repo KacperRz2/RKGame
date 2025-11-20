@@ -1,22 +1,24 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
+#include <enum.h>
 #include <types.h>
 #include <Projectile.h>
 #include <Player.h>
 #include <function.h>
 #include <World.h>
 #include <Being.h>
-#include <enum.h>
 #include <Scroll.h>
 #include <game.h>
+#include <render.h>
 
 static void InitScrolls(Player* const p){
 	*(p->scrolls + scroll_0) = 99U;
 	*(p->scrolls + scroll_1) = 99U;
 	*(p->scrolls + scroll_2) = 99U;
 	*(p->scrolls + scroll_3) = 99U;
-	for(unsigned int i = 4U; i < SCROLLS_NUM - 1U; ++i){
-		*(p->scrolls + i) = 0U;
+	*(p->scrolls + scroll_slow) = 99U;
+	for(unsigned int i = 5U; i < SCROLLS_NUM - 1U; ++i){
+		*(p->scrolls + i) = 5U;
 	}
 	*(p->scrolls + scroll_empty) = 1U;
 	*(p->scrolls_quick_access) = scroll_empty;
@@ -67,89 +69,86 @@ extern inline void SetPlayerPosition(Player* const p, const float x, const float
 	p->position = (SDL_FPoint){x, y};
 }
 
-extern inline void MovePlayer(Game_data* const g_d, Player* const p, const float x, const float y){
+extern inline void MovePlayer(Game_data* const gd, Player* const p, const float x, const float y){
 	float new_x = p->position.x + x;
 	float new_y = p->position.y + y;
-	const Segment* s = GetSegment(&g_d->world, new_x, new_y);
+	const Segment* s = GetSegmentUnsafe(&gd->world, new_x, new_y);
 	if(s != NULL){
 		SetPlayerPosition(p, new_x, new_y);
-	}else if((s = GetSegment(&g_d->world, p->position.x, new_y)) != NULL){
+	}else if((s = GetSegmentUnsafe(&gd->world, p->position.x, new_y)) != NULL){
 		p->position.y = new_y;
-	}else if((s = GetSegment(&g_d->world, new_x, p->position.y)) != NULL){
+	}else if((s = GetSegmentUnsafe(&gd->world, new_x, p->position.y)) != NULL){
 		p->position.x = new_x;
 	}
 	if(s != p->segment){
 		p->last_seen_in = p->segment;
-		p->segment = GetSegment(&g_d->world, p->position.x, p->position.y);
+		p->segment = GetSegmentUnsafe(&gd->world, p->position.x, p->position.y);
 	}
 }
 
-static void UpdatePlayerMove(Game_data* const g_d, const unsigned int indx){
-	Player* const p = g_d->champions.array + indx;
+static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){
+	Player* const pc = gd->champions.array + indx;
 	static const Uint32 tmp = forward | back | right | left;
-	const bool runs = ((p->flags & (run | forward | back)) == (run | forward));
-	if(p->velocity > p->max_velocity * RUN_MULTIPL || (!runs && p->velocity > p->max_velocity) || ((p->flags & block) && p->velocity > p->max_velocity * BLOCK_VELOCITY_MULTIP)){
-		p->velocity *= DECELERATION;
-	}else if((p->flags & tmp) == forward || (p->flags & tmp) == (tmp & ~(back))){
-		p->velocity += ACCELERATION;
-		p->move_direction = p->direction;
-	}else if((p->flags & tmp) == back){
-		p->velocity = (p->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		p->move_direction = p->direction + SDL_PI_F;
-	}else if((p->flags & tmp) == right){
-		p->velocity += ACCELERATION;
-		p->move_direction = p->direction + SDL_PI_F * 0.5F;
-	}else if((p->flags & tmp) == left){
-		p->velocity += ACCELERATION;
-		p->move_direction = p->direction + SDL_PI_F * 1.5F;
-	}else if((p->flags & tmp) == (forward | right)){
-		p->velocity += ACCELERATION;
-		p->move_direction = p->direction + SDL_PI_F * 0.25F;
-	}else if((p->flags & tmp) == (forward | left)){
-		p->velocity += ACCELERATION;
-		p->move_direction = p->direction + SDL_PI_F * 1.75F;
-	}else if((p->flags & tmp) == (back | right)){
-		p->velocity = (p->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		p->move_direction = p->direction + SDL_PI_F * 0.75F;
-	}else if((p->flags & tmp) == (back | left)){
-		p->velocity = (p->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		p->move_direction = p->direction + SDL_PI_F * 1.25F;
+	const bool runs = ((pc->flags & (run | forward | back)) == (run | forward));
+	if(pc->velocity > pc->max_velocity * RUN_MULTIPL || (!runs && pc->velocity > pc->max_velocity) || ((pc->flags & block) && pc->velocity > pc->max_velocity * BLOCK_VELOCITY_MULTIP)){
+		pc->velocity *= DECELERATION;
+	}else if((pc->flags & tmp) == forward || (pc->flags & tmp) == (tmp & ~(back))){
+		pc->velocity += ACCELERATION;
+		pc->move_direction = pc->direction;
+	}else if((pc->flags & tmp) == back){
+		pc->velocity = (pc->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
+		pc->move_direction = pc->direction + SDL_PI_F;
+	}else if((pc->flags & tmp) == right){
+		pc->velocity += ACCELERATION;
+		pc->move_direction = pc->direction + SDL_PI_F * 0.5F;
+	}else if((pc->flags & tmp) == left){
+		pc->velocity += ACCELERATION;
+		pc->move_direction = pc->direction + SDL_PI_F * 1.5F;
+	}else if((pc->flags & tmp) == (forward | right)){
+		pc->velocity += ACCELERATION;
+		pc->move_direction = pc->direction + SDL_PI_F * 0.25F;
+	}else if((pc->flags & tmp) == (forward | left)){
+		pc->velocity += ACCELERATION;
+		pc->move_direction = pc->direction + SDL_PI_F * 1.75F;
+	}else if((pc->flags & tmp) == (back | right)){
+		pc->velocity = (pc->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
+		pc->move_direction = pc->direction + SDL_PI_F * 0.75F;
+	}else if((pc->flags & tmp) == (back | left)){
+		pc->velocity = (pc->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
+		pc->move_direction = pc->direction + SDL_PI_F * 1.25F;
 	}else{
-		p->velocity *= DECELERATION;
-		if(p->velocity < 0.05F) p->velocity = 0.0F;
+		pc->velocity *= DECELERATION;
+		if(pc->velocity < 0.05F) pc->velocity = 0.0F;
 	}
-	if(!(p->flags & block)){
-		if(p->flags & dodge && !(p->flags & forward)){
-			if(p->fatigue_points >= PC_DODGE_FATIG && p->block_times.dodge < 1){
-				p->fatigue_points -= PC_DODGE_FATIG;
-				BlockPlayerFatigue(p, PC_DODGE_FATIG_BLOCK_TIME);
-				p->block_times.dodge = PC_DODGE_RELOAD;
-				if(!(p->flags & tmp)){
-					p->move_direction = p->direction + SDL_PI_F;
+	if(!(pc->flags & block)){
+		if(pc->flags & dodge && !(pc->flags & forward)){
+			if(pc->fatigue_points >= PC_DODGE_FATIG && pc->block_times.dodge < 1){
+				pc->fatigue_points -= PC_DODGE_FATIG;
+				BlockPlayerFatigue(pc, PC_DODGE_FATIG_BLOCK_TIME);
+				pc->block_times.dodge = PC_DODGE_RELOAD;
+				if(!(pc->flags & tmp)){
+					pc->move_direction = pc->direction + SDL_PI_F;
 				}
-				p->velocity = PC_DODGE_VELOCITY;
+				pc->velocity = pc->max_velocity * DODGE_VELOCITY_MULTIP;
 			}else{
-				BlockPlayerFatigue(p, PC_FAILURE_FATIG_BLOCK_TIME);
-				if(!(p->flags & tmp)){
-					p->move_direction = p->direction + SDL_PI_F;
+				BlockPlayerFatigue(pc, PC_FAILURE_FATIG_BLOCK_TIME);
+				if(!(pc->flags & tmp)){
+					pc->move_direction = pc->direction + SDL_PI_F;
 				}
-				p->velocity = PC_FAILURE_VELOCITY;
+				pc->velocity = PC_FAILURE_VELOCITY;
 			}
-			p->flags &= ~(dodge);
+			pc->flags &= ~(dodge);
 		}
 		if(runs){
-			if(p->fatigue_points <= 1){
-				p->flags &= ~(run);
+			if(pc->fatigue_points <= 1){
+				pc->flags &= ~(run);
 			}else{
-				--(p->fatigue_points);
+				--(pc->fatigue_points);
 			}
 		}
 	}
-	if(p->block_times.dodge > 0){
-		--p->block_times.dodge;
-	}
-	if(p->velocity > 0.0F){
-		MovePlayer(g_d, p, SDL_sinf(p->move_direction) * p->velocity, -SDL_cosf(p->move_direction) * p->velocity);
+	if(pc->velocity > 0.0F){
+		MovePlayer(gd, pc, SDL_sinf(pc->move_direction) * pc->velocity, -SDL_cosf(pc->move_direction) * pc->velocity);
 	}
 }
 
@@ -161,35 +160,38 @@ static void UpdatePlayerDirection(Player* const p){
 	}
 }
 
-static void UpdatePlayerPoints(Player* const p){
-	if(p->block_times.fatigue < 1){
-		if(p->fatigue_points < p->max_fatigue){
-			++(p->fatigue_points);
+static void UpdatePlayerPoints(Player* const pc){
+	if(pc->block_times.fatigue < 1){
+		if(pc->fatigue_points < pc->max_fatigue){
+			++(pc->fatigue_points);
 		}
-		if(p->flags & block){
-			BlockPlayerFatigue(p, PC_FATIGUE_GAIN_INTERVAL * 2);
+		if(pc->flags & block){
+			BlockPlayerFatigue(pc, PC_FATIGUE_GAIN_INTERVAL * 2);
 		}else{
-			BlockPlayerFatigue(p, PC_FATIGUE_GAIN_INTERVAL);
+			BlockPlayerFatigue(pc, PC_FATIGUE_GAIN_INTERVAL);
 		}
 	}else{
-		--(p->block_times.fatigue);
+		--(pc->block_times.fatigue);
 	}
-	if(p->block_times.armour < 1U){
-		PlayerGainArmour(p, 0.01F);
-		BlockPlayerArmourRegen(p, PC_ARMOUR_GAIN_INTERVAL);
+	if(pc->block_times.armour < 1U){
+		PlayerGainArmour(pc, 0.01F);
+		BlockPlayerArmourRegen(pc, PC_ARMOUR_GAIN_INTERVAL);
 	}else{
-		--(p->block_times.armour);
+		--(pc->block_times.armour);
+	}
+	if(pc->block_times.dodge > 0){
+		--pc->block_times.dodge;
 	}
 }
 
-static inline void UpdatePlayer(Game_data* const g_d, const unsigned int indx){
-	UpdatePlayerDirection(g_d->champions.array + indx);
-	UpdatePlayerMove(g_d, indx);
-	UpdatePlayerCast(g_d, indx);
-	UpdatePlayerPush(g_d, indx);
-	UpdatePlayerFire(g_d, indx);
-	UpdatePlayerBlade(g_d, indx);
-	UpdatePlayerPoints(g_d->champions.array + indx);
+static inline void UpdatePlayer(Game_data* const gd, const unsigned int indx){
+	UpdatePlayerDirection(gd->champions.array + indx);
+	UpdatePlayerMove(gd, indx);
+	UpdatePlayerCast(gd, indx);
+	UpdatePlayerPush(gd, indx);
+	UpdatePlayerFire(gd, indx);
+	UpdatePlayerBlade(gd, indx);
+	UpdatePlayerPoints(gd->champions.array + indx);
 }
 
 static inline void ShiftBlade(Blade* const bl, Placement* const shift){
@@ -244,13 +246,13 @@ static inline bool BladeHitsBeing(Blade* const bl, Placement* const location, Be
 	return false;
 }
 
-static bool UnleashDestruction(Game_data* const g_d, const unsigned int indx){
+static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 	static const float length_part = BLADE_SIZE * 0.85F / (float)PC_BLADE_CHECKPOINTS;
 	float sine_blade_direction;
 	float cosine_blade_direction;
-	Placement blade_true_location = GetBladeLocation(g_d->champions.array + indx, &sine_blade_direction, &cosine_blade_direction);
-	Segment* s = GetSegment(&g_d->world, blade_true_location.position.x, blade_true_location.position.y);
-	if(s == NULL){
+	Placement blade_true_location = GetBladeLocation(gd->champions.array + indx, &sine_blade_direction, &cosine_blade_direction);
+	Segment* seg = GetSegmentUnsafe(&gd->world, blade_true_location.position.x, blade_true_location.position.y);
+	if(seg == NULL){
 		return true;
 	}
 	float shift_x = sine_blade_direction * length_part;
@@ -259,43 +261,47 @@ static bool UnleashDestruction(Game_data* const g_d, const unsigned int indx){
 		{blade_true_location.position.x + 2.0F * shift_x, blade_true_location.position.y + 2.0F * shift_y},
 		{blade_true_location.position.x + shift_x, blade_true_location.position.y + shift_y}
 	};
-	Blade* const bl = &(g_d->champions.array + indx)->blade;
-	for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
-	for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
-		Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
+	Blade* const bl = &(gd->champions.array + indx)->blade;
+	Segment* neighbour_segs[4];
+	Get4NearestSegments(neighbour_segs, &gd->world, seg, blade_true_location.position.x, blade_true_location.position.y);
+	for(unsigned int k = 0U; k < 4; ++k){
+		Segment* neighbour = *(neighbour_segs + k);
 		if(neighbour == NULL) continue;
 		for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
-			Being* b = (g_d->beings.array + *(neighbour->beings.beings_ind + i));
-			if(!BladeHitsBeing(bl, &blade_true_location, b, dangerous_points)) continue;
-			if(DamageBeing(b, &bl->impact, g_d->beings.array)){
+			Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
+			if(!BladeHitsBeing(bl, &blade_true_location, bg, dangerous_points)) continue;
+			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, dangerous_points);
+			if(DamageBeing(bg, &bl->impact, gd->beings.array)){
 				if(bl->hits < --bl->penetration){
 					--i;
 					continue;
 				}
 			}else{
-				const float angle = GetDirectionToPush(&(g_d->champions.array + indx)->position, &b->position);
-				const float stun_power = CalculateStunPower(&bl->impact, &b->armour);
-				CatapultBeing(b, SineSafe(angle) * stun_power, -CosiSafe(angle) * stun_power, BEING_DEFAULT_LEFT_TICKS * 2);
+				const float stun_power = CalculateStunPower(&bl->impact, &bg->armour);
+				if(stun_power >= 1.0F){
+					const float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &bg->position);
+					CatapultBeing(bg, SineSafe(angle) * stun_power, -CosiSafe(angle) * stun_power, BEING_DEFAULT_LEFT_TICKS * 2);
+				}
 				if(bl->hits < bl->penetration){
-					*(bl->hit_targets + bl->hits++) = b->main_indx;
+					*(bl->hit_targets + bl->hits++) = bg->main_indx;
 					continue;
 				}
 			}
 			return true;
 		}
-	}}
+	}
 	return false;
 }
 
-static void UpdatePlayerBlade(Game_data* const g_d, const unsigned int indx){
+static void UpdatePlayerBlade(Game_data* const gd, const unsigned int indx){
 	static const Placement blade_key_frames_0[] = PC_BLADE_FRAMES0;
 	static const Placement blade_key_frames_1[] = PC_BLADE_FRAMES1;
 	static const Placement blade_key_frames_2[] = PC_BLADE_FRAMES2;
 	static const Placement* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
 	static const float extra_penetration[] = PC_BLADE_PENETRATIONS;
-	Blade* const bl = &(g_d->champions.array + indx)->blade;
-	if((g_d->champions.array + indx)->flags & range_mode){
+	Blade* const bl = &(gd->champions.array + indx)->blade;
+	if((gd->champions.array + indx)->flags & range_mode){
 		if(bl->step <= bl->steps){
 			SetBladePositionToBase(bl);
 			bl->abide = false;
@@ -307,16 +313,16 @@ static void UpdatePlayerBlade(Game_data* const g_d, const unsigned int indx){
 		}
 		return;
 	}
-	if((g_d->champions.array + indx)->flags & block){
+	if((gd->champions.array + indx)->flags & block){
 		bl->abide = false;
 		bl->charge = PC_BLADE_CHARGE_BASE;
 		bl->idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
-	}else if((g_d->champions.array + indx)->flags & attack){
+	}else if((gd->champions.array + indx)->flags & attack){
 		bl->charge *= PC_BLADE_CHARGE_MODIFIER;
 	} 
 	if(!bl->abide){
 		if(bl->charge != PC_BLADE_CHARGE_BASE){
-			if(!((g_d->champions.array + indx)->flags & attack)){
+			if(!((gd->champions.array + indx)->flags & attack)){
 				bl->chain = bl->chain_next;
 				bl->key = 0;
 				bl->step = 0;
@@ -325,10 +331,10 @@ static void UpdatePlayerBlade(Game_data* const g_d, const unsigned int indx){
 				bl->hits = 0U;
 				const float multip = 1.0F - bl->charge;
 				bl->impact = (Impact){
-					(g_d->champions.array + indx)->blade_attack.damage * multip,
-					(g_d->champions.array + indx)->blade_attack.armour_reduction * multip + *(extra_penetration + bl->chain),
-					(g_d->champions.array + indx)->blade_attack.magic * multip,
-					(g_d->champions.array + indx)->blade_attack.stun * multip
+					(gd->champions.array + indx)->blade_attack.damage * multip,
+					(gd->champions.array + indx)->blade_attack.armour_reduction * multip + *(extra_penetration + bl->chain),
+					(gd->champions.array + indx)->blade_attack.magic * multip,
+					(gd->champions.array + indx)->blade_attack.stun * multip
 				};
 				bl->penetration = (unsigned int)((float)BLADE_PENETRATION * multip);
 				bl->charge = PC_BLADE_CHARGE_BASE;
@@ -358,7 +364,7 @@ static void UpdatePlayerBlade(Game_data* const g_d, const unsigned int indx){
 		bl->step = 0;
 	}else{
 		ShiftBlade(bl, &bl->step_shift);
-		if(!bl->freehand && bl->key > 1 && (bl->freehand = UnleashDestruction(g_d, indx))){
+		if(!bl->freehand && bl->key > 1 && (bl->freehand = UnleashDestruction(gd, indx))){
 			bl->abide = false;
 			bl->hits = 0U;
 			bl->placement.direction = bl->chain == 1 ? bl->placement.direction - PC_BLADE_BOUNCE_ANGLE : bl->placement.direction + PC_BLADE_BOUNCE_ANGLE;
@@ -383,70 +389,72 @@ extern inline bool CircleMeetsPlayer(const float x, const float y, const float d
 	return false;
 }
 
-extern inline void DamagePlayer(Player* const p, const Impact* impact){
-	p->hit_points -= CalculateDamage(impact, &p->armour);
+extern inline void DamagePlayer(Player* const pc, const Impact* impact){
+	pc->hit_points -= CalculateDamage(impact, &pc->armour);
 	if(impact->damage > 0.0F){
-		if(p->armour.absorption > 0.0F){
-			p->armour.absorption -= impact->damage;
-			if(p->armour.absorption < 0.0F){
-				p->armour.absorption = 0.0F;
+		if(pc->armour.absorption > 0.0F){
+			pc->armour.absorption -= impact->damage;
+			if(pc->armour.absorption < 0.0F){
+				pc->armour.absorption = 0.0F;
 			}
 		}
-		if(p->armour.multipl < 1.0F){
-			p->armour.multipl += (1.0F - p->max_armour.multipl) * (impact->damage / p->max_armour.absorption);
-			if(p->armour.multipl > 1.0F){
-				p->armour.multipl = 1.0F;
+		if(pc->armour.multipl < 1.0F){
+			pc->armour.multipl += (1.0F - pc->max_armour.multipl) * (impact->damage / pc->max_armour.absorption);
+			if(pc->armour.multipl > 1.0F){
+				pc->armour.multipl = 1.0F;
 			}
 		}
 	}
 	if(impact->magic > 0.0F){
-		if(p->armour.magic_multipl < 1.0F){
-			p->armour.magic_multipl += (1.0F - p->max_armour.magic_multipl) * 0.01F;
-			if(p->armour.magic_multipl > 1.0F){
-				p->armour.magic_multipl = 1.0F;
+		if(pc->armour.magic_multipl < 1.0F){
+			pc->armour.magic_multipl += (1.0F - pc->max_armour.magic_multipl) * 0.01F;
+			if(pc->armour.magic_multipl > 1.0F){
+				pc->armour.magic_multipl = 1.0F;
 			}
 		}
 	}
-	BlockPlayerArmourRegen(p, PC_ARMOUR_REGEN_BLOCK);
+	BlockPlayerArmourRegen(pc, PC_ARMOUR_REGEN_BLOCK);
+	StunPlayer(pc);
 }
 
-static void UpdatePlayerFire(Game_data* const g_d, const unsigned int indx){
-	if((g_d->champions.array + indx)->block_times.shoot > 0){
-		--(g_d->champions.array + indx)->block_times.shoot;
-	}else if((g_d->champions.array + indx)->selected_scroll == scroll_empty && ((g_d->champions.array + indx)->flags & (range_mode | attack | block)) == (range_mode | attack) && g_d->projectiles.num < MAX_PROJECTILES_NUM){
+static void UpdatePlayerFire(Game_data* const gd, const unsigned int indx){
+	if((gd->champions.array + indx)->block_times.shoot > 0){
+		--(gd->champions.array + indx)->block_times.shoot;
+	}else if((gd->champions.array + indx)->selected_scroll == scroll_empty && ((gd->champions.array + indx)->flags & (range_mode | attack | block)) == (range_mode | attack) && gd->projectiles.num < MAX_PROJECTILES_NUM){
 		float x, y;
-		GetShiftFromAngle((g_d->champions.array + indx)->direction + 0.25F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &x, &y);
-		AddPCProjectileToArray(&g_d->projectiles, &(g_d->champions.array + indx)->position, x, y, &(g_d->champions.array + indx)->range_attack, TEST_PENETRATION);
-		(g_d->champions.array + indx)->block_times.shoot = PC_SHOOT_RELOAD;
+		GetShiftFromAngle((gd->champions.array + indx)->direction + 0.125F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &x, &y);
+		AddPCProjectileToArray(&gd->projectiles, &(gd->champions.array + indx)->position, x, y, &(gd->champions.array + indx)->range_attack, TEST_PENETRATION);
+		(gd->champions.array + indx)->block_times.shoot = PC_SHOOT_RELOAD;
 	}
 }
 
-static void UpdatePlayerPush(Game_data* const g_d, const unsigned int indx){
-	if((g_d->champions.array + indx)->block_times.push > 0){
-		--(g_d->champions.array + indx)->block_times.push;
-	}else if(((g_d->champions.array + indx)->flags & (attack | block)) == (attack | block) && (g_d->champions.array + indx)->fatigue_points >= PC_PUSH_FATIG){
-		(g_d->champions.array + indx)->fatigue_points -= PC_PUSH_FATIG;
-		BlockPlayerFatigue(g_d->champions.array + indx, PC_PUSH_FATIG_BLOCK_TIME);
-		(g_d->champions.array + indx)->block_times.push = PC_PUSH_RELOAD;
-		Segment* s = GetSegment(&g_d->world, (g_d->champions.array + indx)->position.x, (g_d->champions.array + indx)->position.y);
-		for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
-		for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
-			Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
+static void UpdatePlayerPush(Game_data* const gd, const unsigned int indx){
+	if((gd->champions.array + indx)->block_times.push > 0){
+		--(gd->champions.array + indx)->block_times.push;
+	}else if(((gd->champions.array + indx)->flags & (attack | block)) == (attack | block) && (gd->champions.array + indx)->fatigue_points >= PC_PUSH_FATIG){
+		(gd->champions.array + indx)->fatigue_points -= PC_PUSH_FATIG;
+		BlockPlayerFatigue(gd->champions.array + indx, PC_PUSH_FATIG_BLOCK_TIME);
+		(gd->champions.array + indx)->block_times.push = PC_PUSH_RELOAD;
+		Segment* seg = GetSegmentUnsafe(&gd->world, (gd->champions.array + indx)->position.x, (gd->champions.array + indx)->position.y);
+		Segment* neighbour_segs[4];
+		Get4NearestSegments(neighbour_segs, &gd->world, seg, (gd->champions.array + indx)->position.x, (gd->champions.array + indx)->position.y);
+		for(unsigned int k = 0U; k < 4; ++k){
+			Segment* neighbour = *(neighbour_segs + k);
 			if(neighbour == NULL) continue;
 			for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
-				Being* b = (g_d->beings.array + *(neighbour->beings.beings_ind + i));
-				if(pow2((g_d->champions.array + indx)->position.x - b->position.x) + pow2((g_d->champions.array + indx)->position.y - b->position.y) < pow2(PC_PUSH_REACH)){
-					float angle = GetDirectionToPush(&(g_d->champions.array + indx)->position, &b->position);
+				Being* b = (gd->beings.array + *(neighbour->beings.beings_ind + i));
+				if(pow2((gd->champions.array + indx)->position.x - b->position.x) + pow2((gd->champions.array + indx)->position.y - b->position.y) < pow2(PC_PUSH_REACH)){
+					float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &b->position);
 					if(angle < 0.0F){
 						angle += FULL_ANGLE;
 					}
-					float difference = SDL_fabsf((g_d->champions.array + indx)->direction - angle);
+					const float difference = SDL_fabsf((gd->champions.array + indx)->direction - angle);
 					if(difference <= SDL_PI_F * 0.5F || difference >= SDL_PI_F * 1.5F){
-						CatapultBeing(b, sine(angle) * DEFAULT_FLY_VELOCITY, -cosi(angle) * DEFAULT_FLY_VELOCITY, BEING_DEFAULT_LEFT_TICKS * 4);
+						CatapultBeing(b, SineUnsafe(angle) * DEFAULT_FLY_VELOCITY, -CosiUnsafe(angle) * DEFAULT_FLY_VELOCITY, BEING_DEFAULT_LEFT_TICKS * 4);
 					}
 				}
 			}
-		}}
+		}
 	}
 }
 
@@ -467,17 +475,17 @@ extern inline float GetDirectionToPush(SDL_FPoint* const pushing, SDL_FPoint* co
     return arctan2(pushed->y - pushing->y, pushed->x - pushing->x) + SDL_PI_F * 0.5F;
 }
 
-static void UpdatePlayerCast(Game_data* const g_d, const unsigned int indx){
-	if((g_d->champions.array + indx)->block_times.cast > 0){
-		--(g_d->champions.array + indx)->block_times.cast;
-	}else if((g_d->champions.array + indx)->flags & cast){
-		(g_d->champions.array + indx)->flags &= ~(cast);
-		const int cost = ScrollCost((g_d->champions.array + indx)->selected_scroll);
-		if(*((g_d->champions.array + indx)->scrolls + (g_d->champions.array + indx)->selected_scroll) > 0U && (g_d->champions.array + indx)->magic_points >= cost){
-			(g_d->champions.array + indx)->magic_points -= cost;
-			--(*((g_d->champions.array + indx)->scrolls + (g_d->champions.array + indx)->selected_scroll));
-			UseScroll(g_d);
-			(g_d->champions.array + indx)->block_times.cast = PC_CAST_RELOAD;
+static void UpdatePlayerCast(Game_data* const gd, const unsigned int indx){
+	if((gd->champions.array + indx)->block_times.cast > 0){
+		--(gd->champions.array + indx)->block_times.cast;
+	}else if((gd->champions.array + indx)->flags & cast){
+		(gd->champions.array + indx)->flags &= ~(cast);
+		const int cost = ScrollCost((gd->champions.array + indx)->selected_scroll);
+		if(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll) > 0U && (gd->champions.array + indx)->magic_points >= cost){
+			(gd->champions.array + indx)->magic_points -= cost;
+			--(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll));
+			UseScroll(gd);
+			(gd->champions.array + indx)->block_times.cast = PC_CAST_RELOAD;
 		}
 	}
 }
@@ -526,22 +534,28 @@ static inline void PlayerGainArmour(Player* const p, const float perc){
 	}
 }
 
-void UpdatePlayers(Game_data* const g_d){
-	for(unsigned int i = 0U; i < g_d->champions.num; ++i){
-		if(i != g_d->human_indx){
-			UpdateCPUPlayerFlags(g_d, i);
+void UpdatePlayers(Game_data* const gd){
+	for(unsigned int i = 0U; i < gd->champions.num; ++i){
+		if(i != gd->human_indx){
+			UpdateCPUPlayerFlags(gd, i);
 		}
-		UpdatePlayer(g_d, i);
+		UpdatePlayer(gd, i);
     }
 }
 
-static void UpdateCPUPlayerFlags(Game_data* const g_d, const unsigned int indx){
-	Player* const p = g_d->champions.array + indx;
-	unsigned int next_i = (indx + 1U) % g_d->champions.num;
-	if(next_i == g_d->human_indx && g_d->champions.num > 2U){
-		next_i = (next_i + 1U) % g_d->champions.num;
+void UpdatePlayersEffects(Game_data* const gd){
+	for(unsigned int i = 0U; i < gd->champions.num; ++i){
+		UpdatePlayerEffects(gd, i);
+    }
+}
+
+static void UpdateCPUPlayerFlags(Game_data* const gd, const unsigned int indx){
+	Player* const p = gd->champions.array + indx;
+	unsigned int next_i = (indx + 1U) % gd->champions.num;
+	if(next_i == gd->human_indx && gd->champions.num > 2U){
+		next_i = (next_i + 1U) % gd->champions.num;
 	}
-	if(pow2((g_d->champions.array + next_i)->position.x - p->position.x) + pow2((g_d->champions.array + next_i)->position.y - p->position.y) < pow2(PLAYER_SIZE * 2.0F)){
+	if(pow2((gd->champions.array + next_i)->position.x - p->position.x) + pow2((gd->champions.array + next_i)->position.y - p->position.y) < pow2(PLAYER_SIZE * 2.0F)){
 		if(indx % 2U == 0U){
 			p->flags |= left;
 			p->flags &= ~(right);
@@ -556,11 +570,11 @@ static void UpdateCPUPlayerFlags(Game_data* const g_d, const unsigned int indx){
 	float d_x;
 	float d_y;
 	float d_squared;
-	if(target = BeingNear(p->segment, g_d)){
+	if(target = BeingNear(p->segment, gd)){
 		d_x = target->position.x - p->position.x;
 		d_y = target->position.y - p->position.y;
 		d_squared = pow2(d_x) + pow2(d_y);
-		if(IsClearSightWithKnownDistance(&p->position, target->segment, &g_d->world, d_x, d_y, d_squared)){
+		if(IsClearSightWithKnownDistance(&p->position, target->segment, &gd->world, d_x, d_y, d_squared)){
 			p->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
 			if(d_squared <= pow2(BEING_ATTACK_DISTANCE)){
 				p->flags &= ~(back);
@@ -572,13 +586,13 @@ static void UpdateCPUPlayerFlags(Game_data* const g_d, const unsigned int indx){
 				if((p->flags & (attack | range_mode)) != attack){
 					p->flags &= ~(range_mode);
 					p->flags |= attack;
-				}else if((p->flags & (attack | range_mode)) == attack && SDL_randf() < 0x1.0p-7F){
+				}else if((p->flags & (attack | range_mode)) == attack && SDL_randf() < 0x1.0p-5F){
 					p->flags &= ~(attack);
 				}
 				return;
 			}
-			d_x = p->position.x - (g_d->champions.array + g_d->human_indx)->position.x;
-			d_y = p->position.y - (g_d->champions.array + g_d->human_indx)->position.y;
+			d_x = p->position.x - human(gd)->position.x;
+			d_y = p->position.y - human(gd)->position.y;
 			d_squared = pow2(d_x) + pow2(d_y);
 			if(d_squared > pow2(SEGMENT_SIZE)){
 				const float direction_to_main_player = arctan2(d_y, d_x) - SDL_PI_F * 0.5F;
@@ -605,12 +619,12 @@ static void UpdateCPUPlayerFlags(Game_data* const g_d, const unsigned int indx){
 		}
 	}
 	p->flags &= ~(attack | back);
-	d_x = (g_d->champions.array + g_d->human_indx)->position.x - p->position.x;
-	d_y = (g_d->champions.array + g_d->human_indx)->position.y - p->position.y;
+	d_x = human(gd)->position.x - p->position.x;
+	d_y = human(gd)->position.y - p->position.y;
 	d_squared = pow2(d_x) + pow2(d_y);
-	if(!IsClearSightWithKnownDistance(&p->position, (g_d->champions.array + g_d->human_indx)->segment, &g_d->world, d_x, d_y, d_squared)){
-		d_x = SegmentCenterX((g_d->champions.array + g_d->human_indx)->last_seen_in) - p->position.x;
-		d_y = SegmentCenterY((g_d->champions.array + g_d->human_indx)->last_seen_in) - p->position.y;
+	if(!IsClearSightWithKnownDistance(&p->position, human(gd)->segment, &gd->world, d_x, d_y, d_squared)){
+		d_x = SegmentCenterX(human(gd)->last_seen_in) - p->position.x;
+		d_y = SegmentCenterY(human(gd)->last_seen_in) - p->position.y;
 	}
 	p->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
 	if(d_squared < pow2(SEGMENT_SIZE)){
@@ -658,16 +672,76 @@ static inline Being* BeingNear(Segment* s, Game_data* const gd){
 	return NULL;
 }
 
-extern inline void SetQuickScroll(Player* const p, int num){
+extern inline void SetQuickScroll(Player* const pc, int num){
 	for(unsigned int i = 0U; i < 9U; ++i){
-		if(*(p->scrolls_quick_access + i) == p->help_data.menu_position){
+		if(*(pc->scrolls_quick_access + i) == pc->help_data.menu_position){
 			if(i != num){
-				*(p->scrolls_quick_access + i) = *(p->scrolls_quick_access + num);
+				*(pc->scrolls_quick_access + i) = *(pc->scrolls_quick_access + num);
 				break;
 			}else{
 				return;
 			}
 		}
 	}
-	*(p->scrolls_quick_access + num) = p->help_data.menu_position;
+	*(pc->scrolls_quick_access + num) = pc->help_data.menu_position;
+}
+
+static inline void StunPlayer(Player* const pc){
+	const int effect_indx = PlayerHasEffect(pc, pc_effect_slow);
+	if(effect_indx == -1){
+		AddPlayerEffect(pc, (Lasting_effect){pc_effect_slow, PC_DODGE_RELOAD});
+		pc->flags |= stunned;
+		pc->max_velocity *= 0.25F;
+	}else{
+		(pc->effects + effect_indx)->ticks_left = PC_DODGE_RELOAD;
+	}
+	pc->flags &= ~(dodge | run | block | attack | cast | action);
+	pc->block_times.dodge = PC_DODGE_RELOAD;
+	pc->blade.charge = PC_BLADE_CHARGE_BASE;
+	pc->blade.idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
+}
+
+extern inline void AddPlayerEffect(Player* const pc, const Lasting_effect effect){
+	if(pc->effects_num < MAX_PC_EFFECTS){
+		AddLastingEffect(pc->effects, effect, pc->effects_num++);
+	}
+}
+
+static inline void RemovePlayerEffect(Player* const pc, const int indx){
+	RemoveLastingEffect(pc->effects, indx, pc->effects_num--);
+}
+
+static inline void UpdatePlayerEffects(Game_data* const gd, const unsigned int indx){
+	Player* const pc = gd->champions.array + indx;
+	for(unsigned int i = 0U; i < pc->effects_num; ++i){
+		UpdatePlayerEffect(gd, pc, i);
+	}
+}
+
+static inline void UpdatePlayerEffect(Game_data* const gd, Player* const pc, const int effect_indx){
+    const void (*effect[])(Game_data* const, Player* const, const int) = PLAYER_LASTING_EFFECTS;
+    (*(effect + (pc->effects + effect_indx)->id))(gd, pc, (pc->effects + effect_indx)->ticks_left--);
+	if((pc->effects + effect_indx)->ticks_left < 1){
+		RemovePlayerEffect(pc, effect_indx);
+	}
+}
+
+extern inline int PlayerHasEffect(Player* const pc, const int effect_id){
+    for(unsigned int i = 0U; i < pc->effects_num; ++i){
+        if((pc->effects + i)->id == effect_id){
+            return i;
+        }
+    }
+    return -1;
+}
+
+void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
+    if(ticks_left < 2){
+        pc->max_velocity = PLAYER_VELOCITY;
+		pc->flags &= ~(stunned);
+    }
+}
+
+void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
+    HealPlayer(pc, 1);
 }

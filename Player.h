@@ -32,8 +32,18 @@ static void BlockPlayerFatigue(Player* const, const int);
 static void BlockPlayerArmourRegen(Player* const, const int);
 static void PlayerGainArmour(Player* const, const float);
 void UpdatePlayers(Game_data* const);
+void UpdatePlayersEffects(Game_data* const);
 static void UpdateCPUPlayerFlags(Game_data* const, const unsigned int);
 static Being* BeingNear(Segment* s, Game_data* const);
 void SetQuickScroll(Player* const, int);
+static void StunPlayer(Player* const);
+
+void AddPlayerEffect(Player* const, const Lasting_effect);
+static void RemovePlayerEffect(Player* const, const int);
+static void UpdatePlayerEffects(Game_data* const, const unsigned int);
+static void UpdatePlayerEffect(Game_data* const, Player* const, const int);
+int PlayerHasEffect(Player* const, const int);
+void SlowPlayer(Game_data* const, Player* const, const int);
+void PlayerHPRegeneration(Game_data* const, Player* const, const int);
 
 #endif

@@ -1,18 +1,19 @@
 #include <SDL3/SDL.h>
 #include <macros.h>
+#include <enum.h>
 #include <types.h>
 #include <Projectile.h>
 #include <Being.h>
 #include <World.h>
 #include <Player.h>
 #include <function.h>
-#include <enum.h>
 #include <game.h>
+#include <render.h>
 
 const bool (*update[])(Projectile* const, Game_data* const) = PROJECTILES_UPDATE_FUNC;
 
-static inline void UpdateProjectile(Projectile* const pr, Game_data* const g_d){
-	(*(update + pr->type_id))(pr, g_d);
+static inline void UpdateProjectile(Projectile* const pr, Game_data* const gd){
+	(*(update + pr->type_id))(pr, gd);
 }
 
 void DestroyProjectiles(Projectiles_array* const prs){
@@ -62,88 +63,100 @@ static inline void MoveProjectile(Projectile* const pr){
 	pr->position.y += pr->shift_per_tick.y;
 }
 
-void UpdateProjectiles(Game_data* const g_d){
-	for(Projectile* pr = g_d->projectiles.array; pr != (g_d->projectiles.array + g_d->projectiles.num); ++pr){
-		if(!((*(update + pr->type_id))(pr, g_d))){
+void UpdateProjectiles(Game_data* const gd){
+	for(Projectile* pr = gd->projectiles.array; pr != (gd->projectiles.array + gd->projectiles.num); ++pr){
+		if(!((*(update + pr->type_id))(pr, gd))){
 			--pr;
 		}
 	}
 }
 
-static bool UpdatePCProjectile(Projectile* const pr, Game_data* const g_d){
+static bool UpdatePCProjectile(Projectile* const pr, Game_data* const gd){
 		MoveProjectile(pr);
-		Segment* s = GetSegment(&g_d->world, pr->position.x, pr->position.y);
-		if(s == NULL){
-			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
+		Segment* seg = GetSegmentUnsafe(&gd->world, pr->position.x, pr->position.y);
+		if(seg == NULL){
+			*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 			return false;
 		}
-		for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
-		for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
-			Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
+		Segment* neighbour_segs[4];
+		Get4NearestSegments(neighbour_segs, &gd->world, seg, pr->position.x, pr->position.y);
+		for(unsigned int k = 0U; k < 4; ++k){
+			Segment* neighbour = *(neighbour_segs + k);
 			if(neighbour == NULL) continue;
 			for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
-				Being* b = (g_d->beings.array + *(neighbour->beings.beings_ind + j));
-				if(!ProjectileHitsBeing(pr, b)) continue;
-				if(DamageBeing(b, &pr->data.penetrating.impact, g_d->beings.array)){
+				Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + j));
+				if(!ProjectileHitsBeing(pr, bg)) continue;
+				AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+				if(DamageBeing(bg, &pr->data.penetrating.impact, gd->beings.array)){
 					if(pr->data.penetrating.hits < --pr->data.penetrating.penetration){
 						--j;
 						continue;
 					}
 				}else{
-					if(b->status != being_fly){
-						StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.penetrating.impact, &b->armour)));
+					if(bg->status != being_fly){
+						const float power = CalculateStunPower(&pr->data.penetrating.impact, &bg->armour);
+						if(power > 1.0F){
+							StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * power));
+						}
 					}
 					if(pr->data.penetrating.hits < pr->data.penetrating.penetration){
-						*(pr->data.penetrating.hit_targets + pr->data.penetrating.hits++) = b->main_indx;
+						*(pr->data.penetrating.hit_targets + pr->data.penetrating.hits++) = bg->main_indx;
 						continue;
 					}
 				}
-				*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
+				*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 				return false;
 			}
-		}}
+		}
 		return true;
 }
 
-static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const g_d){
+static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const gd){
 	MoveProjectile(pr);
-	Segment* s = GetSegment(&g_d->world, pr->position.x, pr->position.y);
-	if(s == NULL){
-		*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
+	Segment* seg = GetSegmentUnsafe(&gd->world, pr->position.x, pr->position.y);
+	if(seg == NULL){
+		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 		return false;
 	}
-	for(unsigned int c = s->indx.x - 1; c < s->indx.x + 2; ++c){
-	for(unsigned int r = s->indx.y - 1; r < s->indx.y + 2; ++r){
-		Segment* neighbour = GetSegmentByIndx(&g_d->world, c, r);
+	Segment* neighbour_segs[4];
+	Get4NearestSegments(neighbour_segs, &gd->world, seg, pr->position.x, pr->position.y);
+	for(unsigned int k = 0U; k < 4; ++k){
+		Segment* neighbour = *(neighbour_segs + k);
 		if(neighbour == NULL) continue;
 		for(unsigned int j = 0U; j < neighbour->ally_beings.num; ++j){
-			Being* b = (g_d->beings.array + *(neighbour->ally_beings.beings_ind + j));
-			if(!ProjectileHitsBeing(pr, b)) continue;
-			if(!DamageAlly(b, &pr->data.basic.impact, g_d->beings.array)){
-				if(b->status != being_fly){
-					StunBeing(b, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&pr->data.basic.impact, &b->armour)));
+			Being* bg = (gd->beings.array + *(neighbour->ally_beings.beings_ind + j));
+			if(!ProjectileHitsBeing(pr, bg)) continue;
+			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+			if(!DamageAlly(bg, &pr->data.basic.impact, gd->beings.array)){
+				if(bg->status != being_fly){
+					const float power = CalculateStunPower(&pr->data.basic.impact, &bg->armour);
+					if(power > 1.0F){
+						StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * power));
+					}
 				}
 			}
-			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
+			*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 			return false;
 		}
-	}}
-	for(unsigned int i = 0U; i < g_d->champions.num; ++i){
-		if(ProjectileHitsPlayer(pr, g_d->champions.array + i)){
-			*pr = *(g_d->projectiles.array + g_d->projectiles.num-- - 1U);
+	}
+	for(unsigned int i = 0U; i < gd->champions.num; ++i){
+		if(ProjectileHitsPlayer(pr, gd, i)){
+			*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 			return false;
 		}
 	}
 	return true;
 }
-static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const g_d){}
+static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const gd){}
 
-static inline bool ProjectileHitsPlayer(Projectile* const pr, Player* const p){
-	if(pow2(pr->position.x - p->position.x) + pow2(pr->position.y - p->position.y) < pow2(half(PLAYER_SIZE))){
-		if(p->flags & block && (sine(p->direction) * pr->shift_per_tick.x) + (-cosi(p->direction) * pr->shift_per_tick.y) <= 0){
-			HitBarrier(p, &pr->data.basic.impact);
+static inline bool ProjectileHitsPlayer(Projectile* const pr, Game_data* const gd, const unsigned int pc_indx){
+	Player* const pc = gd->champions.array + pc_indx;
+	if(pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
+		if(pc->flags & block && (SineUnsafe(pc->direction) * pr->shift_per_tick.x) + (-CosiUnsafe(pc->direction) * pr->shift_per_tick.y) <= 0){
+			HitBarrier(pc, &pr->data.basic.impact);
 		}else{
-			DamagePlayer(p, &pr->data.basic.impact);
+			DamagePlayer(pc, &pr->data.basic.impact);
+			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
 		}
 		return true;
 	}
