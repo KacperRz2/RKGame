@@ -21,6 +21,7 @@ static int UpdateGame(Game_data* const);
 static void UpdateEffects(Game_data* const);
 static SDL_FPoint GetRandomBeingCreationPoint(Game_data* const);
 
+int HasEffect(Lasting_effect* const, const unsigned int, const unsigned int);
 void AddLastingEffect(Lasting_effect* const, const Lasting_effect, const int);
 void RemoveLastingEffect(Lasting_effect* const, const int, const int);
 static void AddGameEffect(Game_data* const, const Lasting_effect);

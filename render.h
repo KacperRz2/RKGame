@@ -10,6 +10,7 @@ void AddDamageVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddBonusVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddCurseVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddDeadVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddPortalVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 
 static void DrawBeings(Render_data* const, SDL_Surface*, char*);
 static void DrawColouredThings(Render_data* const, SDL_Surface*, char*);
@@ -23,6 +24,7 @@ static void RenderBeing(Render_data* const, Game_data* const, Being* const, cons
 static void RenderBeings(Render_data* const, Game_data* const, Segment** const, const unsigned int);
 static void RenderMap(Render_data* const, Player* const);
 static bool GetRenderPointFromTrue(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const, World* const);
+static bool GetRenderPointFromTrueWithKnownSegmentVisibility(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const);
 void RenderTextInfo(Render_data* const, const Uint64, Game_data* const);//temporary func.
 static void RenderPlayerStatus(Render_data* const, Player* const, const Game_data* const);
 void RenderMainMenu(Render_data* const, const float);

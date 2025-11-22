@@ -8,7 +8,7 @@
 #define human(game_data_ptr)        (game_data_ptr->champions.array + game_data_ptr->human_indx)
 #define BIG_SEGMENTS_X              29U
 #define BIG_SEGMENT_SEGMENTS_X      16U
-#define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X + 2U)
+#define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X)
 #define SEGMENTS_Y			        SEGMENTS_X
 #define SEGMENT_SIZE		        128.0F
 #define WORLD_W				        (SEGMENT_SIZE * SEGMENTS_X)
@@ -48,7 +48,7 @@
 
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
-#define NAP_TICKS                   512
+#define NAP_TICKS                   128
 #define BLADE_BASE_X                16.0F
 #define BLADE_BASE_Y                (-8.0F)
 #define BLADE_BASE_DIRECTION_BEING  0.0F
@@ -65,7 +65,7 @@
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       3000
+#define PC_HP                       0x3000
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    0x10
 #define PC_M_MAGIC                  0x10000000
@@ -98,7 +98,7 @@
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
 #define BLADE_HANDLER_POSITION      0.85F
 #define PC_SHOOT_RELOAD             192
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x40U)
+#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x4U)
 #define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
@@ -136,6 +136,11 @@
 #define COMMANDER_EFFECT_TICKS      1024
 #define HP_REGEN_TICKS              1024
 #define SLOW_EFFECT_TICKS           1024
+#define OPENING_PORTAL_TICKS        128
+#define ATTENTION_RECT_SIZE         (BIG_SEGMENT_SIZE * 3.0F)
+#define SPIRAL_STEPS(range)         (pow2(range * 2U + 1U))
+#define ALLY_ATTENTION_RANGE        3U
+#define BEING_ALLY_DETEC_RANGE      1U
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -185,7 +190,8 @@
 #define BEING_LASTING_EFFECTS       {\
                                         SlowBeing,\
                                         CommanderAura,\
-                                        CommanderIsNear\
+                                        CommanderIsNear,\
+                                        OpeningPortal\
                                     }
 #define PLAYER_LASTING_EFFECTS      {\
                                         SlowPlayer,\
@@ -257,7 +263,7 @@
                                             UpdateAlly0\
                                         }\
                                     }
-#define PC_BLADE_IMPACT             {1200.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
+#define PC_BLADE_IMPACT             {3600.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
 #define PC_RANGE_IMPACT             {10.0F, 0.5F, 350.0F, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
 #define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}//absorption, multipl, magic_multipl, unstability
@@ -297,8 +303,8 @@
                                         200+80+50,\
                                         200+80+50+40,\
                                         200+80+50+40+20,\
-                                        200+80+50+40+20+3,\
-                                        200+80+50+40+20+3+4\
+                                        200+80+50+40+20+30,\
+                                        200+80+50+40+20+30+4\
                                     }
 #define WORLD_BASE              {\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
@@ -341,5 +347,7 @@
                                     0, 0, 1, 1, 1, 0, 0,\
                                 }
 #define ZERO_POINT_F            ((SDL_FPoint){0.0F, 0.0F})
+#define SPIRAL_X_SHIFTS         {0,0,1,1,1,0,-1,-1,-1,-1,0,1,2,2,2,2,2,1,0,-1,-2,-2,-2,-2,-2,-2,-1,0,1,2,3,3,3,3,3,3,3,2,1,0,-1,-2,-3,-3,-3,-3,-3,-3,-3,-3,-2,-1,0,1,2,3,4,4,4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-4}
+#define SPIRAL_Y_SHIFTS         {0,-1,-1,0,1,1,1,0,-1,-2,-2,-2,-2,-1,0,1,2,2,2,2,2,1,0,-1,-2,-3,-3,-3,-3,-3,-3,-2,-1,0,1,2,3,3,3,3,3,3,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-3,-2,-1,0,1,2,3,4,4,4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4}
 
 #endif

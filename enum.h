@@ -21,17 +21,17 @@ enum being_status{
     being_follow,
     being_shoot,
     being_strike,
+    being_attack_being,
     being_follow_being,
     being_shoot_being,
     being_strike_being,
-    being_idle,
     being_walk,
-    being_dead,
-    being_stunned,
-    being_fly,
     being_search,
-    being_attack_being,
-    being_void
+    being_fly,
+    being_idle,
+    being_stunned,
+    being_in_void,
+    being_dead
 };
 
 enum menu_option{
@@ -75,6 +75,7 @@ enum being_effect{
     being_effect_slow,
     being_effect_commander,
     being_effect_bonus,
+    being_effect_open_portal,
     being_no_effect
 };
 
@@ -91,9 +92,10 @@ enum game_effect{
 };
 
 enum visual_effect_type{
-    visual_effect_static,
+    visual_effect_t0,
     visual_effect_moving,
-    visual_effect_2
+    visual_effect_t1,
+    visual_effect_t2
 };
 
 enum projectile_type{

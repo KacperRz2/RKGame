@@ -16,9 +16,6 @@ static inline void PopulateBigSeg(Game_data* const gd, const unsigned int x, con
 		return;
 	}
 	MarkAsPopulatedBigSeg(gd->world.plan, x, y);
-	for(unsigned int i = 0U; i < MAX_POPULATION_NUM; ++i){
-		TryCreateIdleBeing(gd, GetRandomBeingId(), BigSegPosition(x) + SDL_randf() * BIG_SEGMENT_SIZE, BigSegPosition(y) + SDL_randf() * BIG_SEGMENT_SIZE, human(gd));
-	}
 }
 
 static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
@@ -142,9 +139,11 @@ static void RareEventsService(Game_data* const gd){
 	static int check_queue = 0;
 	if(check_queue == 0 && SDL_fabsf(human(gd)->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
 		SetPlayerPosition(human(gd), gd->world.portalB.x, gd->world.portalB.y);
+		UpdatePlayerNewSegment(&gd->world, human(gd));
 	 	human(gd)->flags &= ~(action);
 	}else if(check_queue == 1 && SDL_fabsf(human(gd)->position.x - gd->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalB.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
 		SetPlayerPosition(human(gd), gd->world.portalA.x, gd->world.portalA.y);
+		UpdatePlayerNewSegment(&gd->world, human(gd));
 	 	human(gd)->flags &= ~(action);
 	}else if(check_queue == 2 && (human(gd)->flags & action) && gd->boxes.num > 0U){
 		int box_indx = GetNearbyBoxIndx(gd);
@@ -152,9 +151,13 @@ static void RareEventsService(Game_data* const gd){
 			LootBox(gd, box_indx);
 	 		human(gd)->flags &= ~(action);
 		}
-	}else if(check_queue == 3 && gd->keys >= gd->needed_keys && SDL_fabsf(human(gd)->position.x - gd->world.door.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.door.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
-		human(gd)->hit_points = 0;
-	 	human(gd)->flags &= ~(action);
+	}else if(check_queue == 3){
+		if(gd->keys >= gd->needed_keys && SDL_fabsf(human(gd)->position.x - gd->world.door.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.door.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
+			human(gd)->hit_points = 0;
+			human(gd)->flags &= ~(action);
+		}
+		human(gd)->attention_rect.x = human(gd)->position.x - half(ATTENTION_RECT_SIZE);
+		human(gd)->attention_rect.y = human(gd)->position.y - half(ATTENTION_RECT_SIZE);
 	}else if(check_queue == 4){
 		if(!(gd->flags & gamef_horde_attack)){
 			if(gd->horde_data.ticks_from_attack > HORDE_ATTACK_START_TICKS * 2 + SDL_rand(HORDE_ATTACK_START_TICKS * 32)){
@@ -346,6 +349,15 @@ static inline SDL_FPoint GetRandomBeingCreationPoint(Game_data* const gd){
 		}
 		control_point_old = control_point;
 	}
+}
+
+extern inline int HasEffect(Lasting_effect* const efs, const unsigned int efs_num, const unsigned int effect_id){
+    for(unsigned int i = 0U; i < efs_num; ++i){
+        if((efs + i)->id == effect_id){
+            return i;
+        }
+    }
+    return -1;
 }
 
 extern inline void AddLastingEffect(Lasting_effect* const effects, const Lasting_effect effect, const int effects_num){

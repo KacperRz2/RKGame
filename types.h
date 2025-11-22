@@ -207,6 +207,7 @@ struct Player{
 	Impact range_attack;
 	Segment* segment;
 	Segment* last_seen_in;
+	SDL_FRect attention_rect;
 	float direction;
 	float move_direction;
 	float velocity;

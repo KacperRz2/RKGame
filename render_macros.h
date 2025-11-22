@@ -46,6 +46,7 @@
 #define BEING_TEXURE_SIZE           128
 #define PROJECTILE_TEXURE_SIZE      64
 #define CREATION_POINT_SIZE         96.0F
+#define VORTEX_ROTAT_SPEED          4.0F
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
@@ -190,7 +191,7 @@
                                         64U,\
                                         64U,\
                                         32U,\
-                                        visual_effect_static,\
+                                        visual_effect_t0,\
                                         tx_damage_test\
                                     })
 #define BONUS_VIS_EFFECT(position) ((Visual_effect){\
@@ -198,7 +199,7 @@
                                         64U,\
                                         64U,\
                                         16U,\
-                                        visual_effect_static,\
+                                        visual_effect_t0,\
                                         tx_bonus_effect\
                                     })
 #define CURSE_VIS_EFFECT(position) ((Visual_effect){\
@@ -206,7 +207,7 @@
                                         64U,\
                                         64U,\
                                         32U,\
-                                        visual_effect_static,\
+                                        visual_effect_t0,\
                                         tx_curse_effect\
                                     })
 #define DEAD_VIS_EFFECT(position)   ((Visual_effect){\
@@ -214,8 +215,17 @@
                                         128U,\
                                         128U,\
                                         64U,\
-                                        visual_effect_static,\
+                                        visual_effect_t0,\
                                         tx_damage_test\
+                                    })
+	                                //SDL_FPoint position; Uint16 ticks_left; Uint16 start_ticks; Uint16 size; Uint8 type; Uint8 tx_num;
+#define PORTAL_VIS_EFFECT(position) ((Visual_effect){\
+                                        position,\
+                                        (Uint16)OPENING_PORTAL_TICKS * 2U,\
+                                        (Uint16)OPENING_PORTAL_TICKS * 2U,\
+                                        128U,\
+                                        visual_effect_t1,\
+                                        tx_creation_point\
                                     })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
 #define TEST_TEXT                   {T,e,s,t,sp,t,e,k,s,t,dot,char_end}

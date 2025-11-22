@@ -27,63 +27,73 @@ static void InitScrolls(Player* const p){
 	}
 }
 
-void CreatePlayer(Player* const p, const float x, const float y){
-	p->blade.placement = (Placement)PC_BLADE_BASE_PLCMNT;
-	p->blade.impact = (Impact){};
-	p->blade.penetration = BLADE_PENETRATION;
-	p->blade.hits = 0;
-	p->blade.step_shift = (Placement){{0.0F, 0.0F}, 0.0};
-	p->blade.key = 0;
-	p->blade.steps = 0;
-	p->blade.step = 0;
-	p->blade.chain = 0U;
-	p->blade.chain_next = 0U;
-	p->blade.abide = false;
-	p->blade.freehand = false;
-	p->blade.idle_ticks = 0U;
-	p->blade.charge = PC_BLADE_CHARGE_BASE;
-	p->blade_attack = (Impact)PC_BLADE_IMPACT;
-	p->range_attack = (Impact)PC_RANGE_IMPACT;
-	SetPlayerPosition(p, x, y);
-	p->flags = 0x00000000U;
-	p->direction = 0.0F;
-	p->move_direction = 0.0F;
-	p->velocity = 0.0F;
-	p->max_velocity = PLAYER_VELOCITY;
-	p->hit_points = PC_HP;
-	p->fatigue_points = (int)(PC_FATIGUE * 0.9F);
-	p->magic_points = PC_MAGIC;
-	p->max_fatigue = PC_FATIGUE;
-	p->max_h_p = PC_HP;
-	p->block_times = (Block_times){0, 0, 0, 0, 0, 0};
-	p->armour = (Armour)PC_ARMOUR;
-	p->max_armour = (Armour)PC_MAX_ARMOUR;
-	p->coins = PC_START_COINS;
-	p->selected_scroll = scroll_empty;
-	InitScrolls(p);
-    p->effects_num = 0U;
-	p->help_data.menu_position = 0U;
+void CreatePlayer(Player* const pc, const float x, const float y){
+	pc->blade.placement = (Placement)PC_BLADE_BASE_PLCMNT;
+	pc->blade.impact = (Impact){};
+	pc->blade.penetration = BLADE_PENETRATION;
+	pc->blade.hits = 0;
+	pc->blade.step_shift = (Placement){{0.0F, 0.0F}, 0.0};
+	pc->blade.key = 0;
+	pc->blade.steps = 0;
+	pc->blade.step = 0;
+	pc->blade.chain = 0U;
+	pc->blade.chain_next = 0U;
+	pc->blade.abide = false;
+	pc->blade.freehand = false;
+	pc->blade.idle_ticks = 0U;
+	pc->blade.charge = PC_BLADE_CHARGE_BASE;
+	pc->blade_attack = (Impact)PC_BLADE_IMPACT;
+	pc->range_attack = (Impact)PC_RANGE_IMPACT;
+	SetPlayerPosition(pc, x, y);
+	pc->flags = 0x00000000U;
+	pc->direction = 0.0F;
+	pc->move_direction = 0.0F;
+	pc->velocity = 0.0F;
+	pc->max_velocity = PLAYER_VELOCITY;
+	pc->hit_points = PC_HP;
+	pc->fatigue_points = (int)(PC_FATIGUE * 0.9F);
+	pc->magic_points = PC_MAGIC;
+	pc->max_fatigue = PC_FATIGUE;
+	pc->max_h_p = PC_HP;
+	pc->block_times = (Block_times){0, 0, 0, 0, 0, 0};
+	pc->armour = (Armour)PC_ARMOUR;
+	pc->max_armour = (Armour)PC_MAX_ARMOUR;
+	pc->coins = PC_START_COINS;
+	pc->selected_scroll = scroll_empty;
+	InitScrolls(pc);
+    pc->effects_num = 0U;
+	pc->help_data.menu_position = 0U;
+	pc->attention_rect = (SDL_FRect) {
+		pc->position.x - half(ATTENTION_RECT_SIZE),
+		pc->position.y - half(ATTENTION_RECT_SIZE),
+		ATTENTION_RECT_SIZE,
+		ATTENTION_RECT_SIZE
+	};
 }
 
 extern inline void SetPlayerPosition(Player* const p, const float x, const float y){
 	p->position = (SDL_FPoint){x, y};
 }
 
-extern inline void MovePlayer(Game_data* const gd, Player* const p, const float x, const float y){
-	float new_x = p->position.x + x;
-	float new_y = p->position.y + y;
-	const Segment* s = GetSegmentUnsafe(&gd->world, new_x, new_y);
-	if(s != NULL){
-		SetPlayerPosition(p, new_x, new_y);
-	}else if((s = GetSegmentUnsafe(&gd->world, p->position.x, new_y)) != NULL){
-		p->position.y = new_y;
-	}else if((s = GetSegmentUnsafe(&gd->world, new_x, p->position.y)) != NULL){
-		p->position.x = new_x;
+extern inline void MovePlayer(Game_data* const gd, Player* const pc, const float x, const float y){
+	float new_x = pc->position.x + x;
+	float new_y = pc->position.y + y;
+	const Segment* seg = GetSegmentUnsafe(&gd->world, new_x, new_y);
+	if(seg){
+		SetPlayerPosition(pc, new_x, new_y);
+	}else if((seg = GetSegmentUnsafe(&gd->world, pc->position.x, new_y))){
+		pc->position.y = new_y;
+	}else if((seg = GetSegmentUnsafe(&gd->world, new_x, pc->position.y))){
+		pc->position.x = new_x;
 	}
-	if(s != p->segment){
-		p->last_seen_in = p->segment;
-		p->segment = GetSegmentUnsafe(&gd->world, p->position.x, p->position.y);
+	if(seg != pc->segment){
+		UpdatePlayerNewSegment(&gd->world, pc);
 	}
+}
+
+extern inline void UpdatePlayerNewSegment(World* const wld, Player* const pc){
+	pc->last_seen_in = pc->segment;
+	pc->segment = GetSegmentUnsafe(wld, pc->position.x, pc->position.y);
 }
 
 static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){

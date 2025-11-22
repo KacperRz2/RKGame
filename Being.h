@@ -2,8 +2,8 @@
 #define BEIGN_H_
 
 static void UpdateBeing(Being* const, Game_data* const);
-float BeingSize(Being* const);
-float BeingVelocity(Being* const);
+float BeingSize(const Being* const);
+int BeingHP(const Being* const);
 
 unsigned int GetRandomBeingId();
 static void AddBeingToSegment(Segment* const, Being* const, Segment_beings* const);
@@ -25,6 +25,8 @@ static void MoveBeingY(Being* const, const float);
 static bool CircleMeetsBeing(const float, const float, const float, Being* const);
 static void MoveBeingToSegment(Being* const, Segment* const, Being* const);
 static void MoveAllyToSegment(Being* const, Segment* const, Being* const);
+static void TurnBlockedBeing(Being* const, Game_data* const);
+static void TurnBlockedBeingWalk(Being* const, Game_data* const);
 
 static void StartBeingWalk(Being* const, const int, const float, const float);
 static void StartBeingRandWalk(Being* const, const int);
@@ -65,13 +67,12 @@ void StunBeing(Being* const, const int);
 void CatapultBeing(Being* const, const float, const float, const int);
 static void FindTargetForBeing(Being* const, Players* const);
 static bool IdleBeingCollision(Being* const, Game_data* const);
-static bool HasTargetForAlly(const unsigned int, const unsigned int, Being* const, Game_data* const);
-static bool FindAllyTargetFar(Being* const, Game_data* const, const int);
 static bool FindAllyTarget(Being* const, Game_data* const);
 static void TurnBlockedAlly(Being* const, Game_data* const);
 static bool AllyNear(Being* const, Game_data* const);
-static bool FindBeingTargetFar(Being* const, Game_data* const, const int);
-static bool HasAllyForBeingTarget(const unsigned int, const unsigned int, Being* const, Game_data* const);
+static Being* GetOtherBeingNearPlayer(Being* const, Game_data* const);
+static void MovePlayerIfTooClose(const float, const float, const float, const Being* const, Game_data* const);
+static void BeingFlee(Being* const, Game_data* const);
 
 static void StartAllyFollow(Being* const, const int);
 static void UpdateAllyFollow(Being* const, Game_data* const);
@@ -82,10 +83,11 @@ void AddBeingEffect(Being* const, const Lasting_effect);
 static void RemoveBeingEffect(Being* const, const int);
 static void UpdateBeingEffects(Game_data* const, Being* const);
 static void UpdateBeingEffect(Game_data* const, Being* const, const int);
-int BeingHasEffect(Being* const, const int);
+int BeingHasEffect(Being* const, const unsigned int);
 void SlowBeing(Game_data* const, Being* const, const int);
 void CommanderAura(Game_data* const, Being* const, const int);
 void CommanderIsNear(Game_data* const, Being* const, const int);
+void OpeningPortal(Game_data* const, Being* const, const int);
 
 static void UpdateBeingOrdinary(Being* const, Game_data* const);
 static void UpdateBeingRanger(Being* const, Game_data* const);

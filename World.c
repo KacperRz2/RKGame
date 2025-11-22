@@ -10,7 +10,7 @@
 #include <scroll.h>
 
 extern inline unsigned int GetBigSegCoordinate(const float x){
-	return (unsigned int)((x - SEGMENT_SIZE) / BIG_SEGMENT_SIZE);
+	return (unsigned int)(x / BIG_SEGMENT_SIZE);
 }
 
 extern inline bool IsInUncoveredBigSeg(const Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
@@ -276,21 +276,26 @@ void CreateWorld(Game_data* const gd){
 	world->segments = (Segment***)SDL_malloc(sizeof(Segment**) * SEGMENTS_X);
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 		*(world->segments + c) = (Segment**)SDL_malloc(sizeof(Segment*) * SEGMENTS_Y);
-		for(unsigned int r = 0U; r < SEGMENTS_Y; ++r){
-			if(c == 0U || r == 0U || c == SEGMENTS_X - 1U || r == SEGMENTS_Y - 1U){
-				*(*(world->segments + c) + r) = NULL;
-			}
-		}
 	}
 	for(unsigned int bigc = 0U; bigc < BIG_SEGMENTS_X; ++bigc){
 		for(unsigned int bigr = 0U; bigr < BIG_SEGMENTS_X; ++bigr){
 			if(*(*(world_plan_base + bigc) + bigr) == true){
-				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X + 1U; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++c){
-					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X + 1U; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++r){
-						if(!(c == bigc * BIG_SEGMENT_SEGMENTS_X + 1U || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X || r == bigr * BIG_SEGMENT_SEGMENTS_X + 1U
-							|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X) || c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
-							|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U || r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
-							|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 + 1U){
+				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++c){
+					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++r){
+						if(
+							(
+								!(
+									c == bigc * BIG_SEGMENT_SEGMENTS_X
+									|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X - 1U
+									|| r == bigr * BIG_SEGMENT_SEGMENTS_X
+									|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X - 1U
+								)
+								|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 - 1U
+								|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
+								|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 - 1U
+								|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
+							)
+							&& !(c == 0U || r == 0U || c == SEGMENTS_X - 1U || r == SEGMENTS_Y - 1U)){
 							*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
 							(*(*(world->segments + c) + r))->indx.x = c;
 							(*(*(world->segments + c) + r))->indx.y = r;
@@ -303,8 +308,8 @@ void CreateWorld(Game_data* const gd){
 					}
 				}
 			}else{
-				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X + 1U; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++c){
-					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X + 1U; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X + 1U; ++r){
+				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++c){
+					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++r){
 						*(*(world->segments + c) + r) = NULL;
 					}
 				}
@@ -313,11 +318,11 @@ void CreateWorld(Game_data* const gd){
 		}
 	}
 	while(gd->boxes.num < BOXES_NUM){
-		unsigned int c = SDL_rand(SEGMENTS_X - 3) + 2U;
-		unsigned int r = SDL_rand(SEGMENTS_Y - 3) + 2U;
-		Segment* s = GetSegmentByIndxUnsafe(world, c, r);
-		if(s != NULL){
-			AddBoxToArray(&gd->boxes, SegmentPositionX(s) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE, SegmentPositionY(s) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE);
+		unsigned int c = SDL_rand(SEGMENTS_X - 4) + 2U;
+		unsigned int r = SDL_rand(SEGMENTS_Y - 4) + 2U;
+		Segment* seg = GetSegmentByIndxUnsafe(world, c, r);
+		if(seg){
+			AddBoxToArray(&gd->boxes, SegmentPositionX(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE, SegmentPositionY(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE);
 		}
 	}
 	FillBoxes(gd);
@@ -361,6 +366,13 @@ void StartLevel(Game_data* const gd){
 	const unsigned int seg_x = GetBigSegCoordinate(start_position.x);
 	const unsigned int seg_y = GetBigSegCoordinate(start_position.y);
 	MarkAsPopulatedBigSeg(gd->world.plan, seg_x, seg_y);
+	while(gd->beings.num < MAX_START_BEINGS_NUM){
+		const float x = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
+		const float y = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
+		if(pow2(start_position.x - x) + pow2(start_position.y - y) > pow2(BIG_SEGMENT_SIZE)){
+			TryCreateIdleBeing(gd, GetRandomBeingId(), x, y, human(gd));
+		}
+	}
 }
 
 static SDL_FPoint GetStartPosition(World* const w){
@@ -398,7 +410,11 @@ extern inline float SegmentCenterY(const Segment* const s){
 }
 
 extern inline float BigSegPosition(const unsigned int x){
-	return x * BIG_SEGMENT_SIZE + SEGMENT_SIZE;
+	return x * BIG_SEGMENT_SIZE;
+}
+
+extern inline float BigSegCenter(const unsigned int x){
+	return (x + 0.5F) * BIG_SEGMENT_SIZE;
 }
 
 static float GetDoorPositionXorY(const unsigned int small_plan_position){
@@ -475,35 +491,6 @@ extern inline bool SegmentInSight(const SDL_FPoint* const from, const SDL_FPoint
 	p1 = (SDL_FPoint){to.x + SEGMENT_SIZE - 1.0F, to.y + SEGMENT_SIZE - 1.0F};
 	p2 = (SDL_FPoint){to.x + SEGMENT_SIZE - 1.0F, to.y};
 	return (IsClearSight(from, &to, to_s, w) || IsClearSight(from, &p0, to_s, w) || IsClearSight(from, &p1, to_s, w) || IsClearSight(from, &p2, to_s, w));
-}
-
-static inline bool IsClearSightPlus(const SDL_FPoint* const from, const SDL_FPoint* const to, const Segment* const to_s, const World* const w){
-	const float distance_x = to->x - from->x;
-	const float distance_y = to->y - from->y;
-	const float distance = SDL_sqrtf(pow2(distance_x) + pow2(distance_y));
-    const float shift_x = distance_x / distance;
-    const float shift_y = distance_y / distance;
-	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
-	const float help_to_y = shift_y < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
-	SDL_FPoint control_point = *from;
-	const Segment* s;
-	do{
-		const float help_x = SDL_fmodf(control_point.x, SEGMENT_SIZE);
-		const float help_y = SDL_fmodf(control_point.y, SEGMENT_SIZE);
-		const float shifts_to_next_seg_x = (help_to_x - help_x) / shift_x;
-		const float shifts_to_next_seg_y = (help_to_y - help_y) / shift_y;
-		const float multipl = shifts_to_next_seg_x < shifts_to_next_seg_y ? shifts_to_next_seg_x : shifts_to_next_seg_y;
-		control_point.x += shift_x * multipl;
-		control_point.y += shift_y * multipl;
-		s = GetSegmentUnsafe(w, control_point.x, control_point.y);
-		if(s == NULL){
-			if(SDL_fabsf(to->x - control_point.x) < SEGMENT_SIZE * SQRT2DIV2 && SDL_fabsf(to->y - control_point.y) < SEGMENT_SIZE * SQRT2DIV2){
-				return true;
-			}
-			return false;
-		}
-	}while(s != to_s);
-	return true;
 }
 
 static void FillBoxes(Game_data* const gd){
@@ -611,4 +598,30 @@ extern inline void Get2NearestSegments(Segment** const array, const World* const
 		}
 	}
 	*(array + 1U) = GetSegmentByIndxUnsafe(wld, col, row);
+}
+
+extern inline void GetSurroundingSegmentsFar(Segment** const array, const World* const wld, const Segment* const seg, const int range){
+	unsigned int i = 0U;
+	int row = (int)seg->indx.y - range;
+	for(int c = (int)seg->indx.x - range; c <= (int)seg->indx.x + range; ++c){
+		*(array + i++) = GetSegmentByIndxSafe(wld, c, row);
+	}
+	int col = (int)seg->indx.x + range;
+	for(int r = (int)seg->indx.y - range + 1; r <= (int)seg->indx.y + range; ++r){
+		*(array + i++) = GetSegmentByIndxSafe(wld, col, r);
+	}
+	row = (int)seg->indx.y + range;
+	for(int c = (int)seg->indx.x + range - 1; c >= (int)seg->indx.x - range; --c){
+		*(array + i++) = GetSegmentByIndxSafe(wld, c, row);
+	}
+	col = (int)seg->indx.x - range;
+	for(int r = (int)seg->indx.y + range - 1; r >= (int)seg->indx.y - range + 1; --r){
+		*(array + i++) = GetSegmentByIndxSafe(wld, col, r);
+	}
+}
+
+extern inline Segment* GetDistantSegmentBySpiral(const World* const wld, const Segment* const seg, const int step){
+	const Sint8 spiral_shift_x[] = SPIRAL_X_SHIFTS;
+	const Sint8 spiral_shift_y[] = SPIRAL_Y_SHIFTS;
+	return GetSegmentByIndxSafe(wld, seg->indx.x + *(spiral_shift_x + step), seg->indx.y + *(spiral_shift_y + step));
 }
