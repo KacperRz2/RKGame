@@ -515,7 +515,7 @@ static inline void UpdateBeingFollow(Being* const bg, float const distance_squar
         TurnBlockedBeingWalk(bg, gd);
         bg->status == being_walk;
         return;
-    }else if(distance_squared < pow2(CHECK_COLLISION_DISTANCE)){
+    }else if(distance_squared < pow2(CHECK_COLLISION_DISTANCE) && bg->status_ticks_left % 2){
         collision = ResolveBeingCollisionInNewSegment(gd, bg, new_segment, &new_x, &new_y, x_shift, y_shift);
     }
     if(collision){
@@ -768,14 +768,14 @@ static inline void UpdateAllyFollow(Being* const b, Game_data* const gd){
     float new_x = b->position.x + b->special_move_shift.x;
     float new_y = b->position.y + b->special_move_shift.y;
     Segment* new_segment = GetSegmentUnsafe(&gd->world, new_x, new_y);
-    if(new_segment == NULL){
+    if(!new_segment){
         StartBeingWalkWithRandTurn45Deg(b, BEING_WALK_TICKS, b->special_move_shift.x, b->special_move_shift.y);
         new_x = b->position.x + b->special_move_shift.x;
         new_y = b->position.y + b->special_move_shift.y;
         new_segment = GetSegmentUnsafe(&gd->world, new_x, new_y);
     }
     if(new_segment != b->segment){
-        if(new_segment == NULL){
+        if(!new_segment){
             StartBeingWalkWithRandTurn(b, BEING_WALK_TICKS, b->special_move_shift.x * 0.5F, b->special_move_shift.y * 0.5F);
             return;
         }else if(new_segment->ally_beings.num >= MAX_SEGM_BEINGS){

@@ -332,7 +332,7 @@ static inline void RenderBeing(Render_data* const rend_data, Game_data* const gd
 		SDL_RenderTextureRotated(rend_data->renderer, texture(tex_weapon), NULL, &rect_blade, (double)RadToDeg(weapon.direction + being_direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
 		SDL_RenderTextureRotated(rend_data->renderer, texture(tex_body), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
 		if(bg->status == being_stunned){
-			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &rect, (double)(rend_data->counter * 2U), NULL, SDL_FLIP_NONE);
+			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &rect, (double)(rend_data->counter * TEXTURE_ROTA_SPEED), NULL, SDL_FLIP_NONE);
 		}
 	}
 }
@@ -548,7 +548,7 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 		RenderProjectiles(rend_data, gd);
 		RenderHumanPlayer(rend_data);
 		if(human(gd)->flags & stunned){
-			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &(SDL_FRect)PC_RECT, (double)(rend_data->counter * 2U), NULL, SDL_FLIP_NONE);
+			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &(SDL_FRect)PC_RECT, (double)(rend_data->counter * TEXTURE_ROTA_SPEED), NULL, SDL_FLIP_NONE);
 		}
 		RenderPlayers(rend_data, p->direction, players_to_rend, players_rend_points, indx);
 		if(p->flags & block){
@@ -815,7 +815,7 @@ static void	RenderPlayers(Render_data* const rend_data, const float human_player
 		rect_player.y = (points + i)->y - half(PLAYER_SIZE);
 		SDL_RenderTextureRotated(rend_data->renderer, texture(tx_pc), NULL, &rect_player, (double)RadToDeg((*(plys + i))->direction - human_player_direction), NULL, SDL_FLIP_NONE);
 		if((*(plys + i))->flags & stunned){
-			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &rect_player, (double)(rend_data->counter * 2U), NULL, SDL_FLIP_NONE);
+			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &rect_player, (double)(rend_data->counter * TEXTURE_ROTA_SPEED), NULL, SDL_FLIP_NONE);
 		}
 	}
 }

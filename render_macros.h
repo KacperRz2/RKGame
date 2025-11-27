@@ -46,7 +46,8 @@
 #define BEING_TEXURE_SIZE           128
 #define PROJECTILE_TEXURE_SIZE      64
 #define CREATION_POINT_SIZE         96.0F
-#define VORTEX_ROTAT_SPEED          4.0F
+#define VORTEX_ROTAT_SPEED          (1024.0F / (0x40000000ULL / FRAME_TIME))
+#define TEXTURE_ROTA_SPEED          (512.0F / (0x40000000ULL / FRAME_TIME))
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
@@ -188,32 +189,32 @@
 #define PROJECTILE1_RGBA            ((Uint8[]){255, 255, 0, 255})
 #define DAMAGE_VIS_EFFECT(position) ((Visual_effect){\
                                         position,\
-                                        64U,\
-                                        64U,\
+                                        (0x10000000ULL / FRAME_TIME),\
+                                        (0x10000000ULL / FRAME_TIME),\
                                         32U,\
                                         visual_effect_t0,\
                                         tx_damage_test\
                                     })
 #define BONUS_VIS_EFFECT(position) ((Visual_effect){\
                                         position,\
-                                        64U,\
-                                        64U,\
+                                        (0x10000000ULL / FRAME_TIME),\
+                                        (0x10000000ULL / FRAME_TIME),\
                                         16U,\
                                         visual_effect_t0,\
                                         tx_bonus_effect\
                                     })
 #define CURSE_VIS_EFFECT(position) ((Visual_effect){\
                                         position,\
-                                        64U,\
-                                        64U,\
+                                        (0x10000000ULL / FRAME_TIME),\
+                                        (0x10000000ULL / FRAME_TIME),\
                                         32U,\
                                         visual_effect_t0,\
                                         tx_curse_effect\
                                     })
 #define DEAD_VIS_EFFECT(position)   ((Visual_effect){\
                                         position,\
-                                        128U,\
-                                        128U,\
+                                        (0x20000000ULL / FRAME_TIME),\
+                                        (0x20000000ULL / FRAME_TIME),\
                                         64U,\
                                         visual_effect_t0,\
                                         tx_damage_test\
@@ -221,8 +222,8 @@
 	                                //SDL_FPoint position; Uint16 ticks_left; Uint16 start_ticks; Uint16 size; Uint8 type; Uint8 tx_num;
 #define PORTAL_VIS_EFFECT(position) ((Visual_effect){\
                                         position,\
-                                        (Uint16)OPENING_PORTAL_TICKS * 2U,\
-                                        (Uint16)OPENING_PORTAL_TICKS * 2U,\
+                                        ((0x40000000ULL / FRAME_TIME) / ((unsigned int)OPENING_PORTAL_TICKS / 128U)),\
+                                        ((0x40000000ULL / FRAME_TIME) / ((unsigned int)OPENING_PORTAL_TICKS / 128U)),\
                                         128U,\
                                         visual_effect_t1,\
                                         tx_creation_point\
