@@ -717,6 +717,15 @@ extern inline void AddPlayerEffect(Player* const pc, const Lasting_effect effect
 	}
 }
 
+extern inline void AddOrUpdatePlayerEffect(Player* const pc, const Lasting_effect effect){
+	const int effect_indx = PlayerHasEffect(pc, effect.id);
+	if(effect_indx == -1){
+		AddPlayerEffect(pc, effect);
+	}else{
+		(pc->effects + effect_indx)->ticks_left = effect.ticks_left;
+	}
+}
+
 static inline void RemovePlayerEffect(Player* const pc, const int indx){
 	RemoveLastingEffect(pc->effects, indx, pc->effects_num--);
 }
@@ -754,4 +763,29 @@ void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
 
 void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
     HealPlayer(pc, 1);
+}
+
+void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left){
+	if(ticks_left < 2){
+		if(pc->blade_attack.damage < PC_BLADE_DMG){
+        	pc->blade_attack.damage = PC_BLADE_DMG;
+		}
+		if(pc->blade_attack.magic < PC_BLADE_MAGIC){
+        	pc->blade_attack.magic = PC_BLADE_MAGIC;
+		}
+		if(pc->blade_attack.armour_reduction < PC_BLADE_PENETR){
+        	pc->blade_attack.armour_reduction = PC_BLADE_PENETR;
+		}
+		if(pc->range_attack.damage < PC_RANGE_DMG){
+        	pc->range_attack.damage = PC_RANGE_DMG;
+		}
+		if(pc->range_attack.magic < PC_RANGE_MAGIC){
+        	pc->range_attack.magic = PC_RANGE_MAGIC;
+		}
+		if(pc->range_attack.armour_reduction < PC_RANGE_PENETR){
+        	pc->range_attack.armour_reduction = PC_RANGE_PENETR;
+		}
+    }else if(ticks_left % 64 == 0){
+        AddCurseVisualEffect(&gd->rend_data_ptr->visual_effects, &pc->position);
+    }
 }

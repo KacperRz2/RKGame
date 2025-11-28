@@ -65,7 +65,7 @@
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       0x3000
+#define PC_HP                       0x300
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    0x10
 #define PC_M_MAGIC                  0x10000000
@@ -113,6 +113,7 @@
 #define DEFAULT_FLY_VELOCITY        0.5F
 #define QUICK_SCROLLS               9U
 #define SCROLLS_NUM                 35U
+#define OPTIONS_NUM                 5U
 #define SCROLL_SIZE                 32.0F
 #define BEING_TYPES_NUM             2U
 #define MAX_BEING_EFFECTS           8
@@ -135,12 +136,15 @@
 #define MAX_POPULATION_NUM          0x20
 #define COMMANDER_EFFECT_TICKS      1024
 #define HP_REGEN_TICKS              1024
+#define WEAK_EFFECT_TICKS           0x1000
 #define SLOW_EFFECT_TICKS           1024
 #define OPENING_PORTAL_TICKS        128
 #define ATTENTION_RECT_SIZE         (BIG_SEGMENT_SIZE * 3.0F)
 #define SPIRAL_STEPS(range)         (pow2(range * 2U + 1U))
 #define ALLY_ATTENTION_RANGE        3U
 #define BEING_ALLY_DETEC_RANGE      1U
+#define UNLIMITET_SPEC_PROJE        0U
+#define WARLOCK_SPEC_PROJE_TICKS    0x1000U
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -151,6 +155,7 @@
 #define KEY_ACTION                  SDL_SCANCODE_E
 #define KEY_SWITCH_RANGE            SDL_SCANCODE_Q
 #define KEY_MANAGE_SCROLLS          SDL_SCANCODE_I
+#define KEY_SHOW_MAP                SDL_SCANCODE_M
 #define KEY_TMP                     SDL_SCANCODE_PERIOD
 #define KEY_TMP1                    SDL_SCANCODE_H
 #define KEY_SELECT                  SDL_SCANCODE_E
@@ -159,6 +164,8 @@
 #define BUTTON_ATTACK               SDL_BUTTON_LEFT
 #define BUTTON_BLOCK                SDL_BUTTON_RIGHT
 
+#define UNCOVERED_SEG_RGB           255U, 255U, 255U
+#define POPULATED_SEG_RGB           127U, 127U, 127U
 #define SCR_COSTS                   {\
                                         1U,\
                                         1U,\
@@ -195,7 +202,8 @@
                                     }
 #define PLAYER_LASTING_EFFECTS      {\
                                         SlowPlayer,\
-                                        PlayerHPRegeneration\
+                                        PlayerHPRegeneration,\
+                                        PlayerWeakness\
                                     }
 #define BEING_TYPES                 {\
                                         {\
@@ -263,8 +271,14 @@
                                             UpdateAlly0\
                                         }\
                                     }
-#define PC_BLADE_IMPACT             {3600.0F, 1.0F, 0.0F, 3.0F}//dmg, penetr, magic, stun
-#define PC_RANGE_IMPACT             {10.0F, 0.5F, 350.0F, 1.0F}
+#define PC_BLADE_DMG                3600.0F
+#define PC_BLADE_MAGIC              0.0F
+#define PC_BLADE_PENETR             1.0F
+#define PC_RANGE_DMG                10.0F
+#define PC_RANGE_MAGIC              350.0F
+#define PC_RANGE_PENETR             0.5F
+#define PC_BLADE_IMPACT             {PC_BLADE_DMG, PC_BLADE_PENETR, PC_BLADE_MAGIC, 3.0F}//dmg, penetr, magic, stun
+#define PC_RANGE_IMPACT             {PC_RANGE_DMG, PC_RANGE_PENETR, PC_RANGE_MAGIC, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
 #define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}//absorption, multipl, magic_multipl, unstability
 #define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.25F}

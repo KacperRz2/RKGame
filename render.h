@@ -11,6 +11,7 @@ void AddBonusVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddCurseVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddDeadVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddPortalVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddProjectileVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 
 static void DrawBeings(Render_data* const, SDL_Surface*, char*);
 static void DrawColouredThings(Render_data* const, SDL_Surface*, char*);
@@ -27,7 +28,7 @@ static bool GetRenderPointFromTrue(Render_data* const, const float, const float,
 static bool GetRenderPointFromTrueWithKnownSegmentVisibility(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const);
 void RenderTextInfo(Render_data* const, const Uint64, Game_data* const);//temporary func.
 static void RenderPlayerStatus(Render_data* const, Player* const, const Game_data* const);
-void RenderMainMenu(Render_data* const, const float);
+void RenderMainMenu(Render_data* const, const unsigned int);
 void RenderGame(Render_data* const, Game_data* const, const int);
 static void SetSineCosine(Render_data* const, Player* const);
 void ClearRenderData(Render_data* const);
@@ -37,7 +38,8 @@ static void RenderGunSight(Render_data* const);
 static void RenderStaticThings(Render_data* const, Game_data* const);
 static void RenderStaticThing(Render_data* const, const float, const float, Player* const, const float, const int, World* const);
 static void RenderStaticThingRotating(Render_data* const, const float, const float, Player* const, const float, const int, World* const, const float);
-void DrawMap(Render_data* const, World* const);
+void DrawMap(Render_data* const, const World* const);
+void UpdateMap(Render_data* const, const Uint8, const Uint8, const Uint8, const unsigned int, const unsigned int);
 static void RenderHumanPlayer(Render_data* const);
 static void RenderHumanPlayerBarrier(Render_data* const, const Player* const);
 static void RenderHumanPlayerScroll(Render_data* const, const bool);
@@ -51,6 +53,7 @@ static void RenderFrame(Render_data* const, SDL_Texture* const, const SDL_FRect*
 static void RenderDirectionArrow(Render_data* const, const double);
 static void RenderQuickScrolls(Render_data* const, const Player* const);
 static void RenderScrollsManagement(Render_data* const, const Player* const);
+static void RenderMenu(Render_data* const, const Player* const);
 static void DrawBackgroud(Render_data* const, SDL_Surface*, char*);
 static void RenderPortrait(Render_data* const, SDL_Texture* const);
 static SDL_FPoint GetCharacterXPositionAndWidth(const int);
@@ -60,6 +63,10 @@ static void RenderInt(Render_data* const, const float, const float, const float,
 void ResetTextTextureAlpha(Render_data* const);
 void SetSelectetScrollMouseSelection(const Render_data* const, Player* const);
 void SetPointedScrollMouseSelection(const Render_data* const, Player* const);
-int GetMousePointedPositionNum(const Render_data* const);
+void SetPointedOptionMouseSelection(const Render_data* const, Uint8* const);
+int GetMouseScrollManagPositionNum(const Render_data* const);
+static int GetMouseMenuPositionNum(const Render_data* const);
+void RenderDefeatedScreen(Render_data* const);
+void RenderVictoryScreen(Render_data* const);
 
 #endif

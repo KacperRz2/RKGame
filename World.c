@@ -41,7 +41,7 @@ void CreateWorld(Game_data* const gd){
 		*(world->plan + i) = 0x0;
 	}
 	Uint64 seed = 2ULL;
-	// SDL_srand(seed);
+	SDL_srand(seed);
 	SDL_Point portal0;
 	SDL_Point portal1;
 	SDL_Point door_position;

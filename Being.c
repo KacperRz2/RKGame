@@ -260,6 +260,27 @@ static inline void UpdateBeingShoot(Being* const b, Projectiles_array* const prs
     --b->status_ticks_left;
 }
 
+static inline void UpdateWarlockShoot(Being* const b, Projectiles_array* const prs, const World* const w, const SDL_FPoint* const target_position, Segment* const target_segment){
+    if(b->status_ticks_left == 0){
+        b->status = being_idle;
+        return;
+    }
+    if(b->status_ticks_left == 32 && prs->num < MAX_PROJECTILES_NUM){
+        if(IsClearSight(&b->position, target_position, target_segment, w)){
+            float x, y;
+            GetShift(&b->position, target_position, PROJECTILE_VELOCITY, &x, &y);
+            if(SDL_rand(4)){
+                AddHProjectileToArray(prs, &b->position, x, y, &b->impact);
+            }else{
+                AddSpecialProjectileToArray(prs, &b->position, x, y, projectile_effect_0, WARLOCK_SPEC_PROJE_TICKS);
+            }
+        }else{
+            b->status = being_idle;
+        }
+    }
+    --b->status_ticks_left;
+}
+
 static inline void MoveStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, Game_data* const gd){
     const float velocity_xy = distance / b->velocity;
     const float x_shift = distance_x / velocity_xy;
@@ -1357,7 +1378,7 @@ static inline void UpdateBeingWarlock(Being* const bg, Game_data* const gd){
     }
     MovePlayerIfTooClose(distance_x, distance_y, distance_squared, bg, gd);
     if(bg->status == being_shoot){
-        UpdateBeingShoot(bg, &gd->projectiles, &gd->world, &bg->target.player->position, bg->target.player->segment);
+        UpdateWarlockShoot(bg, &gd->projectiles, &gd->world, &bg->target.player->position, bg->target.player->segment);
         return;
     }
     if(bg->status == being_stunned){

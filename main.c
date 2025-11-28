@@ -10,8 +10,12 @@ int main(int argc, char* argv[]){
 	SetRenderData(&rend_data);
 	if(GraphicsInitiation(&rend_data)) return 1;
 	while(1){
-		if(MainMenuLoop(&event, &rend_data) == menu_quit) break;
-		GameLoop(&event, &rend_data);
+		const int option = MainMenuLoop(&event, &rend_data);
+		if(option == menu_quit) break;
+		if(option == menu_start){
+			GameLoop(&event, &rend_data);
+			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
+		}
 	}
 	ClearRenderData(&rend_data);
 	return 0;

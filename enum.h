@@ -14,7 +14,8 @@ enum control{
     action = 1 << 9,
     range_mode = 1 << 10,
     stunned = 1 << 11,
-    tmp = 1 << 12
+    map_look = 1 << 12,
+    tmp = 1 << 13
 };
 
 enum being_status{
@@ -35,9 +36,20 @@ enum being_status{
 };
 
 enum menu_option{
-    menu_unknown,
     menu_start,
-    menu_quit
+    menu_load,
+    menu_settings,
+    menu_credits,
+    menu_quit,
+    menu_unknown
+};
+
+enum menu_position{
+    menu_p_settings,
+    menu_p_load,
+    menu_p_continue,
+    menu_p_save,
+    menu_p_quit
 };
 
 enum box_content_type{
@@ -82,6 +94,7 @@ enum being_effect{
 enum pc_effect{
     pc_effect_slow,
     pc_effect_hpregen,
+    pc_effect_weak,
     pc_no_effect
 };
 
@@ -104,6 +117,12 @@ enum projectile_type{
     projectile_special
 };
 
+enum special_projectile_effect{
+    projectile_effect_0,
+    projectile_effect_1,
+    projectile_effect_2
+};
+
 enum segment_flags{
     segment_in_sight = 1 << 0,
     segment_known = 1 << 1
@@ -114,12 +133,15 @@ enum game_flags{
 };
 
 enum event{
-    event_manage_scrolls = 2
+    event_quit_game = 1,
+    event_menu,
+    event_manage_scrolls
 };
 
 enum game_update{
     update_ok,
-    update_defeated
+    update_defeated,
+    update_victory
 };
 
 enum character{

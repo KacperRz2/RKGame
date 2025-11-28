@@ -164,6 +164,12 @@
                                         shift * ICONS_IN_VIEWF_ROW,\
                                         shift * 5\
                                     }
+#define MENU_RECT                   {\
+                                        rend_data->viewfinder_rect.x + FRAME_W,\
+                                        rend_data->viewfinder_rect.y + icon_size + FRAME_W * 2.5F,\
+                                        rend_data->viewfinder_rect.w - FRAME_W * 2.0F,\
+                                        shift * OPTIONS_NUM\
+                                    }
 #define RGB_LOWER_RANK              ((Uint8[]){102, 63, 25})
 #define RGB_MEDIUM_RANK             ((Uint8[]){223, 223, 223})
 #define RGB_HIGH_RANK               ((Uint8[]){255, 191, 0})
@@ -228,10 +234,35 @@
                                         visual_effect_t1,\
                                         tx_creation_point\
                                     })
+#define PROJE_VIS_EFFECT(position)  ((Visual_effect){\
+                                        position,\
+                                        (0x8000000ULL / FRAME_TIME),\
+                                        (0x8000000ULL / FRAME_TIME),\
+                                        16U,\
+                                        visual_effect_t0,\
+                                        tx_creation_point\
+                                    })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
 #define TEST_TEXT                   {T,e,s,t,sp,t,e,k,s,t,dot,char_end}
 #define MENU_TEXT                   {N,a,c,i,ś,n,i,j,sp,S,P,A,C,E,char_end}
 #define HORDE_ALERT                 {H,o,r,d,a,exclam_m,char_end}
+#define MENU_TEXTS                  {\
+                                        (Uint8[]){U,s,t,a,w,i,e,n,i,a,char_end},\
+                                        (Uint8[]){C,o,f,n,i,j,sp,d,o,sp,p,u,n,k,t,u,sp,k,o,n,t,r,o,l,n,e,g,o,char_end},\
+                                        (Uint8[]){K,o,n,t,y,n,u,u,j,char_end},\
+                                        (Uint8[]){Z,a,p,i,s,z,sp,i,sp,w,y,j,d,ź,char_end},\
+                                        (Uint8[]){W,y,j,d,ź,char_end},\
+                                    }
+#define MAIN_MENU_TEXTS                  {\
+                                        (Uint8[]){N,o,w,a,sp,g,r,a,char_end},\
+                                        (Uint8[]){W,c,z,y,t,a,j,sp,g,r,ę,char_end},\
+                                        (Uint8[]){U,s,t,a,w,i,e,n,i,a,char_end},\
+                                        (Uint8[]){A,u,t,o,r,z,y,char_end},\
+                                        (Uint8[]){W,y,j,ś,c,i,e,char_end},\
+                                    }
+#define DEFEAT_TEXT                 {P,o,r,a,ż,k,a,char_end}
+#define VICTORY_TEXT                {S,u,k,c,e,s,exclam_m,char_end}
+
 
 #define TEXTURE_FILES_NAMES         {\
                                         "img1",\

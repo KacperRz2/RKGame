@@ -41,6 +41,7 @@ static void TurnBeingWalk(Being* const);
 
 static void UpdateBeingWalk(Being* const, Game_data* const);
 static void UpdateBeingShoot(Being* const, Projectiles_array* const, const World* const, const SDL_FPoint* const, Segment* const);
+static void UpdateWarlockShoot(Being* const, Projectiles_array* const, const World* const, const SDL_FPoint* const, Segment* const);
 static void UpdateBeingStrike(Being* const, Player* const, float const, float const, float const, Game_data* const);
 static void UpdateBeingStrikeAlly(Being* const, float const, float const, float const, Game_data* const);
 static void UpdateBeingSearch(Being* const, Game_data* const);

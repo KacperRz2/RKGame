@@ -5,6 +5,7 @@
 #include <event.h>
 #include <render.h>
 #include <Player.h>
+#include <game.h>
 
 int EventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_data){
 	while(SDL_PollEvent(e)){
@@ -56,6 +57,11 @@ int EventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_
 			case KEY_MANAGE_SCROLLS:
 				SDL_SetWindowRelativeMouseMode(rend_data->window, false);
 				return event_manage_scrolls;
+			case KEY_SHOW_MAP:
+				pc->flags ^= map_look; break;
+			case SDL_SCANCODE_ESCAPE:
+				SDL_SetWindowRelativeMouseMode(rend_data->window, false);
+				return event_menu;
 			default: break;
 			}
 		}else if(e->type == SDL_EVENT_KEY_UP){
@@ -74,8 +80,6 @@ int EventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_
 				pc->flags &= ~(run); break;
 			case KEY_ACTION:
 				pc->flags &= ~(action); break;
-			case SDL_SCANCODE_ESCAPE:
-				return 1;
 			default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
@@ -110,43 +114,66 @@ int EventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_
 	return 0;
 }
 
-int MenuEventsService(SDL_Event* const e, Render_data* const rend_data){
-	while (SDL_PollEvent(e)){
-		if(e->type == SDL_EVENT_KEY_UP){
-			switch (e->key.scancode){
-			case SDL_SCANCODE_ESCAPE:
-				return menu_quit;
-			case SDL_SCANCODE_SPACE:
-				return menu_start;
-				break;
-			default: break;
-			}
-		}else if(e->type == SDL_EVENT_QUIT){
-			return menu_quit;
-		}
-	}
-	return menu_unknown;
-}
-
-int ManageScrollsEventsService(SDL_Event* const e, Player* const p, Render_data* const rend_data){
+int MainMenuEventsService(SDL_Event* const e, Render_data* const rend_data, Uint8* const menu_position){
 	while(SDL_PollEvent(e)){
 		if(e->type == SDL_EVENT_KEY_DOWN){
 			switch(e->key.scancode){
 			case KEY_SELECT:
 			case SDL_SCANCODE_RETURN:
-				p->selected_scroll = p->help_data.menu_position; break;
-			case KEY_MOVE_RIGHT:
-			case SDL_SCANCODE_RIGHT:
-				++p->help_data.menu_position; break;
-			case KEY_MOVE_LEFT:
-			case SDL_SCANCODE_LEFT:
-				--p->help_data.menu_position; break;
+				return *menu_position;
+				break;
 			case KEY_MOVE_BACK:
 			case SDL_SCANCODE_DOWN:
-				p->help_data.menu_position += ICONS_IN_VIEWF_ROW; break;
+			case KEY_MOVE_RIGHT:
+			case SDL_SCANCODE_RIGHT:
+				++(*menu_position); break;
 			case KEY_MOVE_FORWARD:
 			case SDL_SCANCODE_UP:
-				p->help_data.menu_position -= ICONS_IN_VIEWF_ROW; break;
+			case KEY_MOVE_LEFT:
+			case SDL_SCANCODE_LEFT:
+				--(*menu_position); break;
+			case SDL_SCANCODE_ESCAPE:
+				*menu_position = menu_quit;
+			case KEY_FULLSCR:
+				SDL_SetWindowFullscreen(rend_data->window, true);
+				SDL_SyncWindow(rend_data->window);
+				ResetRenderData(rend_data);
+				break;
+			case KEY_WINDOWED:
+				SDL_SetWindowFullscreen(rend_data->window, false);
+				SDL_SyncWindow(rend_data->window);
+				ResetRenderData(rend_data);
+				break;
+			default: break;
+			}
+		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+			return *menu_position;
+		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
+			SetPointedOptionMouseSelection(rend_data, menu_position); break;
+		}
+	}
+	return menu_unknown;
+}
+
+int ManageScrollsEventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_data){
+	while(SDL_PollEvent(e)){
+		if(e->type == SDL_EVENT_KEY_DOWN){
+			switch(e->key.scancode){
+			case KEY_SELECT:
+			case SDL_SCANCODE_RETURN:
+				pc->selected_scroll = pc->help_data.menu_position; break;
+			case KEY_MOVE_RIGHT:
+			case SDL_SCANCODE_RIGHT:
+				++pc->help_data.menu_position; break;
+			case KEY_MOVE_LEFT:
+			case SDL_SCANCODE_LEFT:
+				--pc->help_data.menu_position; break;
+			case KEY_MOVE_BACK:
+			case SDL_SCANCODE_DOWN:
+				pc->help_data.menu_position += ICONS_IN_VIEWF_ROW; break;
+			case KEY_MOVE_FORWARD:
+			case SDL_SCANCODE_UP:
+				pc->help_data.menu_position -= ICONS_IN_VIEWF_ROW; break;
 			case SDL_SCANCODE_2:
 			case SDL_SCANCODE_3:
 			case SDL_SCANCODE_4:
@@ -156,7 +183,7 @@ int ManageScrollsEventsService(SDL_Event* const e, Player* const p, Render_data*
 			case SDL_SCANCODE_8:
 			case SDL_SCANCODE_9:
 			case SDL_SCANCODE_0:
-				SetQuickScroll(p, (int)e->key.scancode - 31); break;
+				SetQuickScroll(pc, (int)e->key.scancode - 31); break;
 			case KEY_MANAGE_SCROLLS:
 				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
 				return 0;
@@ -170,10 +197,51 @@ int ManageScrollsEventsService(SDL_Event* const e, Player* const p, Render_data*
 			default: break;
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
-			SetSelectetScrollMouseSelection(rend_data, p); break;
+			SetSelectetScrollMouseSelection(rend_data, pc); break;
 		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
-			SetPointedScrollMouseSelection(rend_data, p); break;
+			SetPointedScrollMouseSelection(rend_data, pc); break;
 		}
 	}
 	return event_manage_scrolls;
+}
+
+int MenuEventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_data){
+	while(SDL_PollEvent(e)){
+		if(e->type == SDL_EVENT_KEY_DOWN){
+			switch(e->key.scancode){
+			case KEY_SELECT:
+			case SDL_SCANCODE_RETURN:
+				return ActivateMenuOption(pc->help_data.menu_position, rend_data);
+				break;
+			case KEY_MOVE_BACK:
+			case SDL_SCANCODE_DOWN:
+			case KEY_MOVE_RIGHT:
+			case SDL_SCANCODE_RIGHT:
+				++pc->help_data.menu_position; break;
+			case KEY_MOVE_FORWARD:
+			case SDL_SCANCODE_UP:
+			case KEY_MOVE_LEFT:
+			case SDL_SCANCODE_LEFT:
+				--pc->help_data.menu_position; break;
+			case SDL_SCANCODE_ESCAPE:
+				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+				return 0;
+			default: break;
+			}
+		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+			return ActivateMenuOption(pc->help_data.menu_position, rend_data);
+		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
+			SetPointedOptionMouseSelection(rend_data, &pc->help_data.menu_position); break;
+		}
+	}
+	return event_menu;
+}
+
+int EndingEventsService(SDL_Event* const e){
+	while(SDL_PollEvent(e)){
+		if(e->type == SDL_EVENT_KEY_UP || e->type == SDL_EVENT_MOUSE_BUTTON_UP){
+			return 1;
+		}
+	}
+	return 0;
 }

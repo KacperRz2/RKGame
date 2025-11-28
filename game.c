@@ -16,6 +16,7 @@ static inline void PopulateBigSeg(Game_data* const gd, const unsigned int x, con
 		return;
 	}
 	MarkAsPopulatedBigSeg(gd->world.plan, x, y);
+	UpdateMap(gd->rend_data_ptr, POPULATED_SEG_RGB, x, y);
 }
 
 static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
@@ -27,23 +28,21 @@ static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
 		PopulateBigSeg(gd, seg_x, seg_y + 1U);
 		PopulateBigSeg(gd, seg_x - 1U, seg_y);
 		PopulateBigSeg(gd, seg_x, seg_y - 1U);
+		UpdateMap(gd->rend_data_ptr, UNCOVERED_SEG_RGB, seg_x, seg_y);
 	}
 }
 
 int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
     int option = menu_unknown;
-	float angle = 0.0F;
+	Uint8 menu_position = 0U;
     while(1){
-		angle += 0.02F;
-		if(angle >= SDL_PI_F * 2.0F){
-			angle = 0.0F;
-		}
-        RenderMainMenu(rend_data, angle);
-        option = MenuEventsService(e, rend_data);
+        RenderMainMenu(rend_data, menu_position);
+        option = MainMenuEventsService(e, rend_data, &menu_position);
+		menu_position += OPTIONS_NUM;
+		menu_position %= OPTIONS_NUM;
         if(option != menu_unknown) break;
         SDL_Delay(FRAME_TIME_MS);
     }
-	ResetTextTextureAlpha(rend_data);
     return option;
 }
 
@@ -51,7 +50,6 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Game_data game_data;
 	game_data.rend_data_ptr = rend_data;
 	SetGameData(&game_data);
-	DrawMap(rend_data, &game_data.world);
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 now = 0ULL;
@@ -61,7 +59,8 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Uint64 prev_frame_time = time;
 	Uint64 TPS_time = SDL_GetTicks();
     StartLevel(&game_data);
-    while(quit != 1){
+	DrawMap(rend_data, &game_data.world);
+    while(quit != event_quit_game){
         timer = SDL_GetTicksNS();
 		if(quit == 0){
 			quit = EventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
@@ -69,8 +68,14 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 			quit = ManageScrollsEventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
 			(game_data.champions.array + game_data.human_indx)->help_data.menu_position += SCROLLS_NUM;
 			(game_data.champions.array + game_data.human_indx)->help_data.menu_position %= SCROLLS_NUM;
+		}else if(quit == event_menu){
+			quit = MenuEventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
+			(game_data.champions.array + game_data.human_indx)->help_data.menu_position += OPTIONS_NUM;
+			(game_data.champions.array + game_data.human_indx)->help_data.menu_position %= OPTIONS_NUM;
 		}
-		if(UpdateGame(&game_data)){
+		int update_result = UpdateGame(&game_data);
+		if(update_result != update_ok){
+			EndLoop(e, &game_data, update_result);
             break;
 		}
 		now = SDL_GetTicksNS();
@@ -99,6 +104,40 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	ClearGameData(&game_data);
 }
 
+static void EndLoop(SDL_Event* const e, Game_data* const gd, const int result){
+	if(result == update_defeated){
+		for(unsigned int i = 0U; i < 50U; ++i){
+			RenderDefeatedScreen(gd->rend_data_ptr);
+			SDL_Delay(40U);
+		}
+		SDL_PumpEvents();
+		SDL_FlushEvent(SDL_EVENT_KEY_UP);
+		SDL_FlushEvent(SDL_EVENT_MOUSE_BUTTON_UP);
+		while(1){
+			if(EndingEventsService(e)){
+				break;
+			}
+			RenderDefeatedScreen(gd->rend_data_ptr);
+        	SDL_Delay(FRAME_TIME_MS);
+		}
+	}else{
+		for(unsigned int i = 0U; i < 50U; ++i){
+			RenderVictoryScreen(gd->rend_data_ptr);
+			SDL_Delay(40U);
+		}
+		SDL_PumpEvents();
+		SDL_FlushEvent(SDL_EVENT_KEY_UP);
+		SDL_FlushEvent(SDL_EVENT_MOUSE_BUTTON_UP);
+		while(1){
+			if(EndingEventsService(e)){
+				break;
+			}
+			RenderVictoryScreen(gd->rend_data_ptr);
+        	SDL_Delay(FRAME_TIME_MS);
+		}
+	}
+}
+
 static void SetGameData(Game_data* const gd){
 	gd->flags = 0x0U;
 	gd->champions.array = (Player*)SDL_malloc(sizeof(Player) * MAX_PLAYERS_NUM);
@@ -122,6 +161,7 @@ static void SetGameData(Game_data* const gd){
 	gd->keys = 0U;
 	gd->effects_num = 0U;
 	gd->horde_data.ticks_from_attack = 0U;
+	SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 }
 
 static void ClearGameData(Game_data* const gd){
@@ -135,7 +175,7 @@ static void ClearGameData(Game_data* const gd){
 	DestroyWorld(&gd->world);
 }
 
-static void RareEventsService(Game_data* const gd){
+static int RareEventsService(Game_data* const gd){
 	static int check_queue = 0;
 	if(check_queue == 0 && SDL_fabsf(human(gd)->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
 		SetPlayerPosition(human(gd), gd->world.portalB.x, gd->world.portalB.y);
@@ -153,8 +193,8 @@ static void RareEventsService(Game_data* const gd){
 		}
 	}else if(check_queue == 3){
 		if(gd->keys >= gd->needed_keys && SDL_fabsf(human(gd)->position.x - gd->world.door.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.door.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
-			human(gd)->hit_points = 0;
 			human(gd)->flags &= ~(action);
+			return update_victory;
 		}
 		human(gd)->attention_rect.x = human(gd)->position.x - half(ATTENTION_RECT_SIZE);
 		human(gd)->attention_rect.y = human(gd)->position.y - half(ATTENTION_RECT_SIZE);
@@ -171,6 +211,7 @@ static void RareEventsService(Game_data* const gd){
 		PlayerInUncoveredBigSeg(gd);
 	}
 	check_queue = (check_queue + 1) % 6;
+	return 0;
 }
 
 extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const float position_y){
@@ -307,7 +348,9 @@ static int UpdateGame(Game_data* const gd){
 		UpdateBeings(gd);
 		ticks_to_rare_update = RARE_UPDATE_INTERVAL;
 	}else{
-		RareEventsService(gd);
+		if(RareEventsService(gd) == update_victory){
+			return update_victory;
+		}
 		UpdateEffects(gd);
 		--ticks_to_rare_update;
 	}
@@ -315,6 +358,17 @@ static int UpdateGame(Game_data* const gd){
 		return update_defeated;
 	}
 	return update_ok;
+}
+
+int ActivateMenuOption(const unsigned int option, Render_data* const rend_data){
+	if(option == menu_p_continue){
+		SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+		return 0;
+	}else if(option == menu_p_save || option == menu_p_quit){
+		return event_quit_game;
+	}else{
+		return event_menu;
+	}
 }
 
 static inline void UpdateEffects(Game_data* const gd){

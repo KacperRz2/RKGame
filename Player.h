@@ -40,11 +40,13 @@ void SetQuickScroll(Player* const, int);
 static void StunPlayer(Player* const);
 
 void AddPlayerEffect(Player* const, const Lasting_effect);
+void AddOrUpdatePlayerEffect(Player* const, const Lasting_effect);
 static void RemovePlayerEffect(Player* const, const int);
 static void UpdatePlayerEffects(Game_data* const, const unsigned int);
 static void UpdatePlayerEffect(Game_data* const, Player* const, const int);
 int PlayerHasEffect(Player* const, const int);
 void SlowPlayer(Game_data* const, Player* const, const int);
 void PlayerHPRegeneration(Game_data* const, Player* const, const int);
+void PlayerWeakness(Game_data* const, Player* const, const int);
 
 #endif

@@ -162,6 +162,7 @@ struct Projectile{
 		}basic;
 		struct special{
 			Uint8 effect_id;
+			unsigned int ticks;
 		}special;
 	}data;
 };
