@@ -582,6 +582,23 @@ static inline bool TypeIsAlly(const Uint8 type_id){
     return false;
 }
 
+static inline int GetMoraleDrop(const Uint8 type){
+    const int morale_costs[] = HOSTILES_MORALE_COSTS;
+    return *(morale_costs + type);
+}
+
+static inline bool IsDeadBeing(Being* const bg, Game_data* const gd, const unsigned int iter){
+    if(bg->status == being_dead){
+        const int morale_drop = GetMoraleDrop(bg->type_id);
+        gd->enemy_morale = gd->enemy_morale + MAX_MORALE < morale_drop ? -MAX_MORALE : gd->enemy_morale - morale_drop;
+        AddDeadVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
+        *(gd->beings.indices + iter) = *(gd->beings.indices + --gd->beings.num);
+        *(gd->beings.indices + gd->beings.num) = bg->main_indx;
+        return true;
+    }
+    return false;
+}
+
 void UpdateBeings(Game_data* const gd){
     if((gd->flags & gamef_horde_attack)){
         for(unsigned int i = 0U; i < gd->beings.num; ++i){
@@ -602,10 +619,7 @@ void UpdateBeings(Game_data* const gd){
                     point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
                 }while(point_indx1 != point_indx);
             }else if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
-                if(bg->status == being_dead){
-                    AddDeadVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
-                    *(gd->beings.indices + i) = *(gd->beings.indices + --gd->beings.num);
-                    *(gd->beings.indices + gd->beings.num) = bg->main_indx;
+                if(IsDeadBeing(bg, gd, i)){
                     --i;
                     continue;
                 }
@@ -614,28 +628,50 @@ void UpdateBeings(Game_data* const gd){
         }
         return;
     }
+    if(gd->enemy_morale <= 0){
+        for(unsigned int i = 0U; i < gd->beings.num; ++i){
+            Being* bg = (gd->beings.array + *(gd->beings.indices + i));
+            if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
+                if(IsDeadBeing(bg, gd, i)){
+                    --i;
+                    continue;
+                }
+                if(IsAlly(bg) || bg->status == being_walk || bg->status == being_fly || bg->status == being_stunned || (bg->status_ticks_left < 0 && bg->status == being_idle)){
+                    (being_types + bg->type_id)->update(bg, gd);
+                }else if(bg->status != being_in_void){
+                    BeingFlee(bg, gd);
+                }
+            }
+        }  
+        if(!(gd->flags & gamef_morale_break)){
+            gd->flags |= gamef_morale_break;
+            gd->enemy_morale -= MORALE_BREAK_DROP;
+        }
+        ++gd->enemy_morale;
+        return;
+    }
+    if(gd->flags & gamef_morale_break){
+        gd->flags &= ~(gamef_morale_break);
+    }
     for(unsigned int i = 0U; i < gd->beings.num; ++i){
         Being* bg = (gd->beings.array + *(gd->beings.indices + i));
         if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
-            if(bg->status == being_dead){
-                AddDeadVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
-                *(gd->beings.indices + i) = *(gd->beings.indices + --gd->beings.num);
-                *(gd->beings.indices + gd->beings.num) = bg->main_indx;
+            if(IsDeadBeing(bg, gd, i)){
                 --i;
                 continue;
             }
             (being_types + bg->type_id)->update(bg, gd);
         }
     }
+    if(gd->enemy_morale < MAX_MORALE){
+        ++gd->enemy_morale;
+    }
 }
 
 void UpdateBeingsEffects(Game_data* const gd){
     for(unsigned int i = 0U; i < gd->beings.num; ++i){
         Being* bg = (gd->beings.array + *(gd->beings.indices + i));
-        if(bg->status == being_dead){
-            AddDeadVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
-            *(gd->beings.indices + i) = *(gd->beings.indices + --gd->beings.num);
-            *(gd->beings.indices + gd->beings.num) = bg->main_indx;
+        if(IsDeadBeing(bg, gd, i)){
             --i;
             continue;
         }

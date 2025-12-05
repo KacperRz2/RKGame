@@ -29,16 +29,6 @@ int EventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_
 				pc->flags ^= range_mode; break;
 			case KEY_TMP1:
 				pc->flags ^= tmp; break;
-			case KEY_FULLSCR:
-				SDL_SetWindowFullscreen(rend_data->window, true);
-				SDL_SyncWindow(rend_data->window);
-				ResetRenderData(rend_data);
-				break;
-			case KEY_WINDOWED:
-				SDL_SetWindowFullscreen(rend_data->window, false);
-				SDL_SyncWindow(rend_data->window);
-				ResetRenderData(rend_data);
-				break;
 			case SDL_SCANCODE_1:
 				pc->flags &= ~(range_mode);
 				break;
@@ -134,15 +124,6 @@ int MainMenuEventsService(SDL_Event* const e, Render_data* const rend_data, Uint
 				--(*menu_position); break;
 			case SDL_SCANCODE_ESCAPE:
 				*menu_position = menu_quit;
-			case KEY_FULLSCR:
-				SDL_SetWindowFullscreen(rend_data->window, true);
-				SDL_SyncWindow(rend_data->window);
-				ResetRenderData(rend_data);
-				break;
-			case KEY_WINDOWED:
-				SDL_SetWindowFullscreen(rend_data->window, false);
-				SDL_SyncWindow(rend_data->window);
-				ResetRenderData(rend_data);
 				break;
 			default: break;
 			}
@@ -241,6 +222,30 @@ int EndingEventsService(SDL_Event* const e){
 	while(SDL_PollEvent(e)){
 		if(e->type == SDL_EVENT_KEY_UP || e->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			return 1;
+		}
+	}
+	return 0;
+}
+
+int ShopEventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_data){
+	while(SDL_PollEvent(e)){
+		if(e->type == SDL_EVENT_KEY_DOWN){
+			switch(e->key.scancode){
+			case KEY_SELECT:
+			case SDL_SCANCODE_RETURN:
+				return 1; break;
+			default: break;
+			}
+		}else if(e->type == SDL_EVENT_KEY_UP){
+			switch (e->key.scancode){
+			case SDL_SCANCODE_ESCAPE:
+				return -1;
+			default: break;
+			}
+		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+			return 1; break;
+		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
+			pc->help_data.menu_position = GetMouseShopSelection(rend_data); break;
 		}
 	}
 	return 0;

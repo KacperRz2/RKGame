@@ -39,7 +39,7 @@ int GraphicsInitiation(Render_data* const rend_data){
 	DrawBeings(rend_data, surface, bmp_path);
 	DrawColouredThings(rend_data, surface, bmp_path);
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
-	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
+	SetMouseBarrier(rend_data);
 	DrawBackgroud(rend_data, surface, bmp_path);
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
@@ -318,9 +318,9 @@ static inline void RenderBeing(Render_data* const rend_data, Game_data* const gd
 			bg->direction = arctan2(bg->position.y - bg->target.player->position.y, bg->position.x - bg->target.player->position.x) - SDL_PI_F * 0.5F;
 		}else if(bg->status <= being_strike_being){
 			bg->direction = arctan2(bg->position.y - bg->target.being->position.y, bg->position.x - bg->target.being->position.x) - SDL_PI_F * 0.5F;
-		}else if(bg->status == being_walk){
+		}else if(bg->status == being_walk && gd->enemy_morale > 0){
 			bg->direction = arctan2(bg->position.y - human(gd)->position.y, bg->position.x - human(gd)->position.x) - SDL_PI_F * 0.5F;
-		}else if(bg->status == being_search){
+		}else if(bg->status == being_search || (bg->status == being_walk && gd->enemy_morale <= 0)){
 			bg->direction = arctan2(-bg->special_move_shift.y, -bg->special_move_shift.x) - SDL_PI_F * 0.5F;
 		}
 		const float being_direction = bg->direction - human(gd)->direction;
@@ -357,7 +357,7 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const gd, Segm
 	}
 }
 
-static void RenderMap(Render_data* const rend_data, Player* const pc){
+static void RenderMap(Render_data* const rend_data, const Game_data* const gd, Player* const pc){
 	const SDL_FRect pc_rect = {
 		pc->position.x * (VIEWFINDER_SIZE / WORLD_W) - half(MINIMAP_PC_SIZE),
 		pc->position.y * (VIEWFINDER_SIZE / WORLD_H) - half(MINIMAP_PC_SIZE),
@@ -365,6 +365,21 @@ static void RenderMap(Render_data* const rend_data, Player* const pc){
 		MINIMAP_PC_SIZE
 	};
 	SDL_RenderTexture(rend_data->renderer, texture(tx_map), NULL, NULL);
+	SDL_SetRenderDrawColor(rend_data->renderer, 255, 242, 0, 255);
+	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
+		if(*(gd->keys_status + i) != key_location_unknown){
+			const SDL_FRect rect = {
+				(gd->world.key_locations + i)->x * (VIEWFINDER_SIZE / 255.0F) - half(MAP_KEY_SIZE),
+				(gd->world.key_locations + i)->y * (VIEWFINDER_SIZE / 255.0F) - half(MAP_KEY_SIZE),
+				MAP_KEY_SIZE,
+				MAP_KEY_SIZE
+			};
+			SDL_RenderFillRect(rend_data->renderer, &rect);
+			if(*(gd->keys_status + i) == key_owned){
+				SDL_RenderTexture(rend_data->renderer, texture(tx_owned), NULL, &rect);
+			}
+		}
+	}
 	SDL_SetRenderDrawColor(rend_data->renderer, 192, 0, 0, 255);
 	SDL_RenderFillRect(rend_data->renderer, &pc_rect);
 }
@@ -380,6 +395,25 @@ static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const fl
 		PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction)
 	};
 	if(SDL_PointInRectFloat(rend_point, &rend_data->visible_rect)) return true;
+	return false;
+}
+
+static inline bool GetRenderPointFromTrueWithYShift(Render_data* const rend_data, const float true_point_x, const float true_point_y, const float y_shift, const Player* const human_player, SDL_FPoint* const rend_point, World* const w){
+	const float dx = true_point_x - human_player->position.x;
+	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
+	float dy = true_point_y - human_player->position.y;
+	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
+	if(!(GetSegmentUnsafe(w, true_point_x, true_point_y)->flags & segment_in_sight)) return false;
+	const SDL_FPoint point = {
+		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
+		PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction)
+	};
+	dy = true_point_y + y_shift - human_player->position.y;
+	*rend_point = (SDL_FPoint){
+		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
+		PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction)
+	};
+	if(SDL_PointInRectFloat(&point, &rend_data->visible_rect)) return true;
 	return false;
 }
 
@@ -411,6 +445,9 @@ void RenderTextInfo(Render_data* const rend_data, const Uint64 tps, Game_data* c
 	SDL_RenderDebugTextFormat(rend, x, 90, "hp: %d", human(gd)->hit_points);
 	SDL_RenderDebugTextFormat(rend, x, 100, "visual effects: %u", rend_data->visual_effects.num);
 	SDL_RenderDebugTextFormat(rend, x, 110, "boxes: %u", gd->boxes.num);
+
+	SDL_RenderDebugTextFormat(rend, x, 120, "enemy morale: %d", gd->enemy_morale);
+
 	SDL_RenderDebugTextFormat(rend, x, 130, "keys needed: %u", gd->needed_keys);
 	SDL_RenderDebugTextFormat(rend, x, 140, "player segment: x: %u y: %u", human(gd)->segment->indx.x, human(gd)->segment->indx.y);
 	SDL_RenderDebugTextFormat(rend, x, 150, "selected scroll: %u", human(gd)->selected_scroll);
@@ -552,8 +589,9 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 		RenderHumanPlayerBarrier(rend_data, pc);
 	}
 	RenderBarriers(rend_data, pc->direction, players_to_rend, players_rend_points, indx);
+	RenderDoors(rend_data, gd);
 	RenderVisualEffects(rend_data, gd);
-	SDL_RenderTexture(rend_data->renderer, texture(tx_viewfinder), NULL, NULL);//viewfinder
+	SDL_RenderTexture(rend_data->renderer, texture(tx_viewfinder), NULL, NULL);
 	if(event_code == event_menu){
 		RenderMenu(rend_data, pc);
 	}else if(event_code == event_manage_scrolls){
@@ -561,7 +599,7 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 	}else{
 		RenderGunSight(rend_data);
 		if(pc->flags & map_look){
-			RenderMap(rend_data, pc);
+			RenderMap(rend_data, gd, pc);
 		}
 	}
 	if(gd->flags & gamef_horde_attack){
@@ -677,6 +715,34 @@ static void RenderGunSight(Render_data* const rend_data){
 	SDL_RenderTextureRotated(rend_data->renderer, texture(tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
 	rect.x += spread * 2.0F;
 	SDL_RenderTextureRotated(rend_data->renderer, texture(tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
+}
+
+static void RenderDoors(Render_data* const rend_data, Game_data* const gd){
+	RenderStaticThing(rend_data, gd->world.door.x, gd->world.door.y, human(gd), DOOR_SIZE, tx_door, &gd->world);
+	for(unsigned int i = 0U; i < SHOPS_NUM; ++i){
+		SDL_FPoint point;
+		if(GetRenderPointFromTrueWithYShift(rend_data, (gd->world.shops + i)->location.x, (gd->world.shops + i)->location.y, half(SHOP_SIZE) + 1.0F, human(gd), &point, &gd->world)){
+			const SDL_FRect rect = {
+				point.x - half(SHOP_SIZE),
+				point.y - half(SHOP_SIZE),
+				SHOP_SIZE,
+				SHOP_SIZE
+			};
+			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_door), NULL, &rect, (double)(-RadToDeg(human(gd)->direction)), NULL, SDL_FLIP_NONE);
+		}
+	}
+	if(gd->flags & gamef_horde_attack){
+		for(unsigned int i = 0U; i < HORDE_ATTACK_POINTS; ++i){
+			const int ticks_left = (gd->effects + HasEffect(gd->effects, gd->effects_num, game_effect_horde_attack))->ticks_left;
+			if(ticks_left > HORDE_ATTACK_START_TICKS / 8 * 7){
+				RenderStaticThingRotating(rend_data, (gd->horde_data.creation_points + i)->x, (gd->horde_data.creation_points + i)->y, human(gd), CREATION_POINT_SIZE * ((float)(HORDE_ATTACK_START_TICKS - ticks_left) / (HORDE_ATTACK_START_TICKS / 8)), tx_creation_point, &gd->world, VORTEX_ROTAT_SPEED);
+			}else if(ticks_left < HORDE_ATTACK_START_TICKS / 8){
+				RenderStaticThingRotating(rend_data, (gd->horde_data.creation_points + i)->x, (gd->horde_data.creation_points + i)->y, human(gd), CREATION_POINT_SIZE * ((float)ticks_left / (HORDE_ATTACK_START_TICKS / 8)), tx_creation_point, &gd->world, VORTEX_ROTAT_SPEED);
+			}else{
+				RenderStaticThingRotating(rend_data, (gd->horde_data.creation_points + i)->x, (gd->horde_data.creation_points + i)->y, human(gd), CREATION_POINT_SIZE, tx_creation_point, &gd->world, VORTEX_ROTAT_SPEED);
+			}
+		}
+	}
 }
 
 static void RenderStaticThings(Render_data* const rend_data, Game_data* const gd){
@@ -1080,7 +1146,6 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
 	SDL_SetRenderDrawColor(rend_data->renderer, 255, 0, 0, 255);
 	SDL_RenderRect(rend_data->renderer, &selection_rect);
-	RenderText(rend_data, FRAME_W, rend_data->viewfinder - 80.0F, 32.0F, (Uint8[])TEST_TEXT);
 }
 
 static void RenderMenu(Render_data* const rend_data, const Player* const pc){
@@ -1539,6 +1604,25 @@ void SetPointedScrollMouseSelection(const Render_data* const rend_data, Player* 
 	}
 }
 
+Uint8 GetMouseShopSelection(const Render_data* const rend_data){
+	const float width = (float)rend_data->window_w / SHOP_COLS;
+	const float height = (float)rend_data->window_h / SHOP_ROWS;
+	SDL_FPoint mouse;
+	SDL_GetMouseState(&mouse.x, &mouse.y);
+	mouse.x -= half(width);
+	if(mouse.x <= 0.0F || mouse.x >= (float)rend_data->window_w - width){
+		return SHOP_POSITIONS;
+	}
+	const unsigned int col = (unsigned int)(mouse.x / width);
+	const unsigned int row = (unsigned int)(mouse.y / height);
+	if(col != SHOP_SIDE_COLS + 1U && col != SHOP_SIDE_COLS + 3U){
+		if((row < 2U || (row == SHOP_ROWS - 1U && col != SHOP_SIDE_COLS + 2U)) || (col == SHOP_SIDE_COLS || (col == SHOP_SIDE_COLS + 2U && row < SHOP_ROWS - 1U) || col == SHOP_SIDE_COLS + 4U)){
+			return SHOP_POSITIONS;
+		}
+	}
+	return col + row * SHOP_COLS;
+}
+
 void SetPointedOptionMouseSelection(const Render_data* const rend_data, Uint8* const menu_position){
 	const int num = GetMouseMenuPositionNum(rend_data);
 	if(num >= 0){
@@ -1596,4 +1680,36 @@ void RenderVictoryScreen(Render_data* const rend_data){
 	RenderText(rend_data, rend_data->window_w * 0.125F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])VICTORY_TEXT);
 	SDL_SetTextureColorMod(texture(tx_chars), 255U, 255U, 255U);
 	SDL_RenderPresent(rend_data->renderer);
+}
+
+extern inline void SetMouseBarrier(Render_data* const rend_data){
+	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
+}
+
+void RenderShop(Render_data* const rend_data, const Player* const pc, const Shop* const sh){
+	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
+	SDL_RenderClear(rend_data->renderer);
+	if(pc->help_data.menu_position < SHOP_POSITIONS){
+		const float width = (float)rend_data->window_w / SHOP_COLS;
+		const float height = (float)rend_data->window_h / SHOP_ROWS;
+		const SDL_FRect menu_ptr_rect = {
+			width * (0.5F + (pc->help_data.menu_position % SHOP_COLS)),
+			height * (pc->help_data.menu_position / SHOP_COLS),
+			width,
+			height
+		};
+		SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
+	}
+	SDL_RenderPresent(rend_data->renderer);
+}
+
+void ToggleFullscreen(Render_data* const rend_data){
+	const bool fullscreen = (SDL_GetWindowFlags(rend_data->window) & SDL_WINDOW_FULLSCREEN);
+	if(fullscreen){
+		SDL_SetWindowFullscreen(rend_data->window, false);
+	}else{
+		SDL_SetWindowFullscreen(rend_data->window, true);
+	}
+	SDL_SyncWindow(rend_data->window);
+	ResetRenderData(rend_data);
 }

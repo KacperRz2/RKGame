@@ -16,6 +16,7 @@
 #define GUN_SIGHT_SPREAD_RANGE      (GUN_SIGHT_SPREAD_MIN * 4.0F)
 #define GUN_SIGHT_MIN_DISTANCE      PLAYER_SIZE
 #define MINIMAP_PC_SIZE             8.0F
+#define MAP_KEY_SIZE                16.0F
 #define SCROLL_TX_SIZE              128.0F
 #define BARRIER_MAGNIFICATION       0.25F
 #define SIDE_AREA_WIDTH             (rend_data->viewfinder_rect.x - FRAME_W * 2.0F)
@@ -225,7 +226,7 @@
                                         visual_effect_t0,\
                                         tx_damage_test\
                                     })
-	                                //SDL_FPoint position; Uint16 ticks_left; Uint16 start_ticks; Uint16 size; Uint8 type; Uint8 tx_num;
+	                                //position; ticks_left; start_ticks; size; type; tx_num;
 #define PORTAL_VIS_EFFECT(position) ((Visual_effect){\
                                         position,\
                                         ((0x40000000ULL / FRAME_TIME) / ((unsigned int)OPENING_PORTAL_TICKS / 128U)),\
@@ -288,6 +289,7 @@
                                         "img1A",\
                                         "img1B",\
                                         "img1C",\
+                                        "img1D",\
                                         "void"\
                                     }
 

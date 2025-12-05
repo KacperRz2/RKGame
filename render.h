@@ -23,7 +23,7 @@ static void RenderHumanPlayerBlade(Render_data* const, Blade* const);
 static void RenderProjectiles(Render_data* const, Game_data* const);
 static void RenderBeing(Render_data* const, Game_data* const, Being* const, const unsigned int, const unsigned int);
 static void RenderBeings(Render_data* const, Game_data* const, Segment** const, const unsigned int);
-static void RenderMap(Render_data* const, Player* const);
+static void RenderMap(Render_data* const, const Game_data* const, Player* const);
 static bool GetRenderPointFromTrue(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const, World* const);
 static bool GetRenderPointFromTrueWithKnownSegmentVisibility(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const);
 void RenderTextInfo(Render_data* const, const Uint64, Game_data* const);//temporary func.
@@ -35,6 +35,8 @@ void ClearRenderData(Render_data* const);
 static void RenderTerrain(Render_data* const, Game_data* const, Segment** const, unsigned int* const);
 static bool GetExtendedRenderPointFromTrue(Render_data* const, const float, const float, const float, const Player* const, SDL_FPoint* const);
 static void RenderGunSight(Render_data* const);
+static void RenderDoors(Render_data* const, Game_data* const);
+static bool GetRenderPointFromTrueWithYShift(Render_data* const, const float, const float, const float, const Player* const, SDL_FPoint* const, World* const);
 static void RenderStaticThings(Render_data* const, Game_data* const);
 static void RenderStaticThing(Render_data* const, const float, const float, Player* const, const float, const int, World* const);
 static void RenderStaticThingRotating(Render_data* const, const float, const float, Player* const, const float, const int, World* const, const float);
@@ -63,10 +65,14 @@ static void RenderInt(Render_data* const, const float, const float, const float,
 void ResetTextTextureAlpha(Render_data* const);
 void SetSelectetScrollMouseSelection(const Render_data* const, Player* const);
 void SetPointedScrollMouseSelection(const Render_data* const, Player* const);
+Uint8 GetMouseShopSelection(const Render_data* const);
 void SetPointedOptionMouseSelection(const Render_data* const, Uint8* const);
 int GetMouseScrollManagPositionNum(const Render_data* const);
 static int GetMouseMenuPositionNum(const Render_data* const);
 void RenderDefeatedScreen(Render_data* const);
 void RenderVictoryScreen(Render_data* const);
+void SetMouseBarrier(Render_data* const);
+void RenderShop(Render_data* const, const Player* const, const Shop* const);
+void ToggleFullscreen(Render_data* const);
 
 #endif

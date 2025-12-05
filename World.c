@@ -317,45 +317,113 @@ void CreateWorld(Game_data* const gd){
 			}
 		}
 	}
+	PlaceShops(&gd->world);
+}
+
+int SDLCALL compareBoxes(const void* a, const void* b)
+{
+    const Box* A = (const Box*)a;
+    const Box* B = (const Box*)b;
+    if(A->location.x < B->location.x){
+        return -1;
+    }else if(B->location.x < A->location.x){
+        return 1;
+    }
+	return 0;
+}
+
+static void PlaceBoxes(Game_data* const gd){
 	while(gd->boxes.num < BOXES_NUM){
 		unsigned int c = SDL_rand(SEGMENTS_X - 4) + 2U;
 		unsigned int r = SDL_rand(SEGMENTS_Y - 4) + 2U;
-		Segment* seg = GetSegmentByIndxUnsafe(world, c, r);
+		Segment* seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
 		if(seg){
-			AddBoxToArray(&gd->boxes, SegmentPositionX(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE, SegmentPositionY(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE);
+			const unsigned int new_box_indx = gd->boxes.num++;
+			(gd->boxes.array + new_box_indx)->location.x = SegmentPositionX(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE;
+			(gd->boxes.array + new_box_indx)->location.y = SegmentPositionY(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE;
 		}
 	}
-	FillBoxes(gd);
+	SDL_qsort(gd->boxes.array, gd->boxes.num, sizeof(Box), compareBoxes);
 }
 
-void DestroyWorld(World* const world){
+int SDLCALL compareShops(const void* a, const void* b)
+{
+    const Shop* A = (const Shop*)a;
+    const Shop* B = (const Shop*)b;
+    if(A->location.x < B->location.x){
+        return -1;
+    }else if(B->location.x < A->location.x){
+        return 1;
+    }
+	if(A->location.y < B->location.y){
+		return -1;
+	}else if(B->location.y < A->location.y){
+		return 1;
+	}
+	return 0;
+}
+
+static void PlaceShops(World* const wld){
+	const unsigned int shops_huge_segments[SHOPS_NUM][2] = SHOPS_HUGE_SEGS;
+	unsigned int a, b;
+	if(SDL_rand(2)){
+		a = 0U;
+		b = 1U;
+	}else{
+		a = 1U;
+		b = 0U;
+	}
+	for(unsigned int i = 0U; i < SHOPS_NUM; ++i){
+		unsigned int x = HugeSegCenterBigSegCoordinate(*(*(shops_huge_segments + i) + a));
+		unsigned int y = HugeSegCenterBigSegCoordinate(*(*(shops_huge_segments + i) + b));
+		if(!IsVoidBigSeg(wld->plan, x, y)){
+			x = SDL_rand(2) ? x + 1U : x - 1U;
+			do{
+				++y;
+			}while(!IsVoidBigSeg(wld->plan, x, y));
+		}
+		const float shift = SDL_randf() * (half(BIG_SEGMENT_SIZE) - SHOP_SIZE - SEGMENT_SIZE * 2.0F) + half(SHOP_SIZE) + SEGMENT_SIZE;
+		(wld->shops + i)->location.x = SDL_rand(2) ? BigSegPosition(x) + shift : BigSegPosition(x) + BIG_SEGMENT_SIZE - shift;
+		(wld->shops + i)->location.y = BigSegPosition(y) - (SEGMENT_SIZE + 1.0F);
+	}
+	SDL_qsort(wld->shops, SHOPS_NUM, sizeof(Shop), compareShops);
+}
+
+void DestroyWorld(World* const wld){
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 	for(unsigned int r = 0U; r < SEGMENTS_Y; ++r){
-			SDL_free(*(*(world->segments + c) + r));
+			SDL_free(*(*(wld->segments + c) + r));
 		}
-		SDL_free(*(world->segments + c));
+		SDL_free(*(wld->segments + c));
 	}
-	SDL_free(world->segments);
+	SDL_free(wld->segments);
+	SDL_free(wld->key_locations);
 }
 
-extern inline Segment* GetSegmentUnsafe(const World* const world, const float x, const float y){
+extern inline Segment* GetSegmentUnsafe(const World* const wld, const float x, const float y){
 	const unsigned int c = (unsigned int)(x / SEGMENT_SIZE);
 	const unsigned int r = (unsigned int)(y / SEGMENT_SIZE);
-	return *(*(world->segments + c) + r);
+	return *(*(wld->segments + c) + r);
 }
 
-extern inline Segment* GetSegmentByIndxUnsafe(const World* const world, const unsigned int c, const unsigned int r){
-	return *(*(world->segments + c) + r);
+extern inline Segment* GetSegmentByIndxUnsafe(const World* const wld, const unsigned int c, const unsigned int r){
+	return *(*(wld->segments + c) + r);
 }
 
-extern inline Segment* GetSegmentByIndxSafe(const World* const world, const unsigned int c, const unsigned int r){
+extern inline Segment* GetSegmentByIndxSafe(const World* const wld, const unsigned int c, const unsigned int r){
 	if(c >= SEGMENTS_X || r >= SEGMENTS_Y){
 		return NULL;
 	}
-	return *(*(world->segments + c) + r);
+	return *(*(wld->segments + c) + r);
 }
 
 void StartLevel(Game_data* const gd){
+	PlaceBoxes(gd);
+	FillBoxes(gd);
+	gd->keys_status = (Uint8*)SDL_malloc(sizeof(Uint8) * gd->needed_keys);
+	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
+		*(gd->keys_status + i) = key_location_unknown;
+	}
 	const SDL_FPoint start_position = GetStartPosition(&gd->world);
 	for(unsigned int i = 0U; i < START_PLAYERS_NUM; ++i){
 		CreatePlayer((gd->champions.array + i), start_position.x, start_position.y);
@@ -415,6 +483,14 @@ extern inline float BigSegPosition(const unsigned int x){
 
 extern inline float BigSegCenter(const unsigned int x){
 	return (x + 0.5F) * BIG_SEGMENT_SIZE;
+}
+
+static inline float SegPosition(const unsigned int x){
+	return x * SEGMENT_SIZE;
+}
+
+static inline unsigned int HugeSegCenterBigSegCoordinate(const unsigned int x){
+	return x * 4U + 2U;
 }
 
 static float GetDoorPositionXorY(const unsigned int small_plan_position){
@@ -495,6 +571,7 @@ extern inline bool SegmentInSight(const SDL_FPoint* const from, const SDL_FPoint
 
 static void FillBoxes(Game_data* const gd){
 	gd->needed_keys = 0U;
+	Key_location key_locations[MAX_KEYS];
 	do{
 		gd->needed_keys = 0U;
 		Uint16 boxes_with_map[MAX_MAPS];
@@ -503,13 +580,13 @@ static void FillBoxes(Game_data* const gd){
 			Box* bx = (gd->boxes.array + i);
 			unsigned int slot = 0U;
 			if(SDL_rand(BOXES_NUM) < 7 && gd->needed_keys < MAX_KEYS){
-				AddToBox(bx, slot++, box_key, 1U);
-				*(gd->world.key_locations + gd->needed_keys++) = (Key_location){
-					(Uint8)(WORLD_SIZE / bx->location.x * 255),
-					(Uint8)(WORLD_SIZE / bx->location.y * 255)
+				AddToBox(bx, slot++, box_key, gd->needed_keys);
+				*(key_locations + gd->needed_keys++) = (Key_location){
+					(Uint8)(bx->location.x / WORLD_SIZE * 255.0F),
+					(Uint8)(bx->location.y / WORLD_SIZE * 255.0F)
 				};
 			}else if(SDL_rand(BOXES_NUM) < 14 && maps_num < MAX_MAPS){
-				AddToBox(bx, slot++, box_map, 0);
+				AddToBox(bx, slot++, box_map, 0U);
 				*(boxes_with_map + maps_num++) = i;
 			}
 			AddToBox(bx, slot++, box_coins, SDL_rand(BOX_MAX_COINS));
@@ -532,6 +609,10 @@ static void FillBoxes(Game_data* const gd){
 			(gd->boxes.array + *(boxes_with_map + i))->elements->value = key;
 		}
 	}while(gd->needed_keys < KEYS_NUM);
+	gd->world.key_locations = (Key_location*)SDL_malloc(sizeof(Key_location) * gd->needed_keys);
+	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
+		*(gd->world.key_locations + i) = *(key_locations + i);
+	}
 }
 
 extern inline void GetNeighbourSegments(Segment** const array, const World* const wld, const Segment* const seg){

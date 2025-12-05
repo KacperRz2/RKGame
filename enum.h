@@ -129,7 +129,14 @@ enum segment_flags{
 };
 
 enum game_flags{
-    gamef_horde_attack = 1 << 0
+    gamef_horde_attack = 1 << 0,
+    gamef_morale_break = 1 << 1
+};
+
+enum key_info{
+    key_location_unknown,
+    key_location_known,
+    key_owned
 };
 
 enum event{
@@ -141,7 +148,8 @@ enum event{
 enum game_update{
     update_ok,
     update_defeated,
-    update_victory
+    update_victory,
+    update_shop
 };
 
 enum character{
@@ -179,6 +187,7 @@ enum texture_num{
     tx_weapon1,
     tx_bonus_effect,
     tx_curse_effect,
+    tx_owned,
     tx_void,
     tx_pc,
     tx_being_weak,

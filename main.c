@@ -15,6 +15,8 @@ int main(int argc, char* argv[]){
 		if(option == menu_start){
 			GameLoop(&event, &rend_data);
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
+		}else if(option == menu_settings){
+			ToggleFullscreen(&rend_data);
 		}
 	}
 	ClearRenderData(&rend_data);

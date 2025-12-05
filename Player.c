@@ -18,7 +18,7 @@ static void InitScrolls(Player* const p){
 	*(p->scrolls + scroll_3) = 99U;
 	*(p->scrolls + scroll_slow) = 99U;
 	for(unsigned int i = 5U; i < SCROLLS_NUM - 1U; ++i){
-		*(p->scrolls + i) = 5U;
+		*(p->scrolls + i) = 16U;
 	}
 	*(p->scrolls + scroll_empty) = 1U;
 	*(p->scrolls_quick_access) = scroll_empty;

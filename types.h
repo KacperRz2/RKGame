@@ -1,7 +1,6 @@
 #ifndef TYPES_H_
 #define TYPES_H_
 
-//other
 typedef struct Blade Blade;
 typedef struct Placement Placement;
 typedef struct Impact Impact;
@@ -11,29 +10,31 @@ typedef struct Render_data Render_data;
 typedef struct Lasting_effect Lasting_effect;
 typedef struct Armour Armour;
 typedef struct position16 position16;
-//Being
+
 typedef struct Being_type Being_type;
 typedef struct Being Being;
 typedef struct Beings_array Beings_array;
 typedef struct Segment_beings Segment_beings;
-//Projectile
+
 typedef struct Projectile Projectile;
 typedef struct Projectiles_array Projectiles_array;
-//World
+
 typedef struct Key_location Key_location;
 typedef struct Segment Segment;
 typedef struct World World;
-//Player
+
 typedef struct Block_times Block_times;
 typedef struct Player Player;
 typedef struct Players Players;
-//Game
+
+typedef struct Shop Shop;
+typedef struct Shops Shops;
 typedef struct Game_data Game_data;
 typedef struct Box_element Box_element;
 typedef struct Box Box;
 typedef struct Boxes Boxes;
 
-//other
+
 struct Placement{
 	SDL_FPoint position;
 	float direction;
@@ -101,7 +102,7 @@ struct position16{
 	_Float16 x;
 	_Float16 y;
 };
-//Being
+
 struct Being_type{
 	float size;
     float velocity;
@@ -145,7 +146,7 @@ struct Segment_beings{
 	Uint16 beings_ind[MAX_SEGM_BEINGS];
     Uint8 num;
 };
-//Projectile
+
 struct Projectile{
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
@@ -170,7 +171,7 @@ struct Projectiles_array{
 	Projectile* array;
 	Uint16 num;
 };
-//World
+
 struct Key_location{
 	Uint8 x;
 	Uint8 y;
@@ -181,6 +182,10 @@ struct Segment{
 	Segment_beings ally_beings;
 	struct coordinates {Uint16 x; Uint16 y;} indx;
 };
+struct Shop{
+	SDL_FPoint location;
+	Uint8 scrolls[SHOP_SCROLLS_NUM];
+};
 struct World{
 	Segment*** segments;
 	Uint64 plan[BIG_SEGMENTS_X];
@@ -189,9 +194,10 @@ struct World{
 	SDL_FPoint portalA;
 	SDL_FPoint portalB;
 	SDL_FPoint door;
-	Key_location key_locations[MAX_KEYS];
+	Key_location* key_locations;
+	Shop shops[SHOPS_NUM];
 };
-//Player
+
 struct Block_times{
 	Sint16 fatigue;
 	Sint16 armour;
@@ -227,7 +233,7 @@ struct Player{
 	Uint8 scrolls_quick_access[QUICK_SCROLLS];
 	Uint8 effects_num;
 	Lasting_effect effects[MAX_PC_EFFECTS];
-	union help_data{
+	struct help_data{
 		Uint8 menu_position;
 	}help_data;
 };
@@ -235,7 +241,7 @@ struct Players{
 	Player* array;
 	Uint8 num;
 };
-//Game
+
 struct Box_element{
 	Uint8 type;
 	Uint16 value;
@@ -248,6 +254,7 @@ struct Boxes{
 	Box* array;
 	Uint16 num;
 };
+
 struct Game_data{
 	Uint8 flags;
 	Players champions;
@@ -259,6 +266,7 @@ struct Game_data{
 	Uint8 keys;
 	Uint8 needed_keys;
 	Sint16 enemy_morale;
+	Uint8* keys_status;
 	Uint8 effects_num;
 	Lasting_effect effects[MAX_GAME_EFFECTS];
 	union horde_data{
@@ -266,6 +274,7 @@ struct Game_data{
 		unsigned int ticks_from_attack;
 	}horde_data;
 	Render_data* rend_data_ptr;
+	SDL_Event* ev_ptr;
 };
 // int a = sizeof(Segment);
 #endif

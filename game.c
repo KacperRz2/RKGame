@@ -49,16 +49,17 @@ int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
 void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 	Game_data game_data;
 	game_data.rend_data_ptr = rend_data;
+	game_data.ev_ptr = e;
 	SetGameData(&game_data);
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 now = 0ULL;
 	Uint64 timer;
     int quit = 0;
+    StartLevel(&game_data);
 	Uint64 time = SDL_GetTicksNS();
 	Uint64 prev_frame_time = time;
 	Uint64 TPS_time = SDL_GetTicks();
-    StartLevel(&game_data);
 	DrawMap(rend_data, &game_data.world);
     while(quit != event_quit_game){
         timer = SDL_GetTicksNS();
@@ -73,10 +74,15 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 			(game_data.champions.array + game_data.human_indx)->help_data.menu_position += OPTIONS_NUM;
 			(game_data.champions.array + game_data.human_indx)->help_data.menu_position %= OPTIONS_NUM;
 		}
-		int update_result = UpdateGame(&game_data);
+		const int update_result = UpdateGame(&game_data);
 		if(update_result != update_ok){
-			EndLoop(e, &game_data, update_result);
-            break;
+			if(update_result == update_shop){
+				time = SDL_GetTicksNS();
+				prev_frame_time = time;
+			}else{
+				EndLoop(e, &game_data, update_result);
+				break;
+			}
 		}
 		now = SDL_GetTicksNS();
 		if(now > prev_frame_time + FRAME_TIME){
@@ -157,6 +163,7 @@ static void SetGameData(Game_data* const gd){
 	}
 	gd->beings.num = 0U;
 	gd->projectiles.num = 0U;
+	gd->enemy_morale = MAX_MORALE;
 	gd->rend_data_ptr->visual_effects.num = 0U;
 	gd->keys = 0U;
 	gd->effects_num = 0U;
@@ -172,15 +179,25 @@ static void ClearGameData(Game_data* const gd){
 	SDL_free(gd->rend_data_ptr->visual_effects.array);
 	gd->champions.num = 0U;
 	gd->rend_data_ptr->visual_effects.num = 0U;
+	SDL_free(gd->keys_status);
 	DestroyWorld(&gd->world);
 }
 
 static int RareEventsService(Game_data* const gd){
 	static int check_queue = 0;
-	if(check_queue == 0 && SDL_fabsf(human(gd)->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
-		SetPlayerPosition(human(gd), gd->world.portalB.x, gd->world.portalB.y);
-		UpdatePlayerNewSegment(&gd->world, human(gd));
-	 	human(gd)->flags &= ~(action);
+	if(check_queue == 0){
+		if(SDL_fabsf(human(gd)->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
+			SetPlayerPosition(human(gd), gd->world.portalB.x, gd->world.portalB.y);
+			UpdatePlayerNewSegment(&gd->world, human(gd));
+			human(gd)->flags &= ~(action);
+		}else if(human(gd)->flags & action){
+			int shop_indx = GetNearbyShopIndx(gd);
+			if(shop_indx != -1){
+				EnterShop(gd, human(gd), shop_indx);
+				human(gd)->flags &= ~(action);
+				return update_shop;
+			}
+		}
 	}else if(check_queue == 1 && SDL_fabsf(human(gd)->position.x - gd->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(human(gd)->position.y - gd->world.portalB.y) < half(DOOR_SIZE) && (human(gd)->flags & action)){
 		SetPlayerPosition(human(gd), gd->world.portalA.x, gd->world.portalA.y);
 		UpdatePlayerNewSegment(&gd->world, human(gd));
@@ -294,11 +311,14 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 			human(gd)->coins += (int)elem->value;
 			elem->type = box_clear;
 		}else if(element_type == box_key){
-			gd->keys += (int)elem->value;
+			++gd->keys;
+			*(gd->keys_status + elem->value) = key_owned;
 			elem->type = box_clear;
 		}else if(element_type == box_map){
-			Key_location* kl = gd->world.key_locations + elem->value;
-			SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "Key location: x: %u, y: %u!", kl->x, kl->y);
+			if(*(gd->keys_status + elem->value) == key_location_unknown){
+				*(gd->keys_status + elem->value) = key_location_known;
+			}
+			SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "Key location: x: %u, y: %u!", (gd->world.key_locations + elem->value)->x, (gd->world.key_locations + elem->value)->y);
 			elem->type = box_clear;
 		}else if(element_type == box_mp){
 			human(gd)->magic_points += (int)elem->value;
@@ -318,6 +338,59 @@ static inline void DestroyBoxInArray(Boxes* const bxs, unsigned int indx){
 		++indx;
 	}
 	--bxs->num;
+}
+
+static int GetNearbyShopIndx(Game_data* const gd){
+	int left = 0;
+	int right = SHOPS_NUM;
+	int center;
+	int new_center = (right - left) / 2 + left;
+	do{
+		center = new_center;
+		if(SDL_fabsf(human(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE){
+			do{
+				if(SDL_fabsf(human(gd)->position.y - (gd->world.shops + center)->location.y) < SHOP_ENTRY_RANGE){
+					return center;
+				}
+				++center;
+			}while(center < SHOPS_NUM && SDL_fabsf(human(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE);
+			center = new_center - 1;
+			while(center >= 0 && SDL_fabsf(human(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE){
+				if(SDL_fabsf(human(gd)->position.y - (gd->world.shops + center)->location.y) < SHOP_ENTRY_RANGE){
+					return center;
+				}
+				--center;
+			};
+			return -1;
+		}else if(human(gd)->position.x > (gd->world.shops + center)->location.x){
+			left = center;
+		}else{
+			right = center;
+		}
+		new_center = (right - left) / 2 + left;
+	}while(new_center != center);
+	return -1;
+}
+
+static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int shop_indx){
+	Render_data* const rend_data = gd->rend_data_ptr;
+	SDL_SetWindowRelativeMouseMode(rend_data->window, false);
+	SDL_SetWindowMouseRect(rend_data->window, NULL);
+    int option = 0;
+	Uint8 items_to_sell[MAX_ITEMS_TO_SELL];
+	Uint8 items_to_sell_num = 0U;
+	Uint8 items_to_get[MAX_ITEMS_TO_SELL];
+	Uint8 items_to_get_num = 0U;
+	pc->help_data.menu_position = SHOP_POSITIONS;
+    while(option != -1){
+        RenderShop(rend_data, pc, gd->world.shops + shop_indx);
+        if((option = ShopEventsService(gd->ev_ptr, pc, rend_data)) > 0){
+			SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "s:%u", pc->help_data.menu_position);
+		}
+        SDL_Delay(FRAME_TIME_MS);
+    }
+	SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+	SetMouseBarrier(rend_data);
 }
 
 extern inline int CalculateDamage(const Impact* const impact, const Armour* const armour){
@@ -348,8 +421,12 @@ static int UpdateGame(Game_data* const gd){
 		UpdateBeings(gd);
 		ticks_to_rare_update = RARE_UPDATE_INTERVAL;
 	}else{
-		if(RareEventsService(gd) == update_victory){
+		const int rare_update_resu = RareEventsService(gd);
+		if(rare_update_resu == update_victory){
 			return update_victory;
+		}
+		if(rare_update_resu == update_shop){
+			return update_shop;
 		}
 		UpdateEffects(gd);
 		--ticks_to_rare_update;
@@ -366,6 +443,9 @@ int ActivateMenuOption(const unsigned int option, Render_data* const rend_data){
 		return 0;
 	}else if(option == menu_p_save || option == menu_p_quit){
 		return event_quit_game;
+	}else if(option == menu_p_settings){
+		ToggleFullscreen(rend_data);
+		return event_menu;
 	}else{
 		return event_menu;
 	}
@@ -377,8 +457,7 @@ static inline void UpdateEffects(Game_data* const gd){
 	UpdatePlayersEffects(gd);
 }
 
-static inline SDL_FPoint GetRandomBeingCreationPoint(Game_data* const gd){
-	const float angle = SDL_randf() * FULL_ANGLE;
+static inline SDL_FPoint GetBeingCreationPoint(Game_data* const gd, const float angle){
     const float shift_x = SineSafe(angle);
     const float shift_y = -CosiSafe(angle);
 	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
@@ -448,12 +527,17 @@ static inline void UpdateGameEffect(Game_data* const gd, const int effect_indx){
 
 void HordeAttack(Game_data* const gd, const int ticks_left){
 	if(ticks_left == HORDE_ATTACK_START_TICKS){
+		const float shift = FULL_ANGLE / HORDE_ATTACK_POINTS;
+		float angle = SDL_randf() * shift;
 		for(unsigned int i = 0U; i < HORDE_ATTACK_POINTS; ++i){
-			*(gd->horde_data.creation_points + i) = GetRandomBeingCreationPoint(gd);
+			*(gd->horde_data.creation_points + i) = GetBeingCreationPoint(gd, angle);
+			angle += shift;
 		}
+		gd->enemy_morale = MAX_MORALE;
 	}else if(ticks_left < 2){
 		gd->flags &= ~(gamef_horde_attack);
 		gd->horde_data.ticks_from_attack = 0U;
+		gd->enemy_morale = MAX_MORALE;
 	}else if((ticks_left < (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / 16)) || (ticks_left >= (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand(ticks_left / 16))){
 		const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
 		unsigned int point_indx1 = point_indx;

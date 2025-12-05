@@ -17,6 +17,7 @@
 #define PLAYER_SIZE			        32
 #define GUN_SIGHT_SIZE		        16
 #define BULLET_SIZE			        16
+#define BLADE_SIZE                  64.0F
 #define DECELERATION		        0.93F
 #define TICK_TIME			        0x200000ULL
 #define TICK_TIME_MS		        (TICK_TIME / 1000000ULL)
@@ -36,7 +37,6 @@
 #define START_PLAYERS_NUM		    0x1U
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
-#define BLADE_SIZE                  64.0F
 #define BEING_HIT_CIRCLE_DIAMET     16.0F
 #define RANGE_SEGMENTS              ((unsigned int)(7000.0F / SEGMENT_SIZE))
 #define PROJECTILE_RAN_SEG          ((unsigned int)(2000.0F / SEGMENT_SIZE))
@@ -65,7 +65,7 @@
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       0x300
+#define PC_HP                       0x3000
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    0x10
 #define PC_M_MAGIC                  0x10000000
@@ -103,10 +103,13 @@
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
 #define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
+#define SHOP_SIZE                   128.0F
+#define SCROLL_SIZE                 32.0F
+#define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
+#define BOX_SIZE                    32.0F
 #define PC_START_COINS              123
 #define KEYS_NUM                    7U
 #define BOXES_NUM                   0x200U
-#define BOX_SIZE                    32.0F
 #define BOX_SLOTS                   8
 #define BLOCK_COST                  16
 #define PC_BLOCK_FATIG_BLOCK_TIME   50
@@ -114,12 +117,10 @@
 #define QUICK_SCROLLS               9U
 #define SCROLLS_NUM                 35U
 #define OPTIONS_NUM                 5U
-#define SCROLL_SIZE                 32.0F
 #define BEING_TYPES_NUM             2U
 #define MAX_BEING_EFFECTS           8
 #define MAX_PC_EFFECTS              8
 #define MAX_GAME_EFFECTS            8
-#define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
 #define WEAPON_ATTACK_Y             24.0F
 #define MAX_PC_ARMOUR_ABSORP        200.0F
 #define ICONS_IN_VIEWF_ROW          7
@@ -128,11 +129,11 @@
 #define MAX_KEYS                    16U
 #define MAX_MAPS                    32U
 #define SMALL_PLAN_SIZE             (BIG_SEGMENTS_X / 4)
+#define BIG_SEGMENT_SIZE            (SEGMENT_SIZE * BIG_SEGMENT_SEGMENTS_X)
+#define HUGE_SEGMENT_SIZE           ((WORLD_SIZE - SEGMENT_SIZE * 2.0F) / (float)HUGE_SEGMENTS_X)
 #define HORDE_ATTACK_START_TICKS    0x800
 #define HORDE_ATTACK_POINTS         8
-#define BIG_SEGMENT_SIZE            (SEGMENT_SIZE * BIG_SEGMENT_SEGMENTS_X)
 #define HUGE_SEGMENTS_X             7
-#define HUGE_SEGMENT_SIZE           ((WORLD_SIZE - SEGMENT_SIZE * 2.0F) / (float)HUGE_SEGMENTS_X)
 #define MAX_POPULATION_NUM          0x20
 #define COMMANDER_EFFECT_TICKS      1024
 #define HP_REGEN_TICKS              1024
@@ -145,6 +146,17 @@
 #define BEING_ALLY_DETEC_RANGE      1U
 #define UNLIMITET_SPEC_PROJE        0U
 #define WARLOCK_SPEC_PROJE_TICKS    0x1000U
+#define SHOP_SCROLLS_NUM            18U
+#define SHOPS_NUM                   7U
+#define SHOP_ENTRY_RANGE            64.0F
+#define MAX_ITEMS_TO_SELL           9U
+#define SHOP_COLS                   20U
+#define SHOP_ROWS                   10U
+#define SHOP_COLS                   20U
+#define SHOP_SIDE_COLS              7U
+#define SHOP_POSITIONS              (SHOP_ROWS * SHOP_COLS)
+#define MAX_MORALE                  0x4000
+#define MORALE_BREAK_DROP           0x2000
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -159,8 +171,6 @@
 #define KEY_TMP                     SDL_SCANCODE_PERIOD
 #define KEY_TMP1                    SDL_SCANCODE_H
 #define KEY_SELECT                  SDL_SCANCODE_E
-#define KEY_FULLSCR                 SDL_SCANCODE_F11
-#define KEY_WINDOWED                SDL_SCANCODE_F12
 #define BUTTON_ATTACK               SDL_BUTTON_LEFT
 #define BUTTON_BLOCK                SDL_BUTTON_RIGHT
 
@@ -349,7 +359,7 @@
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
-                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0\
                                 }
 #define WORLD_SMALL_BASE        {\
                                     0, 0, 1, 1, 1, 0, 0,\
@@ -358,7 +368,25 @@
                                     1, 1, 1, 1, 1, 1, 1,\
                                     1, 1, 1, 1, 1, 1, 1,\
                                     0, 1, 1, 1, 1, 1, 0,\
-                                    0, 0, 1, 1, 1, 0, 0,\
+                                    0, 0, 1, 1, 1, 0, 0\
+                                }
+#define SHOPS_HUGE_SEGS        {\
+                                    2, 1,\
+                                    4, 1,\
+                                    1, 3,\
+                                    3, 3,\
+                                    5, 3,\
+                                    2, 5,\
+                                    4, 5\
+                                }
+#define HOSTILES_MORALE_COSTS   {\
+                                    0x80,\
+                                    0x400,\
+                                    0x400,\
+                                    0x800,\
+                                    0x800,\
+                                    0x2000,\
+                                    0x1000\
                                 }
 #define ZERO_POINT_F            ((SDL_FPoint){0.0F, 0.0F})
 #define SPIRAL_X_SHIFTS         {0,0,1,1,1,0,-1,-1,-1,-1,0,1,2,2,2,2,2,1,0,-1,-2,-2,-2,-2,-2,-2,-1,0,1,2,3,3,3,3,3,3,3,2,1,0,-1,-2,-3,-3,-3,-3,-3,-3,-3,-3,-2,-1,0,1,2,3,4,4,4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-4}

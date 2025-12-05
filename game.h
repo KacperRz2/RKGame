@@ -16,12 +16,14 @@ static void DestroyBoxes(Boxes* const);
 static int GetNearbyBoxIndx(Game_data* const);
 static void LootBox(Game_data* const, const unsigned int);
 static void DestroyBoxInArray(Boxes* const, unsigned int);
+static int GetNearbyShopIndx(Game_data* const);
+static void EnterShop(Game_data* const, Player* const, const unsigned int);
 int CalculateDamage(const Impact* const, const Armour* const);
 float CalculateStunPower(const Impact* const, const Armour* const);
 static int UpdateGame(Game_data* const);
 int ActivateMenuOption(const unsigned int, Render_data* const);
 static void UpdateEffects(Game_data* const);
-static SDL_FPoint GetRandomBeingCreationPoint(Game_data* const);
+static SDL_FPoint GetBeingCreationPoint(Game_data* const, const float);
 
 int HasEffect(Lasting_effect* const, const unsigned int, const unsigned int);
 void AddLastingEffect(Lasting_effect* const, const Lasting_effect, const int);
