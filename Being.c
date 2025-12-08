@@ -181,11 +181,11 @@ static inline void StartBeingWalkWithRandTurn(Being* const b, const int time, co
     }
 }
 
-static inline void StartBeingWalkWithRandTurn45Deg(Being* const b, const int time, const float x_shift, const float y_shift){
-    if(SDL_rand(2)){
-        StartBeingWalk(b, time, (x_shift + y_shift) * SQRT2DIV2, (y_shift - x_shift) * SQRT2DIV2);
+static inline void StartBeingWalkWithRandTurn45Deg(Being* const bg, const int time, const float x_shift, const float y_shift){
+    if(bg->main_indx % 2){
+        StartBeingWalk(bg, time, (x_shift + y_shift) * SQRT2DIV2, (y_shift - x_shift) * SQRT2DIV2);
     }else{
-        StartBeingWalk(b, time, (x_shift - y_shift) * SQRT2DIV2, (y_shift + x_shift) * SQRT2DIV2);
+        StartBeingWalk(bg, time, (x_shift - y_shift) * SQRT2DIV2, (y_shift + x_shift) * SQRT2DIV2);
     }
 }
 
@@ -561,9 +561,9 @@ static inline void UpdateBeingFollow(Being* const bg, float const distance_squar
     --bg->status_ticks_left;
 }
 
-static inline SDL_FPoint GetHBladeAttackHittingPoint(Being* const b, const float sine, const float cosine){
+static inline SDL_FPoint GetHBladeAttackHittingPoint(Being* const bg, const float sine, const float cosine){
     static const float distance_from_being = WEAPON_ATTACK_Y + BLADE_SIZE * 0.85F - BEING_HIT_CIRCLE_DIAMET;
-    return (SDL_FPoint){b->position.x + sine * distance_from_being, b->position.y - cosine * distance_from_being};
+    return (SDL_FPoint){bg->position.x + sine * distance_from_being, bg->position.y - cosine * distance_from_being};
 }
 
 static inline void HaltBeing(Being* const b, const int time){
@@ -799,22 +799,21 @@ static inline bool FindAllyTarget(Being* const bg, Game_data* const gd){
     return false;
 }
 
-static inline void StartAllyFollow(Being* const b, const int duration){
-    float distance_x = b->target.player->position.x - b->position.x;
-    float distance_y = b->target.player->position.y - b->position.y;
-    float distance_squared = pow2(distance_x) + pow2(distance_y);
-    if(distance_squared < pow2(BEING_HALT_DISTANCE * 2.0F)){
-        HaltBeing(b, duration);
+static inline void StartAllyFollow(Being* const bg, const int duration){
+    const float target_x = bg->main_indx % 2U == 1U? bg->target.player->position.x + SEGMENT_SIZE * (0x0.1p0F * (float)(bg->main_indx % 0x10U)) : bg->target.player->position.x - SEGMENT_SIZE * (0x0.1p0F * (float)(bg->main_indx % 0x10U));
+    const float target_y = bg->main_indx % 4U < 2U ? bg->target.player->position.y + SEGMENT_SIZE * (0x0.1p0F * (float)(bg->main_indx % 0x10U)) : bg->target.player->position.y - SEGMENT_SIZE * (0x0.1p0F * (float)(bg->main_indx % 0x10U));
+    const float distance_x = target_x - bg->position.x;
+    const float distance_y = target_y - bg->position.y;
+    const float distance_squared = pow2(distance_x) + pow2(distance_y);
+    if(distance_squared < pow2(BEING_HALT_DISTANCE)){
+        HaltBeing(bg, duration);
         return;
     }
-    distance_x = SDL_rand(2) ? b->target.player->position.x + SEGMENT_SIZE * (SDL_randf() + 0.5F) - b->position.x : b->target.player->position.x - SEGMENT_SIZE * (SDL_randf() + 0.5F) - b->position.x;
-    distance_y = SDL_rand(2) ? b->target.player->position.y + SEGMENT_SIZE * (SDL_randf() + 0.5F) - b->position.y : b->target.player->position.y - SEGMENT_SIZE * (SDL_randf() + 0.5F) - b->position.y;
-    distance_squared = pow2(distance_x) + pow2(distance_y);
     const float distance = SDL_sqrtf(distance_squared);
-    const float velocity_xy = distance / b->velocity;
-    b->special_move_shift = (SDL_FPoint){distance_x / velocity_xy, distance_y / velocity_xy};
-    b->status = being_follow;
-    b->status_ticks_left = duration;
+    const float velocity_xy = distance / bg->velocity;
+    bg->special_move_shift = (SDL_FPoint){distance_x / velocity_xy, distance_y / velocity_xy};
+    bg->status = being_follow;
+    bg->status_ticks_left = duration;
 }
 
 static inline void UpdateAllyFollow(Being* const b, Game_data* const gd){
@@ -982,19 +981,71 @@ static inline void MovePlayerIfTooClose(const float d_x, const float d_y, const 
     }
 }
 
+static inline bool FleeBeingCollision(Being* const bg, Game_data* const gd){
+    for(unsigned int i = 0U; i < bg->segment->beings.num; ++i){
+        Being* bg1 = (gd->beings.array + *(bg->segment->beings.beings_ind + i));
+        if(bg1 == bg || bg1->status == being_idle) continue;
+        if(BeingCollideWithBeing(bg1, bg->position.x, bg->position.y, BeingSize(bg))){
+            StartBeingWalkWithRandTurn45Deg(bg, FLEE_COLLI_WALK_TICKS, bg->special_move_shift.x, bg->special_move_shift.y);
+            return true;
+        }
+    }
+    return false;
+}
+
 #define DistancesDeclaration    float distance_x, distance_y, distance_squared;
+#define SetShifts               if(direction == 0U){\
+                                    x_shift = 0U;\
+                                    y_shift = -1U;\
+                                    x_fshift0 = half(BIG_SEGMENT_SIZE);\
+                                    y_fshift0 = 0.0F;\
+                                    x_fshift1 = bg->special_move_shift.x;\
+                                    y_fshift1 = -SEGMENT_SIZE * 0.125F;\
+                                }else if(direction == 1U){\
+                                    x_shift = -1U;\
+                                    y_shift = 0U;\
+                                    x_fshift0 = 0.0F;\
+                                    y_fshift0 = half(BIG_SEGMENT_SIZE);\
+                                    x_fshift1 = -SEGMENT_SIZE * 0.125F;\
+                                    y_fshift1 = bg->special_move_shift.y;\
+                                }else if(direction == 2U){\
+                                    x_shift = 0U;\
+                                    y_shift = 1U;\
+                                    x_fshift0 = half(BIG_SEGMENT_SIZE);\
+                                    y_fshift0 = BIG_SEGMENT_SIZE;\
+                                    x_fshift1 = bg->special_move_shift.x;\
+                                    y_fshift1 = SEGMENT_SIZE * 0.125F;\
+                                }else{\
+                                    x_shift = 1U;\
+                                    y_shift = 0U;\
+                                    x_fshift0 = BIG_SEGMENT_SIZE;\
+                                    y_fshift0 = half(BIG_SEGMENT_SIZE);\
+                                    x_fshift1 = SEGMENT_SIZE * 0.125F;\
+                                    y_fshift1 = bg->special_move_shift.y;\
+                                }
 
 static inline void BeingFlee(Being* const bg, Game_data* const gd){
+    if(FleeBeingCollision(bg, gd)){
+        return;
+    }
     DistancesDeclaration
+    unsigned int x_shift, y_shift;
+    float x_fshift0, y_fshift0, x_fshift1, y_fshift1;
+    unsigned int direction = bg->main_indx % 4U;
+    SetShifts
     const unsigned int seg_x = GetBigSegCoordinate(bg->position.x);
     const unsigned int seg_y = GetBigSegCoordinate(bg->position.y);
-    if(!IsVoidBigSeg(gd->world.plan, seg_x, seg_y - 1U)){
-        GetBeingDistances(bg, &(SDL_FPoint){BigSegCenter(seg_x), BigSegCenter(seg_y - 1U)}, &distance_x, &distance_y, &distance_squared);
-    }else if(!IsVoidBigSeg(gd->world.plan, seg_x - 1U, seg_y)){
-        GetBeingDistances(bg, &(SDL_FPoint){BigSegCenter(seg_x - 1U), BigSegCenter(seg_y)}, &distance_x, &distance_y, &distance_squared);
+    const unsigned int pc_seg_x = GetBigSegCoordinate(human(gd)->position.x);
+    const unsigned int pc_seg_y = GetBigSegCoordinate(human(gd)->position.y);
+    if(seg_x + x_shift == pc_seg_x && seg_y + y_shift == pc_seg_y){
+        direction = (direction + 1U) % 4;
+        SetShifts
+    }
+    if(!IsVoidBigSeg(gd->world.plan, seg_x + x_shift, seg_y + y_shift)){
+        GetBeingDistances(bg, &(SDL_FPoint){BigSegCenter(seg_x + x_shift) , BigSegCenter(seg_y + y_shift)}, &distance_x, &distance_y, &distance_squared);
     }else{
-        GetBeingDistances(bg, &(SDL_FPoint){BigSegCenter(seg_x), BigSegPosition(seg_y)}, &distance_x, &distance_y, &distance_squared);
-        if(distance_squared <= pow2(SEGMENT_SIZE * 1.5F) && !GetSegmentUnsafe(&gd->world, bg->position.x + bg->special_move_shift.x, bg->position.y - SEGMENT_SIZE * 0.125F)){
+        GetBeingDistances(bg, &(SDL_FPoint){BigSegPosition(seg_x) + x_fshift0, BigSegPosition(seg_y) + y_fshift0}, &distance_x, &distance_y, &distance_squared);
+        if(distance_squared <= pow2(SEGMENT_SIZE * 1.5F) && !GetSegmentUnsafe(&gd->world, bg->position.x + x_fshift1, bg->position.y + y_fshift1)){
             AddBeingEffect(bg, (Lasting_effect){being_effect_open_portal, OPENING_PORTAL_TICKS});
             HaltBeing(bg, OPENING_PORTAL_TICKS * 2);
             AddPortalVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
@@ -1003,7 +1054,7 @@ static inline void BeingFlee(Being* const bg, Game_data* const gd){
     }
     const float distance = SDL_sqrtf(distance_squared);
     const float velocity_xy = distance / bg->velocity;
-    StartBeingWalk(bg, BEING_DEFAULT_LEFT_TICKS * 4, distance_x / velocity_xy, distance_y / velocity_xy);
+    StartBeingWalk(bg, BEING_WALK_TICKS, distance_x / velocity_xy, distance_y / velocity_xy);
 }
 //---------------------------------------------------------------------------------------------------------------
 extern inline void AddBeingEffect(Being* const bg, const Lasting_effect effect){

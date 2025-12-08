@@ -104,7 +104,7 @@ int EventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_
 	return 0;
 }
 
-int MainMenuEventsService(SDL_Event* const e, Render_data* const rend_data, Uint8* const menu_position){
+int MainMenuEventsService(SDL_Event* const e, Render_data* const rend_data, unsigned int* const menu_position){
 	while(SDL_PollEvent(e)){
 		if(e->type == SDL_EVENT_KEY_DOWN){
 			switch(e->key.scancode){

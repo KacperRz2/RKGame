@@ -57,7 +57,7 @@ extern inline void AddVisalEffect(Visual_effects* const ves, const Visual_effect
 	}
 }
 
-static inline void RemoveVisalEffect(Visual_effects* const ves, const Uint16 indx){
+static inline void RemoveVisalEffect(Visual_effects* const ves, const unsigned int indx){
 	if(indx != ves->num - 1U){
 		*(ves->array + indx) = *(ves->array + ves->num - 1);
 	}
@@ -513,8 +513,8 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, co
 			(1.0F - p->blade.charge) * (rect_cha.w - 2.0F),
 			8.0F
 		};
-		const Uint8 red = (Uint8)((1.0F - p->blade.charge) * 255.0F);
-		const Uint8 green = (Uint8)(p->blade.charge * 255.0F);
+		const unsigned int red = (unsigned int)((1.0F - p->blade.charge) * 255.0F);
+		const unsigned int green = (unsigned int)(p->blade.charge * 255.0F);
 		SDL_SetRenderDrawColor(rend_data->renderer, red / 4, green / 4, 0U, 255U);
 		SDL_RenderRect(rend_data->renderer, &rect_cha);
 		SDL_SetTextureColorMod(texture(tx_bar), red, green, 0U);
@@ -1604,7 +1604,7 @@ void SetPointedScrollMouseSelection(const Render_data* const rend_data, Player* 
 	}
 }
 
-Uint8 GetMouseShopSelection(const Render_data* const rend_data){
+unsigned int GetMouseShopSelection(const Render_data* const rend_data){
 	const float width = (float)rend_data->window_w / SHOP_COLS;
 	const float height = (float)rend_data->window_h / SHOP_ROWS;
 	SDL_FPoint mouse;
@@ -1623,7 +1623,7 @@ Uint8 GetMouseShopSelection(const Render_data* const rend_data){
 	return col + row * SHOP_COLS;
 }
 
-void SetPointedOptionMouseSelection(const Render_data* const rend_data, Uint8* const menu_position){
+void SetPointedOptionMouseSelection(const Render_data* const rend_data, unsigned int* const menu_position){
 	const int num = GetMouseMenuPositionNum(rend_data);
 	if(num >= 0){
 		*menu_position = num;

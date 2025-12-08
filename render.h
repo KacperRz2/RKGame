@@ -4,7 +4,7 @@
 int GraphicsInitiation(Render_data* const);
 
 void AddVisalEffect(Visual_effects* const, const Visual_effect* const);
-static void RemoveVisalEffect(Visual_effects* const, const Uint16);
+static void RemoveVisalEffect(Visual_effects* const, const unsigned int);
 static void RenderVisualEffects(Render_data* const, Game_data* const);
 void AddDamageVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddBonusVisualEffect(Visual_effects* const, const SDL_FPoint* const);
@@ -65,8 +65,8 @@ static void RenderInt(Render_data* const, const float, const float, const float,
 void ResetTextTextureAlpha(Render_data* const);
 void SetSelectetScrollMouseSelection(const Render_data* const, Player* const);
 void SetPointedScrollMouseSelection(const Render_data* const, Player* const);
-Uint8 GetMouseShopSelection(const Render_data* const);
-void SetPointedOptionMouseSelection(const Render_data* const, Uint8* const);
+unsigned int GetMouseShopSelection(const Render_data* const);
+void SetPointedOptionMouseSelection(const Render_data* const, unsigned int* const);
 int GetMouseScrollManagPositionNum(const Render_data* const);
 static int GetMouseMenuPositionNum(const Render_data* const);
 void RenderDefeatedScreen(Render_data* const);

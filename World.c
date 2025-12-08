@@ -574,7 +574,7 @@ static void FillBoxes(Game_data* const gd){
 	Key_location key_locations[MAX_KEYS];
 	do{
 		gd->needed_keys = 0U;
-		Uint16 boxes_with_map[MAX_MAPS];
+		unsigned int boxes_with_map[MAX_MAPS];
 		unsigned int maps_num = 0U;
 		for(unsigned int i = 0U; i < BOXES_NUM; ++i){
 			Box* bx = (gd->boxes.array + i);
@@ -597,9 +597,9 @@ static void FillBoxes(Game_data* const gd){
 			}
 			AddToBox(bx, slot, box_mp, SDL_rand(BOX_MAX_MP));
 		}
-		Uint16 keys_maps = 0b0000000000000000;
+		unsigned int keys_maps = 0b0000000000000000;
 		for(unsigned int i = 0U; i < maps_num; ++i){
-			Uint16 key = SDL_rand(gd->needed_keys);
+			unsigned int key = SDL_rand(gd->needed_keys);
 			if(keys_maps != (1U << gd->needed_keys) - 1U){
 				while((1 << key) & keys_maps){
 					key = SDL_rand(gd->needed_keys);

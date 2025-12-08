@@ -4,6 +4,9 @@
 #include <types.h>
 #include <function.h>
 
+float si[ANGLE_PARTS];
+float co[ANGLE_PARTS];
+
 extern inline float RadToDeg(const float angle){
 	return angle * (180.0F / SDL_PI_F);
 }
@@ -52,4 +55,11 @@ extern inline void GetShift(const SDL_FPoint* const a, const SDL_FPoint* const b
 extern inline void GetShiftFromAngle(const float angle, const float velocity, float* x, float* y){
     *x = SineSafe(angle) * velocity;
     *y = -CosiSafe(angle) * velocity;
+}
+
+void SetSineCosineArrays(){
+	for(unsigned int i = 0U; i < ANGLE_PARTS; ++i){
+		*(si + i) = SDL_sinf(MIN_ANGLE * i);
+		*(co + i) = SDL_cosf(MIN_ANGLE * i);
+	}
 }

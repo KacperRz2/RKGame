@@ -2,6 +2,7 @@
 #define MACROS_H_
 
 #define SQRT2DIV2			        (1.4142135623730950488016887242097F * 0.5F)
+#define SQRT2			            1.4142135623730950488016887242097F
 #define FULL_ANGLE			        (SDL_PI_F * 2.0F)
 #define pow2(x)                     ((x) * (x))
 #define half(x)                     ((x) * (0.5F))
@@ -53,6 +54,7 @@
 #define BLADE_BASE_Y                (-8.0F)
 #define BLADE_BASE_DIRECTION_BEING  0.0F
 #define BEING_WALK_TICKS            128
+#define FLEE_COLLI_WALK_TICKS       64
 #define IDLE_BEING_ACTION_DISTANCE  900.0F
 #define BEING_ATTACK_DISTANCE       140.0F
 #define BEING_SHOOT_DISTANCE        700.0F

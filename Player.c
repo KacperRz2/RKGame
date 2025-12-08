@@ -232,17 +232,19 @@ static inline void SetShiftToPosition(Blade* const bl, Placement* const step_shi
 	};
 }
 
-static inline Placement GetBladeLocation(Player* const p, float* const sine, float* const cosine){
-	float direct = p->direction + p->blade.placement.direction;
-	*sine = SineSafe(direct);
-	*cosine = CosiSafe(direct);
+static inline Placement GetBladeLocation(Player* const pc){
+	const float sine = SineUnsafe(pc->direction);
+	const float cosine = CosiUnsafe(pc->direction);
 	return (Placement){
-		{p->position.x + *sine * p->blade.placement.position.x, p->position.y - *cosine * p->blade.placement.position.y},
-		direct
+		{
+			pc->position.x + cosine * pc->blade.placement.position.x + sine * pc->blade.placement.position.y,
+			pc->position.y + sine * pc->blade.placement.position.x - cosine * pc->blade.placement.position.y
+		},
+		pc->direction + pc->blade.placement.direction
 	};
 }
 
-static inline bool BladeHitsBeing(Blade* const bl, Placement* const location, Being* const b, SDL_FPoint* const dangerous_points){
+static inline bool BladeHitsBeing(Blade* const bl, Being* const b, SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
 		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(BeingSize(b)) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(BeingSize(b))){
 			for(unsigned int j = bl->hits; j > 0U; --j){
@@ -258,15 +260,13 @@ static inline bool BladeHitsBeing(Blade* const bl, Placement* const location, Be
 
 static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 	static const float length_part = BLADE_SIZE * 0.85F / (float)PC_BLADE_CHECKPOINTS;
-	float sine_blade_direction;
-	float cosine_blade_direction;
-	Placement blade_true_location = GetBladeLocation(gd->champions.array + indx, &sine_blade_direction, &cosine_blade_direction);
-	Segment* seg = GetSegmentUnsafe(&gd->world, blade_true_location.position.x, blade_true_location.position.y);
+	const Placement blade_true_location = GetBladeLocation(gd->champions.array + indx);
+	const Segment* seg = GetSegmentUnsafe(&gd->world, blade_true_location.position.x, blade_true_location.position.y);
 	if(seg == NULL){
 		return true;
 	}
-	float shift_x = sine_blade_direction * length_part;
-	float shift_y = -cosine_blade_direction * length_part;
+	const float shift_x = SineSafe(blade_true_location.direction) * length_part;
+	const float shift_y = -CosiSafe(blade_true_location.direction) * length_part;
 	SDL_FPoint dangerous_points[PC_BLADE_CHECKPOINTS] = {
 		{blade_true_location.position.x + 2.0F * shift_x, blade_true_location.position.y + 2.0F * shift_y},
 		{blade_true_location.position.x + shift_x, blade_true_location.position.y + shift_y}
@@ -279,7 +279,7 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 		if(neighbour == NULL) continue;
 		for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
 			Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
-			if(!BladeHitsBeing(bl, &blade_true_location, bg, dangerous_points)) continue;
+			if(!BladeHitsBeing(bl, bg, dangerous_points)) continue;
 			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, dangerous_points);
 			if(DamageBeing(bg, &bl->impact, gd->beings.array)){
 				if(bl->hits < --bl->penetration){

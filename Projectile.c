@@ -54,7 +54,7 @@ extern inline void AddSpecialProjectileToArray(Projectiles_array* const prs, con
 	pr->data.special.ticks = ticks;
 }
 
-static inline void DestroyProjectileInArray(Projectiles_array* const prs, const Uint16 indx){
+static inline void DestroyProjectileInArray(Projectiles_array* const prs, const unsigned int indx){
 	if(indx != prs->num - 1){
 		*(prs->array + indx) = *(prs->array + prs->num - 1);
 	}

@@ -8,9 +8,7 @@
 #include <enum.h>
 #include <types.h>
 #include <render.h>
+#include <function.h>
 #include <game.h>
-
-float si[ANGLE_PARTS];
-float co[ANGLE_PARTS];
 
 #endif

@@ -234,7 +234,7 @@ struct Player{
 	Uint8 effects_num;
 	Lasting_effect effects[MAX_PC_EFFECTS];
 	struct help_data{
-		Uint8 menu_position;
+		unsigned int menu_position;
 	}help_data;
 };
 struct Players{
@@ -256,18 +256,18 @@ struct Boxes{
 };
 
 struct Game_data{
-	Uint8 flags;
+	unsigned int flags;
 	Players champions;
 	Beings_array beings;
 	Projectiles_array projectiles;
 	World world;
 	Boxes boxes;
-	Uint8 human_indx;
-	Uint8 keys;
-	Uint8 needed_keys;
-	Sint16 enemy_morale;
+	unsigned int human_indx;
+	unsigned int keys;
+	unsigned int needed_keys;
+	int enemy_morale;
 	Uint8* keys_status;
-	Uint8 effects_num;
+	unsigned int effects_num;
 	Lasting_effect effects[MAX_GAME_EFFECTS];
 	union horde_data{
 		SDL_FPoint creation_points[HORDE_ATTACK_POINTS];

@@ -34,7 +34,7 @@ static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
 
 int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
     int option = menu_unknown;
-	Uint8 menu_position = 0U;
+	unsigned int menu_position = 0U;
     while(1){
         RenderMainMenu(rend_data, menu_position);
         option = MainMenuEventsService(e, rend_data, &menu_position);
@@ -378,9 +378,9 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 	SDL_SetWindowMouseRect(rend_data->window, NULL);
     int option = 0;
 	Uint8 items_to_sell[MAX_ITEMS_TO_SELL];
-	Uint8 items_to_sell_num = 0U;
+	unsigned int items_to_sell_num = 0U;
 	Uint8 items_to_get[MAX_ITEMS_TO_SELL];
-	Uint8 items_to_get_num = 0U;
+	unsigned int items_to_get_num = 0U;
 	pc->help_data.menu_position = SHOP_POSITIONS;
     while(option != -1){
         RenderShop(rend_data, pc, gd->world.shops + shop_indx);
