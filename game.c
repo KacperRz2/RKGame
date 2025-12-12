@@ -47,52 +47,46 @@ int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
     return option;
 }
 
-void GameLoop(SDL_Event* const e, Render_data* const rend_data){
-	Game_data game_data;
-	game_data.rend_data_ptr = rend_data;
-	game_data.ev_ptr = e;
-	SetGameData(&game_data);
+void GameLoop(Game_data* const gd){
 	int tps = 0;
 	int tps_count = 0;
 	Uint64 now = 0ULL;
 	Uint64 timer;
     int quit = 0;
-    StartLevel(&game_data);
 	Uint64 time = SDL_GetTicksNS();
 	Uint64 prev_frame_time = time;
 	Uint64 TPS_time = SDL_GetTicks();
-	DrawMap(rend_data, &game_data.world);
     while(quit != event_quit_game){
         timer = SDL_GetTicksNS();
 		if(quit == 0){
-			quit = EventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
+			quit = EventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
 		}else if(quit == event_manage_scrolls){
-			quit = ManageScrollsEventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
-			(game_data.champions.array + game_data.human_indx)->help_data.menu_position += SCROLLS_NUM;
-			(game_data.champions.array + game_data.human_indx)->help_data.menu_position %= SCROLLS_NUM;
+			quit = ManageScrollsEventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
+			(human(gd))->help_data.menu_position += SCROLLS_NUM;
+			(human(gd))->help_data.menu_position %= SCROLLS_NUM;
 		}else if(quit == event_menu){
-			quit = MenuEventsService(e, game_data.champions.array + game_data.human_indx, rend_data);
-			(game_data.champions.array + game_data.human_indx)->help_data.menu_position += OPTIONS_NUM;
-			(game_data.champions.array + game_data.human_indx)->help_data.menu_position %= OPTIONS_NUM;
+			quit = MenuEventsService(gd);
+			(human(gd))->help_data.menu_position += OPTIONS_NUM;
+			(human(gd))->help_data.menu_position %= OPTIONS_NUM;
 		}
-		const int update_result = UpdateGame(&game_data);
+		const int update_result = UpdateGame(gd);
 		if(update_result != update_ok){
 			if(update_result == update_shop){
 				time = SDL_GetTicksNS();
 				prev_frame_time = time;
 			}else{
-				EndLoop(e, &game_data, update_result);
+				EndLoop(gd->ev_ptr, gd, update_result);
 				break;
 			}
 		}
 		now = SDL_GetTicksNS();
 		if(now > prev_frame_time + FRAME_TIME){
 			prev_frame_time = now;
-            RenderGame(rend_data, &game_data, quit);
-			if((game_data.champions.array + game_data.human_indx)->flags & tmp){
-				RenderTextInfo(rend_data, tps, &game_data);
+            RenderGame(gd->rend_data_ptr, gd, quit);
+			if((human(gd))->flags & tmp){
+				RenderTextInfo(gd->rend_data_ptr, tps, gd);
 			}
-			SDL_RenderPresent(rend_data->renderer);
+			SDL_RenderPresent(gd->rend_data_ptr->renderer);
 		}
 		if(SDL_GetTicks() - TPS_time >= 1000ULL){
 			tps = tps_count;
@@ -108,7 +102,6 @@ void GameLoop(SDL_Event* const e, Render_data* const rend_data){
 			SDL_DelayNS((TICK_TIME - (now - timer)) >> 1);
 		}
     }
-	ClearGameData(&game_data);
 }
 
 static void EndLoop(SDL_Event* const e, Game_data* const gd, const int result){
@@ -145,7 +138,7 @@ static void EndLoop(SDL_Event* const e, Game_data* const gd, const int result){
 	}
 }
 
-static void SetGameData(Game_data* const gd){
+void SetGameData(Game_data* const gd){
 	gd->flags = 0x0U;
 	gd->champions.array = (Player*)SDL_malloc(sizeof(Player) * MAX_PLAYERS_NUM);
 	gd->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
@@ -157,7 +150,7 @@ static void SetGameData(Game_data* const gd){
 	gd->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
 	gd->beings.indices = (Uint16*)SDL_malloc(sizeof(Uint16) * MAX_BEINGS_NUM);
 	gd->rend_data_ptr->visual_effects.array = (Visual_effect*)SDL_malloc(sizeof(Visual_effect) * MAX_VISUAL_EFFECTS_NUM);
-	if(gd->projectiles.array == NULL || gd->beings.array == NULL || gd->champions.array == NULL || gd->boxes.array == NULL || gd->beings.indices == NULL || gd->rend_data_ptr->visual_effects.array == NULL){SDL_Quit(); exit(1);}
+	if(gd->projectiles.array == NULL || gd->beings.array == NULL || gd->champions.array == NULL || gd->boxes.array == NULL || gd->beings.indices == NULL || gd->rend_data_ptr->visual_effects.array == NULL){exit(-1); exit(1);}
 	for(unsigned int i = 0U; i < MAX_BEINGS_NUM; ++i){
 		*(gd->beings.indices + i) = i;
 		(gd->beings.array + i)->main_indx = i;
@@ -172,7 +165,7 @@ static void SetGameData(Game_data* const gd){
 	SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 }
 
-static void ClearGameData(Game_data* const gd){
+void ClearGameData(Game_data* const gd){
 	DestroyBoxes(&gd->boxes);
 	DestroyBeings(&gd->beings);
     DestroyProjectiles(&gd->projectiles);
@@ -298,6 +291,7 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 	Box_element* elem = (gd->boxes.array + box_indx)->elements;
 	int element_type;
 	bool empty = true;
+	bool found_key = false;
 	while(1){
 		element_type = elem->type;
 		if(element_type == box_scroll){
@@ -312,6 +306,7 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 			human(gd)->coins += (int)elem->value;
 			elem->type = box_clear;
 		}else if(element_type == box_key){
+			found_key = true;
 			++gd->keys;
 			*(gd->keys_status + elem->value) = key_owned;
 			elem->type = box_clear;
@@ -330,6 +325,9 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 	}
 	if(empty){
 		DestroyBoxInArray(&gd->boxes, box_indx);
+	}
+	if(found_key){
+		SaveGame(gd);
 	}
 }
 
@@ -573,14 +571,21 @@ static int UpdateGame(Game_data* const gd){
 	return update_ok;
 }
 
-int ActivateMenuOption(const unsigned int option, Render_data* const rend_data){
+int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 	if(option == menu_p_continue){
-		SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 		return 0;
-	}else if(option == menu_p_save || option == menu_p_quit){
+	}else if(option == menu_p_load){
+		ClearGameData(gd);
+		LoadGame(gd);
+		return 0;
+	}else if(option == menu_p_save){
+		SaveGame(gd);
+		return event_quit_game;
+	}else if(option == menu_p_quit){
 		return event_quit_game;
 	}else if(option == menu_p_settings){
-		ToggleFullscreen(rend_data);
+		ToggleFullscreen(gd->rend_data_ptr);
 		return event_menu;
 	}else{
 		return event_menu;
@@ -689,4 +694,138 @@ void HordeAttack(Game_data* const gd, const int ticks_left){
 			point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
 		}while(point_indx1 != point_indx);
 	}
+}
+
+struct Save_data{
+	struct nums{
+		Uint8 champions;
+		Uint16 beings;
+		Uint16 projectiles;
+		Uint16 boxes;
+		Uint8 needed_keys;
+	}nums;
+	unsigned int flags;
+	Player champions[MAX_PLAYERS_NUM];
+	Being beings[MAX_BEINGS_NUM];
+	Projectile projectiles[MAX_PROJECTILES_NUM];
+	Uint64 plan[BIG_SEGMENTS_X];
+	Key_location key_locations[MAX_KEYS];
+	Shop shops[SHOPS_NUM];
+	Box boxes[BOXES_NUM];
+	Uint8 human_indx;
+	Uint8 keys;
+	int enemy_morale;
+	Uint8 keys_status[MAX_KEYS];
+	Uint8 effects_num;
+	Lasting_effect effects[MAX_GAME_EFFECTS];
+	union horde_data horde_data;
+	Uint64 seed;
+};
+
+void SaveGame(const Game_data* const gd){
+    SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
+    if(user == NULL){
+        exit(-1);
+    }
+    while(!SDL_StorageReady(user)){
+        SDL_Delay(1);
+    }
+	struct Save_data* save_data = (struct Save_data*)SDL_malloc(sizeof(struct Save_data));
+	save_data->nums = (struct nums){
+		gd->champions.num,
+		gd->beings.num,
+		gd->projectiles.num,
+		gd->boxes.num,
+		gd->needed_keys
+	};
+	save_data->flags = gd->flags;
+	SDL_memcpy(save_data->champions, gd->champions.array, sizeof(Player) * save_data->nums.champions);
+	for(unsigned int i = 0U; i < save_data->nums.beings; ++i){
+		*(save_data->beings + i) = *(gd->beings.array + *(gd->beings.indices + i));
+	}
+	SDL_memcpy(save_data->projectiles, gd->projectiles.array, sizeof(Projectile) * save_data->nums.projectiles);
+	SDL_memcpy(save_data->plan, gd->world.plan, sizeof(Uint64) * BIG_SEGMENTS_X);
+	SDL_memcpy(save_data->key_locations, gd->world.key_locations, sizeof(Key_location) * save_data->nums.needed_keys);
+	SDL_memcpy(save_data->shops, gd->world.shops, sizeof(Shop) * SHOPS_NUM);
+	SDL_memcpy(save_data->boxes, gd->boxes.array, sizeof(Box) * save_data->nums.boxes);
+	save_data->human_indx = gd->human_indx;
+	save_data->keys = gd->keys;
+	save_data->enemy_morale = gd->enemy_morale;
+	SDL_memcpy(save_data->keys_status, gd->keys_status, sizeof(Uint8) * save_data->nums.needed_keys);
+	save_data->effects_num = gd->effects_num;
+	SDL_memcpy(save_data->effects, gd->effects, sizeof(Lasting_effect) * MAX_GAME_EFFECTS);
+	if(gd->flags & gamef_horde_attack){
+		SDL_memcpy(save_data->horde_data.creation_points, gd->horde_data.creation_points, sizeof(SDL_FPoint) * HORDE_ATTACK_POINTS);
+	}else{
+		save_data->horde_data.ticks_from_attack = gd->horde_data.ticks_from_attack;
+	}
+	save_data->seed = gd->seed;
+    Uint64 save_len = sizeof(struct Save_data);
+    if(!SDL_WriteStorageFile(user, "save", save_data, save_len)){
+        exit(-1);
+    }
+	SDL_free(save_data);
+    SDL_CloseStorage(user);
+}
+
+void LoadGame(Game_data* const gd){
+    SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
+    if(user == NULL){
+        exit(-1);
+    }
+    while(!SDL_StorageReady(user)){
+        SDL_Delay(1);
+    }
+    Uint64 save_len = 0U;
+    if(SDL_GetStorageFileSize(user, "save", &save_len) && save_len > 0U){
+		struct Save_data* save_data = (struct Save_data*)SDL_malloc(save_len);
+        if(SDL_ReadStorageFile(user, "save", save_data, save_len)){
+            gd->seed = save_data->seed;
+			SetGameData(gd);
+			gd->champions.num = save_data->nums.champions;
+			gd->beings.num = save_data->nums.beings;
+			gd->projectiles.num = save_data->nums.projectiles;
+			gd->boxes.num = save_data->nums.boxes;
+			gd->needed_keys = save_data->nums.needed_keys;
+			gd->flags = save_data->flags;
+			SDL_memcpy(gd->champions.array, save_data->champions, sizeof(Player) * save_data->nums.champions);
+			for(unsigned int i = 0U; i < save_data->nums.champions; ++i){
+				(gd->champions.array + i)->segment = GetSegmentUnsafe(&gd->world, (gd->champions.array + i)->position.x, (gd->champions.array + i)->position.y);
+				(gd->champions.array + i)->last_seen_in = (gd->champions.array + i)->segment;
+			}
+			gd->human_indx = save_data->human_indx;
+			for(unsigned int i = 0U; i < save_data->nums.beings; ++i){
+				*(gd->beings.array + i) = *(save_data->beings + i);
+				(gd->beings.array + i)->target.player = human(gd);
+				(gd->beings.array + i)->main_indx = i;
+				Segment* seg = GetSegmentUnsafe(&gd->world, (gd->beings.array + i)->position.x, (gd->beings.array + i)->position.y);
+				if(seg){
+					AddBeingToSegment(seg, (gd->beings.array + i), IsAlly(gd->beings.array + i) ? &seg->ally_beings : &seg->beings);
+				}
+			}
+			SDL_memcpy(gd->projectiles.array, save_data->projectiles, sizeof(Projectile) * save_data->nums.projectiles);
+			SDL_memcpy(gd->world.plan, save_data->plan, sizeof(Uint64) * BIG_SEGMENTS_X);
+			gd->keys_status = (Uint8*)SDL_malloc(sizeof(Uint8) * gd->needed_keys);
+			gd->world.key_locations = (Key_location*)SDL_malloc(sizeof(Key_location) * gd->needed_keys);
+			SDL_memcpy(gd->world.key_locations, save_data->key_locations, sizeof(Key_location) * save_data->nums.needed_keys);
+			SDL_memcpy(gd->world.shops, save_data->shops, sizeof(Shop) * SHOPS_NUM);
+			SDL_memcpy(gd->boxes.array, save_data->boxes, sizeof(Box) * save_data->nums.boxes);
+			gd->keys = save_data->keys;
+			gd->enemy_morale = save_data->enemy_morale;
+			SDL_memcpy(gd->keys_status, save_data->keys_status, sizeof(Uint8) * save_data->nums.needed_keys);
+			gd->effects_num = save_data->effects_num;
+			SDL_memcpy(gd->effects, save_data->effects, sizeof(Lasting_effect) * MAX_GAME_EFFECTS);
+			if(gd->flags & gamef_horde_attack){
+				SDL_memcpy(gd->horde_data.creation_points, save_data->horde_data.creation_points, sizeof(SDL_FPoint) * HORDE_ATTACK_POINTS);
+			}else{
+				gd->horde_data.ticks_from_attack = save_data->horde_data.ticks_from_attack;
+			}
+        }else{
+        	exit(-1);
+        }
+        SDL_free(save_data);
+    }else{
+        exit(-1);
+    }
+    SDL_CloseStorage(user);
 }

@@ -10,7 +10,25 @@ int main(int argc, char* argv[]){
 		const int option = MainMenuLoop(&event, &rend_data);
 		if(option == menu_quit) break;
 		if(option == menu_start){
-			GameLoop(&event, &rend_data);
+			Game_data game_data;
+			game_data.rend_data_ptr = &rend_data;
+			game_data.ev_ptr = &event;
+			game_data.seed = (Uint64)(SDL_randf() * (UINT64_MAX - 1ULL)) + 1ULL;
+			SetGameData(&game_data);
+			StartNewLevel(&game_data);
+			DrawMap(&rend_data, &game_data.world);
+			SaveGame(&game_data);
+			GameLoop(&game_data);
+			ClearGameData(&game_data);
+			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
+		}else if(option == menu_load){
+			Game_data game_data;
+			game_data.rend_data_ptr = &rend_data;
+			game_data.ev_ptr = &event;
+			LoadGame(&game_data);
+			DrawMap(&rend_data, &game_data.world);
+			GameLoop(&game_data);
+			ClearGameData(&game_data);
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
 		}else if(option == menu_settings){
 			ToggleFullscreen(&rend_data);

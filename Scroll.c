@@ -77,11 +77,11 @@ void slow(Game_data* const gd){
 }
 
 void effect5(Game_data* const gd){
-    human(gd)->max_velocity *= 10.0F;
+    
 }
 
 void effect6(Game_data* const gd){
-    SetPlayerPosition(human(gd), gd->world.shops->location.x, gd->world.shops->location.y);
+    
 }
 
 void EffectEmpty(Game_data* const gd){}

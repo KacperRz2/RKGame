@@ -14,7 +14,7 @@ void DestroyWorld(World* const);
 Segment* GetSegmentUnsafe(const World* const, const float, const float);
 Segment* GetSegmentByIndxUnsafe(const World* const, const unsigned int, const unsigned int);
 Segment* GetSegmentByIndxSafe(const World* const, const unsigned int, const unsigned int);
-void StartLevel(Game_data* const);
+void StartNewLevel(Game_data* const);
 static SDL_FPoint GetStartPosition(World* const);
 float SegmentPositionX(const Segment* const);
 float SegmentPositionY(const Segment* const);

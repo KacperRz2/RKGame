@@ -34,14 +34,13 @@ extern inline bool IsVoidBigSeg(const Uint64* const wrld_plan, const unsigned in
 }
 
 void CreateWorld(Game_data* const gd){
+	SDL_srand(gd->seed);
 	bool world_plan_base[BIG_SEGMENTS_X][BIG_SEGMENTS_X] = WORLD_BASE;
 	int small_wordl_plan[SMALL_PLAN_SIZE][SMALL_PLAN_SIZE] = WORLD_SMALL_BASE;
 	World* const world = &gd->world;
 	for(unsigned int i = 0U; i < BIG_SEGMENTS_X; ++i){
 		*(world->plan + i) = 0x0;
 	}
-	Uint64 seed = 2ULL;
-	SDL_srand(seed);
 	SDL_Point portal0;
 	SDL_Point portal1;
 	SDL_Point door_position;
@@ -96,9 +95,6 @@ void CreateWorld(Game_data* const gd){
 	world->portalB.y = GetDoorPositionXorY(portal1.y);
 	world->door.x = GetDoorPositionXorY(door_position.x);
 	world->door.y = GetDoorPositionXorY(door_position.y);
-	// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "p0: %d:%d", portal0.x, portal0.y);
-	// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "p1: %d:%d", portal1.x, portal1.y);
-	// SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "d: %d:%d", door_position.x, door_position.y);
 	enum small_plan_field{
 		small_plan_null,
 		small_plan_unconnected,
@@ -318,6 +314,7 @@ void CreateWorld(Game_data* const gd){
 		}
 	}
 	PlaceShops(&gd->world);
+	SDL_srand(0ULL);
 }
 
 int SDLCALL compareBoxes(const void* a, const void* b)
@@ -425,7 +422,7 @@ static void FillShops(World* const wld){
 	}
 }
 
-void StartLevel(Game_data* const gd){
+void StartNewLevel(Game_data* const gd){
 	PlaceBoxes(gd);
 	FillBoxes(gd);
 	FillShops(&gd->world);

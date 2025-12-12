@@ -186,13 +186,14 @@ int ManageScrollsEventsService(SDL_Event* const e, Player* const pc, Render_data
 	return event_manage_scrolls;
 }
 
-int MenuEventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_data){
-	while(SDL_PollEvent(e)){
-		if(e->type == SDL_EVENT_KEY_DOWN){
-			switch(e->key.scancode){
+int MenuEventsService(Game_data* const gd){
+	Player* const pc = human(gd);
+	while(SDL_PollEvent(gd->ev_ptr)){
+		if(gd->ev_ptr->type == SDL_EVENT_KEY_DOWN){
+			switch(gd->ev_ptr->key.scancode){
 			case KEY_SELECT:
 			case SDL_SCANCODE_RETURN:
-				return ActivateMenuOption(pc->help_data.menu_position, rend_data);
+				return ActivateMenuOption(pc->help_data.menu_position, gd);
 				break;
 			case KEY_MOVE_BACK:
 			case SDL_SCANCODE_DOWN:
@@ -205,14 +206,14 @@ int MenuEventsService(SDL_Event* const e, Player* const pc, Render_data* const r
 			case SDL_SCANCODE_LEFT:
 				--pc->help_data.menu_position; break;
 			case SDL_SCANCODE_ESCAPE:
-				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+				SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 				return 0;
 			default: break;
 			}
-		}else if(e->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
-			return ActivateMenuOption(pc->help_data.menu_position, rend_data);
-		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
-			SetPointedOptionMouseSelection(rend_data, &pc->help_data.menu_position); break;
+		}else if(gd->ev_ptr->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+			return ActivateMenuOption(pc->help_data.menu_position, gd);
+		}else if(gd->ev_ptr->type == SDL_EVENT_MOUSE_MOTION){
+			SetPointedOptionMouseSelection(gd->rend_data_ptr, &pc->help_data.menu_position); break;
 		}
 	}
 	return event_menu;

@@ -276,6 +276,6 @@ struct Game_data{
 	}horde_data;
 	Render_data* rend_data_ptr;
 	SDL_Event* ev_ptr;
+	Uint64 seed;
 };
-// int a = sizeof(Segment);
 #endif

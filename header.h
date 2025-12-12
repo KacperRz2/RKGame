@@ -10,5 +10,6 @@
 #include <render.h>
 #include <function.h>
 #include <game.h>
+#include <World.h>
 
 #endif

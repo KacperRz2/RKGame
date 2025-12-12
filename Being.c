@@ -33,7 +33,7 @@ extern inline unsigned int GetRandomBeingId(){
     return being_warlock;
 }
 
-static inline void AddBeingToSegment(Segment* const seg, Being* const bg, Segment_beings* const bs){
+extern inline void AddBeingToSegment(Segment* const seg, Being* const bg, Segment_beings* const bs){
     bg->segment = seg;
     *(bs->beings_ind + bs->num) = bg->main_indx;
     bg->indx = bs->num++;
@@ -571,7 +571,7 @@ static inline void HaltBeing(Being* const b, const int time){
     b->status_ticks_left = -time;
 }
 
-static inline bool IsAlly(const Being* const b){
+extern inline bool IsAlly(const Being* const b){
     return TypeIsAlly(b->type_id);
 }
 
