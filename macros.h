@@ -156,9 +156,12 @@
 #define SHOP_ROWS                   10U
 #define SHOP_COLS                   20U
 #define SHOP_SIDE_COLS              7U
+#define SHOP_SCROLLS_COLS           3U
+#define FIRST_SHOP_ROW              2U
 #define SHOP_POSITIONS              (SHOP_ROWS * SHOP_COLS)
 #define MAX_MORALE                  0x4000
 #define MORALE_BREAK_DROP           0x2000
+#define SELL_DIVIDER                10
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -189,6 +192,24 @@
                                         1U,1U,1U,1U,1U,1U,1U,1U,1U,1U,\
                                         1U,1U,1U,1U,1U,1U,1U,1U,\
                                         0U\
+                                    }
+#define ITEMS_PRICES                {\
+                                        100,\
+                                        100,\
+                                        100,\
+                                        100,\
+                                        100,\
+                                        100,\
+                                        100,100,100,100,100,100,100,100,100,100,\
+                                        100,100,100,100,100,100,100,100,100,100,\
+                                        100,100,100,100,100,100,100,100,\
+                                        0,\
+                                        20,\
+                                        200,\
+                                        9999,\
+                                        500,\
+                                        1000,\
+                                        7000\
                                     }
 #define SCR_EFFECTS                 {\
                                         effect0,\
@@ -294,6 +315,8 @@
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
 #define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}//absorption, multipl, magic_multipl, unstability
 #define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.25F}
+#define PC_MAX_ARMOUR_II_ABS        750.0F
+#define PC_MAX_ARMOUR_II            {PC_MAX_ARMOUR_II_ABS, 0.25F, 0.25F, 0.125F}
 #define PROJECTILES_UPDATE_FUNC     {\
                                         UpdatePCProjectile,\
                                         UpdateHostileProjectile,\

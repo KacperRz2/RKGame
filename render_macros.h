@@ -38,9 +38,9 @@
 #define TX_ICONS_IN_ROW             8
 #define PORTRAIT_H                  ((float)(rend_data->window_h / 6))
 #define KEY_ICON_FRAME_Y            ((float)(rend_data->window_h / 6) + BAR_H * 2.0F)
-#define KEYS_NUM_X                  (ICON_X + BAR_H + FRAME_W * 2.0F + 4.0F)
+#define KEYS_NUM_X                  (ICON_X + BAR_H + FRAME_W * 2.0F)
 #define KEYS_NUM_Y                  (KEY_ICON_FRAME_Y + FRAME_W + 1.0F)
-#define COINS_NUM_Y                 (KEY_ICON_FRAME_Y + BAR_H * 1.25F + FRAME_W * 4.0F + 1.0F)
+#define COINS_NUM_Y                 (KEY_ICON_FRAME_Y + BAR_H + FRAME_W * 4.0F + 1.0F)
 #define SCROLLS_MANAG_ICON_SIZE     ((rend_data->viewfinder - FRAME_W) / (float)ICONS_IN_VIEWF_ROW - FRAME_W)
 #define SEGMENT_TX_SIZE             (SEGMENT_SIZE * 1.5F)
 #define MAX_UNSEEN_SEG              (pow2((unsigned int)((VIEWFINDER_SIZE * 1.4142135623730950488016887242097F) / SEGMENT_SIZE)))
@@ -194,6 +194,9 @@
 #define ALLY0_RGB_1                 RGB_MEDIUM_RANK
 #define PROJECTILE0_RGBA            ((Uint8[]){255, 112, 0, 255})
 #define PROJECTILE1_RGBA            ((Uint8[]){255, 255, 0, 255})
+#define MP_TEXT_RGB                 0U, 208U, 255U
+#define MP_COST_TEXT_RGB            255U, 0U, 127U
+#define WHITE_RGB                   255U, 255U, 255U
 #define DAMAGE_VIS_EFFECT(position) ((Visual_effect){\
                                         position,\
                                         (0x10000000ULL / FRAME_TIME),\
@@ -244,25 +247,39 @@
                                         tx_creation_point\
                                     })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
-#define TEST_TEXT                   {T,e,s,t,sp,t,e,k,s,t,dot,char_end}
-#define MENU_TEXT                   {N,a,c,i,ś,n,i,j,sp,S,P,A,C,E,char_end}
 #define HORDE_ALERT                 {H,o,r,d,a,exclam_m,char_end}
 #define MENU_TEXTS                  {\
-                                        (Uint8[]){U,s,t,a,w,i,e,n,i,a,char_end},\
-                                        (Uint8[]){C,o,f,n,i,j,sp,d,o,sp,p,u,n,k,t,u,sp,k,o,n,t,r,o,l,n,e,g,o,char_end},\
-                                        (Uint8[]){K,o,n,t,y,n,u,u,j,char_end},\
-                                        (Uint8[]){Z,a,p,i,s,z,sp,i,sp,w,y,j,d,ź,char_end},\
-                                        (Uint8[]){W,y,j,d,ź,char_end},\
+                                        (Uint8[]){U,s,t,a,w,i,e,n,i,a},\
+                                        (Uint8[]){C,o,f,n,i,j,sp,d,o,sp,p,u,n,k,t,u,sp,k,o,n,t,r,o,l,n,e,g,o},\
+                                        (Uint8[]){K,o,n,t,y,n,u,u,j},\
+                                        (Uint8[]){Z,a,p,i,s,z,sp,i,sp,w,y,j,d,ź},\
+                                        (Uint8[]){W,y,j,d,ź},\
                                     }
-#define MAIN_MENU_TEXTS                  {\
-                                        (Uint8[]){N,o,w,a,sp,g,r,a,char_end},\
-                                        (Uint8[]){W,c,z,y,t,a,j,sp,g,r,ę,char_end},\
-                                        (Uint8[]){U,s,t,a,w,i,e,n,i,a,char_end},\
-                                        (Uint8[]){A,u,t,o,r,z,y,char_end},\
-                                        (Uint8[]){W,y,j,ś,c,i,e,char_end},\
+#define MENU_TEXTS_SIZES       {\
+                                        10U,\
+                                        28U,\
+                                        9U,\
+                                        14U,\
+                                        5U,\
                                     }
-#define DEFEAT_TEXT                 {P,o,r,a,ż,k,a,char_end}
-#define VICTORY_TEXT                {S,u,k,c,e,s,exclam_m,char_end}
+#define MAIN_MENU_TEXTS             {\
+                                        (Uint8[]){N,o,w,a,sp,g,r,a},\
+                                        (Uint8[]){W,c,z,y,t,a,j,sp,g,r,ę},\
+                                        (Uint8[]){U,s,t,a,w,i,e,n,i,a},\
+                                        (Uint8[]){A,u,t,o,r,z,y},\
+                                        (Uint8[]){W,y,j,ś,c,i,e},\
+                                    }
+#define MAIN_MENU_TEXTS_SIZES       {\
+                                        8U,\
+                                        11U,\
+                                        10U,\
+                                        7U,\
+                                        7U,\
+                                    }
+#define DEFEAT_TEXT                 {P,o,r,a,ż,k,a}
+#define DEFEAT_TEXT_LEN             7U
+#define VICTORY_TEXT                {S,u,k,c,e,s,exclam_m}
+#define VICTORY_TEXT_LEN            7U
 
 
 #define TEXTURE_FILES_NAMES         {\

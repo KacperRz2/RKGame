@@ -17,8 +17,11 @@ static void InitScrolls(Player* const p){
 	*(p->scrolls + scroll_2) = 99U;
 	*(p->scrolls + scroll_3) = 99U;
 	*(p->scrolls + scroll_slow) = 99U;
-	for(unsigned int i = 5U; i < SCROLLS_NUM - 1U; ++i){
+	for(unsigned int i = 5U; i < SCROLLS_NUM / 2U; ++i){
 		*(p->scrolls + i) = 16U;
+	}
+	for(unsigned int i = SCROLLS_NUM / 2U; i < scroll_empty; ++i){
+		*(p->scrolls + i) = 0U;
 	}
 	*(p->scrolls + scroll_empty) = 1U;
 	*(p->scrolls_quick_access) = scroll_empty;
@@ -50,6 +53,7 @@ void CreatePlayer(Player* const pc, const float x, const float y){
 	pc->move_direction = 0.0F;
 	pc->velocity = 0.0F;
 	pc->max_velocity = PLAYER_VELOCITY;
+	pc->dodge_velocity_multipl = DODGE_VELOCITY_MULTIP;
 	pc->hit_points = PC_HP;
 	pc->fatigue_points = (int)(PC_FATIGUE * 0.9F);
 	pc->magic_points = PC_MAGIC;
@@ -139,7 +143,7 @@ static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){
 				if(!(pc->flags & tmp)){
 					pc->move_direction = pc->direction + SDL_PI_F;
 				}
-				pc->velocity = pc->max_velocity * DODGE_VELOCITY_MULTIP;
+				pc->velocity = pc->max_velocity * pc->dodge_velocity_multipl;
 			}else{
 				BlockPlayerFatigue(pc, PC_FAILURE_FATIG_BLOCK_TIME);
 				if(!(pc->flags & tmp)){
@@ -244,11 +248,11 @@ static inline Placement GetBladeLocation(Player* const pc){
 	};
 }
 
-static inline bool BladeHitsBeing(Blade* const bl, Being* const b, SDL_FPoint* const dangerous_points){
+static inline bool BladeHitsBeing(Blade* const bl, Being* const bg, SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
-		if(SDL_fabsf((dangerous_points + i)->x - b->position.x) < half(BeingSize(b)) && SDL_fabsf((dangerous_points + i)->y - b->position.y) < half(BeingSize(b))){
+		if(SDL_fabsf((dangerous_points + i)->x - bg->position.x) < half(BeingSize(bg)) && SDL_fabsf((dangerous_points + i)->y - bg->position.y) < half(BeingSize(bg))){
 			for(unsigned int j = bl->hits; j > 0U; --j){
-				if(*(bl->hit_targets + (j - 1U)) == b->main_indx){
+				if(*(bl->hit_targets + (j - 1U)) == bg->main_indx){
 					return false;
 				}
 			}
@@ -523,23 +527,23 @@ static inline void BlockPlayerArmourRegen(Player* const p, const int time){
 	}
 }
 
-static inline void PlayerGainArmour(Player* const p, const float perc){
-	if(p->armour.absorption < p->max_armour.absorption){
-		p->armour.absorption += p->max_armour.absorption * perc;
-		if(p->armour.absorption > p->max_armour.absorption){
-			p->armour.absorption = p->max_armour.absorption;
+static inline void PlayerGainArmour(Player* const pc, const float perc){
+	if(pc->armour.absorption < pc->max_armour.absorption){
+		pc->armour.absorption += pc->max_armour.absorption * perc;
+		if(pc->armour.absorption > pc->max_armour.absorption){
+			pc->armour.absorption = pc->max_armour.absorption;
 		}
 	}
-	if(p->armour.multipl > p->max_armour.multipl){
-		p->armour.multipl -= (1.0F - p->max_armour.multipl) * perc;
-		if(p->armour.multipl < p->max_armour.multipl){
-			p->armour.multipl = p->max_armour.multipl;
+	if(pc->armour.multipl > pc->max_armour.multipl){
+		pc->armour.multipl -= (1.0F - pc->max_armour.multipl) * perc;
+		if(pc->armour.multipl < pc->max_armour.multipl){
+			pc->armour.multipl = pc->max_armour.multipl;
 		}
 	}
-	if(p->armour.magic_multipl > p->max_armour.magic_multipl){
-		p->armour.magic_multipl -= (1.0F - p->max_armour.magic_multipl) * perc;
-		if(p->armour.magic_multipl < p->max_armour.magic_multipl){
-			p->armour.magic_multipl = p->max_armour.magic_multipl;
+	if(pc->armour.magic_multipl > pc->max_armour.magic_multipl){
+		pc->armour.magic_multipl -= (1.0F - pc->max_armour.magic_multipl) * perc;
+		if(pc->armour.magic_multipl < pc->max_armour.magic_multipl){
+			pc->armour.magic_multipl = pc->max_armour.magic_multipl;
 		}
 	}
 }

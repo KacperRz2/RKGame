@@ -493,13 +493,13 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, co
 	SDL_RenderTexture(rend_data->renderer, texture(tx_bar), NULL, &rectHP);
 	SDL_SetTextureColorMod(texture(tx_bar), 0U, 255U, 0U);
 	SDL_RenderTexture(rend_data->renderer, texture(tx_bar), NULL, &rectFP);
-	SDL_SetTextureColorMod(texture(tx_chars), 0U, 208U, 255U);
-	RenderInt(rend_data, MP_position.x + 4.0F, MP_position.y, MP_BAR_H, p->magic_points);
-	SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 127U);
-	RenderInt(rend_data, MP_position.x + 4.0F, MP_position.y + MP_BAR_H, MP_BAR_H, ScrollCost(p->selected_scroll));
-	SDL_SetTextureColorMod(texture(tx_chars), 255U, 255U, 255U);
-	RenderInt(rend_data, KEYS_NUM_X, KEYS_NUM_Y, BAR_H, gd->keys);
-	RenderInt(rend_data, KEYS_NUM_X, COINS_NUM_Y, half(BAR_H), p->coins);
+	SDL_SetTextureColorMod(texture(tx_chars), MP_TEXT_RGB);
+	RenderIntCentered(rend_data, MP_position.x, MP_position.y, MP_BAR_H, p->magic_points, BAR_W);
+	SDL_SetTextureColorMod(texture(tx_chars), MP_COST_TEXT_RGB);
+	RenderIntCentered(rend_data, MP_position.x, MP_position.y + MP_BAR_H, MP_BAR_H, ScrollCost(p->selected_scroll), BAR_W);
+	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
+	RenderIntCentered(rend_data, KEYS_NUM_X, KEYS_NUM_Y, BAR_H, gd->keys, BAR_W - BAR_H - FRAME_W * 2.0F);
+	RenderIntCentered(rend_data, KEYS_NUM_X, COINS_NUM_Y, BAR_H, p->coins, BAR_W - BAR_H - FRAME_W * 2.0F);
 	if(p->blade.charge != PC_BLADE_CHARGE_BASE){
 		const SDL_FRect rect_cha = {
 			half(rend_data->window_w) - half(PLAYER_SIZE),
@@ -527,6 +527,7 @@ void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_positi
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
 	const Uint8* texts[] = MAIN_MENU_TEXTS;
+	const unsigned int texts_chars_num[] = MAIN_MENU_TEXTS_SIZES;
 	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
 	const float text_height = icon_size * 0.5F;
 	SDL_FPoint dst_point_text = {
@@ -541,7 +542,7 @@ void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_positi
 		icon_size
 	};
 	for(unsigned int i = 0U; i < OPTIONS_NUM; ++i){
-		RenderText(rend_data, dst_point_text.x, dst_point_text.y, text_height, *(texts + i));
+		RenderTextCentered(rend_data, 0.0F, dst_point_text.y, text_height, *(texts + i), *(texts_chars_num + i), rend_data->viewfinder);
 		dst_point_text.y += shift;
 	}
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
@@ -1051,23 +1052,29 @@ static void RenderQuickScrolls(Render_data* const rend_data, const Player* const
 		Q_SCROLL_SIZE,
 		Q_SCROLL_SIZE
 	};
+	SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);
 	for(unsigned int i = 0U; i < 3U; ++i){
 		scroll_rect.x = RIGHT_AREA_X + FRAME_W * 1.5F;
 		for(unsigned int j = 0U; j < 3U; ++j){
-			SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){
-				(*(p->scrolls_quick_access + i * 3 + j) % TX_ICONS_IN_ROW) * ICON_TX_SIZE,
-				ICON_SCRL_0_Y + (*(p->scrolls_quick_access + i * 3 + j) / TX_ICONS_IN_ROW) * ICON_TX_SIZE,
-				ICON_TX_SIZE,
-				ICON_TX_SIZE
-			}, &scroll_rect);
-			SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);
+			const unsigned int scroll_id = *(p->scrolls_quick_access + i * 3 + j);
+			const int scrolls_num = *(p->scrolls + scroll_id);
+			const SDL_FRect src_rect = GetScrollTextureSrcRect(scroll_id);
+			if(scrolls_num < 1){
+				SDL_SetTextureAlphaMod(texture(tx_icons), 31U);
+				SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &scroll_rect);
+			}else{
+				SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
+				SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &scroll_rect);
+				SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
+				RenderIntFromRight(rend_data, scroll_rect.x + Q_SCROLL_SIZE - 1.0F, scroll_rect.y + Q_SCROLL_SIZE - 15.0F, 16.0F, scrolls_num);
+				SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);
+			}
 			RenderInt(rend_data, scroll_rect.x + 1.0F, scroll_rect.y - 1.0F, 16.0F, (i * 3 + j + 2) % 10);
-			SDL_SetTextureColorMod(texture(tx_chars), 255U, 255U, 255U);
-			RenderInt(rend_data, scroll_rect.x + 1.0F, scroll_rect.y + Q_SCROLL_SIZE - 15.0F, 16.0F, *(p->scrolls + *(p->scrolls_quick_access + i * 3 + j)));
 			scroll_rect.x += shift_scroll;
 		}
 		scroll_rect.y += shift_scroll;
 	}
+	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	for(unsigned int i = 0U; i < 9U; ++i){
 		if(p->selected_scroll == *(p->scrolls_quick_access + i)){
 			SDL_SetRenderDrawColor(rend_data->renderer, 255, 0, 0, 255);
@@ -1094,7 +1101,7 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 		icon_size
 	};
 	SDL_FPoint dst_point_scrolls_num = {
-		FRAME_W + 4.0F,
+		4.0F + icon_size,
 		icon_size * 1.75F + FRAME_W * 3.0F 
 	};
 	const float shift = icon_size + FRAME_W;
@@ -1118,15 +1125,19 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 	};
 	for(unsigned int i = 0U; i < ICONS_IN_VIEWF_ROW - 2U; ++i){
 		dst_rect.x = FRAME_W;
-		dst_point_scrolls_num.x = FRAME_W + 4.0F;
+		dst_point_scrolls_num.x = 4.0F + icon_size;
 		for(unsigned int j = 0U; j < ICONS_IN_VIEWF_ROW; ++j){
-			SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){
-				((i * ICONS_IN_VIEWF_ROW + j) % TX_ICONS_IN_ROW) * ICON_TX_SIZE,
-				ICON_SCRL_0_Y + ((i * ICONS_IN_VIEWF_ROW + j) / TX_ICONS_IN_ROW) * ICON_TX_SIZE,
-				ICON_TX_SIZE,
-				ICON_TX_SIZE
-			}, &dst_rect);
-			RenderInt(rend_data, dst_point_scrolls_num.x, dst_point_scrolls_num.y, scrolls_num_text_height, *(pc->scrolls + i * ICONS_IN_VIEWF_ROW + j));
+			const unsigned int scroll_id = i * ICONS_IN_VIEWF_ROW + j;
+			const int scrolls_num = *(pc->scrolls + scroll_id);
+			const SDL_FRect src_rect = GetScrollTextureSrcRect(scroll_id);
+			if(scrolls_num < 1){
+				SDL_SetTextureAlphaMod(texture(tx_icons), 31U);
+				SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &dst_rect);
+			}else{
+				SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
+				SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &dst_rect);
+				RenderIntFromRight(rend_data, dst_point_scrolls_num.x, dst_point_scrolls_num.y, scrolls_num_text_height, scrolls_num);
+			}
 			dst_rect.x += shift;
 			dst_point_scrolls_num.x += shift;
 		}
@@ -1141,8 +1152,8 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 		SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &quick_scroll_rect);
 		RenderInt(rend_data, quick_scroll_rect.x + 4.0F, quick_scroll_rect.y, scrolls_num_text_height, (i + 2) % 10);
 	}
-	SDL_SetTextureColorMod(texture(tx_menu_ptr), 255U, 255U, 255U);
-	SDL_SetTextureColorMod(texture(tx_chars), 255U, 255U, 255U);
+	SDL_SetTextureColorMod(texture(tx_menu_ptr), WHITE_RGB);
+	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
 	SDL_SetRenderDrawColor(rend_data->renderer, 255, 0, 0, 255);
 	SDL_RenderRect(rend_data->renderer, &selection_rect);
@@ -1152,6 +1163,7 @@ static void RenderMenu(Render_data* const rend_data, const Player* const pc){
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 127);
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	const Uint8* texts[] = MENU_TEXTS;
+	const unsigned int texts_chars_num[] = MENU_TEXTS_SIZES;
 	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
 	const float text_height = icon_size * 0.5F;
 	SDL_FPoint dst_point_text = {
@@ -1166,7 +1178,7 @@ static void RenderMenu(Render_data* const rend_data, const Player* const pc){
 		icon_size
 	};
 	for(unsigned int i = 0U; i < OPTIONS_NUM; ++i){
-		RenderText(rend_data, dst_point_text.x, dst_point_text.y, text_height, *(texts + i));
+		RenderTextCentered(rend_data, 0.0F, dst_point_text.y, text_height, *(texts + i), *(texts_chars_num + i), rend_data->viewfinder);
 		dst_point_text.y += shift;
 	}
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
@@ -1431,7 +1443,7 @@ static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, ch
 		RenderFrame(rend_data, tx_backgr1, frames + 1, FRAME_W);
 		SDL_SetTextureColorMod(tx_backgr1, 127U, 127U, 127U);
 		SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas, 0.0F, NULL, SDL_FLIP_VERTICAL);
-		SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
+		SDL_SetTextureColorMod(tx_backgr1, WHITE_RGB);
 		SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &icon_scr_rect, empty_areas);
 		icon_scr_rect.x += ICON_TX_SIZE;
 		frames->y += shift_bar;
@@ -1447,7 +1459,7 @@ static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, ch
 	empty_areas->y += BAR_H + FRAME_W * 3.0F;
 	icon_scr_rect.x = ICON_TX_SIZE * ic_coin;
 	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &icon_scr_rect, empty_areas);
-	SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
+	SDL_SetTextureColorMod(tx_backgr1, WHITE_RGB);
 	frames->y = KEY_ICON_FRAME_Y;
 	RenderFrame(rend_data, tx_backgr1, frames, FRAME_W);
 	RenderFrame(rend_data, tx_backgr1, frames + 6, FRAME_W);
@@ -1463,7 +1475,7 @@ static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, ch
 	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
 	(empty_areas + 2)->y += MP_BAR_H;
 	SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas + 2, 0.0F, NULL, SDL_FLIP_VERTICAL);
-	SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
+	SDL_SetTextureColorMod(tx_backgr1, WHITE_RGB);
 	icon_scr_rect.x = ICON_TX_SIZE * ic_mp;
 	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &icon_scr_rect, empty_areas + 1);
 	for(unsigned int i = 0U; i < 3U; ++i){
@@ -1473,7 +1485,7 @@ static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, ch
 			RenderFrame(rend_data, tx_backgr1, frames + 4, FRAME_W);
 			SDL_SetTextureColorMod(tx_backgr1, 127U, 127U, 127U);
 			SDL_RenderTextureRotated(rend_data->renderer, tx_backgr1, &FRAME_PART_0, empty_areas + 3, 0.0F, NULL, SDL_FLIP_VERTICAL);
-			SDL_SetTextureColorMod(tx_backgr1, 255U, 255U, 255U);
+			SDL_SetTextureColorMod(tx_backgr1, WHITE_RGB);
 			(frames + 4)->x += shift_scroll;
 			(empty_areas + 3)->x += shift_scroll;
 		}
@@ -1490,7 +1502,7 @@ static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, ch
 		rend_data->viewfinder_rect.w,
 		rend_data->viewfinder_rect.h
 	});
-	SDL_SetTextureColorMod(tx_backgr0, 255U, 255U, 255U);
+	SDL_SetTextureColorMod(tx_backgr0, WHITE_RGB);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(rend_data->renderer, &nesw_rect);
 	icon_scr_rect.x = ICON_TX_SIZE * ic_directions;
@@ -1547,9 +1559,9 @@ static inline unsigned int GetCharacterRow(const int character_num){
 }
 
 static void RenderText(Render_data* const rend_data, float x, const float y, const float size, const Uint8* char_nums){
+	const float size_factor = size / CHARS_ROW_HEIGHT;
 	do{
 		const SDL_FPoint x_and_width = GetCharacterXPositionAndWidth(*char_nums);
-		const float size_factor = size / CHARS_ROW_HEIGHT;
 		const float char_width = x_and_width.y * size_factor;
 		SDL_RenderTexture(rend_data->renderer, texture(tx_chars), &(SDL_FRect){
 			x_and_width.x,
@@ -1565,6 +1577,49 @@ static void RenderText(Render_data* const rend_data, float x, const float y, con
 		x += char_width + 1.0F;
 		++char_nums;
 	}while(*char_nums != char_end);
+}
+
+static void RenderTextWithKnownCharsXAndWidth(Render_data* const rend_data, float x, const float y, const float size_factor, const Uint8* const char_nums, const unsigned int chars_num, const SDL_FPoint* const chars_x_and_width){
+	for(unsigned int i = 0U; i < chars_num; ++i){
+		const SDL_FPoint x_and_width = *(chars_x_and_width + i);
+		const float char_width = x_and_width.y * size_factor;
+		SDL_RenderTexture(rend_data->renderer, texture(tx_chars), &(SDL_FRect){
+			x_and_width.x,
+			GetCharacterRow(*(char_nums + i)) * CHARS_ROW_HEIGHT,
+			x_and_width.y,
+			CHARS_ROW_HEIGHT
+		}, &(SDL_FRect){
+			x,
+			y,
+			char_width,
+			CHARS_ROW_HEIGHT * size_factor
+		});
+		x += char_width + 1.0F;
+	}
+}
+
+static void RenderTextCentered(Render_data* const rend_data, float x, const float y, const float size, const Uint8* char_nums, const unsigned int chars_num, const float space){
+	SDL_FPoint chars_x_and_width[chars_num];
+	float width = -1.0F;
+	const float size_factor = size / CHARS_ROW_HEIGHT;
+	for(unsigned int i = 0U; i < chars_num; ++i){
+		*(chars_x_and_width + i) = GetCharacterXPositionAndWidth(*(char_nums + i));
+		width += (chars_x_and_width + i)->y * size_factor + 1.0F;
+	}
+	x += half(space - width);
+	RenderTextWithKnownCharsXAndWidth(rend_data, x, y, size_factor, char_nums, chars_num, chars_x_and_width);
+}
+
+static void RenderTextFromRight(Render_data* const rend_data, float x, const float y, const float size, const Uint8* char_nums, const unsigned int chars_num){
+	SDL_FPoint chars_x_and_width[chars_num];
+	float width = -1.0F;
+	const float size_factor = size / CHARS_ROW_HEIGHT;
+	for(unsigned int i = 0U; i < chars_num; ++i){
+		*(chars_x_and_width + i) = GetCharacterXPositionAndWidth(*(char_nums + i));
+		width += (chars_x_and_width + i)->y * size_factor + 1.0F;
+	}
+	x -= width;
+	RenderTextWithKnownCharsXAndWidth(rend_data, x, y, size_factor, char_nums, chars_num, chars_x_and_width);
 }
 
 static void RenderInt(Render_data* const rend_data, const float x, const float y, const float size, int num){
@@ -1584,6 +1639,68 @@ static void RenderInt(Render_data* const rend_data, const float x, const float y
 	}
 	*(char_nums + text_len) = char_end;
 	RenderText(rend_data, x, y, size, char_nums);
+}
+
+static void RenderIntCentered(Render_data* const rend_data, const float x, const float y, const float size, int num, const float space){
+	const Uint8 cipher_nums[] = CIPHER_NUMS;
+	unsigned int text_len = 1U;
+	int tmp = 10;
+	while(num >= tmp){
+		++text_len;
+		tmp *= 10;
+	}
+	Uint8 char_nums[text_len];
+	for(unsigned int i = 0U; i < text_len; ++i){
+		tmp /= 10;
+		unsigned int cipher = num / tmp;
+		*(char_nums + i) = *(cipher_nums + cipher);
+		num %= tmp;
+	}
+	RenderTextCentered(rend_data, x, y, size, char_nums, text_len, space);
+}
+
+static void RenderSignedIntCentered(Render_data* const rend_data, const float x, const float y, const float size, int num, const float space){
+	const Uint8 cipher_nums[] = CIPHER_NUMS;
+	Uint8 sign;
+	if(num < 0){
+		num = -num;
+		sign = s_minus;
+	}else{
+		sign = s_plus;
+	}
+	unsigned int text_len = 2U;
+	int tmp = 10;
+	while(num >= tmp){
+		++text_len;
+		tmp *= 10;
+	}
+	Uint8 char_nums[text_len + 1U];
+	*(char_nums) = sign;
+	for(unsigned int i = 1U; i < text_len; ++i){
+		tmp /= 10;
+		unsigned int cipher = num / tmp;
+		*(char_nums + i) = *(cipher_nums + cipher);
+		num %= tmp;
+	}
+	RenderTextCentered(rend_data, x, y, size, char_nums, text_len, space);
+}
+
+static void RenderIntFromRight(Render_data* const rend_data, const float x, const float y, const float size, int num){
+	const Uint8 cipher_nums[] = CIPHER_NUMS;
+	unsigned int text_len = 1U;
+	int tmp = 10;
+	while(num >= tmp){
+		++text_len;
+		tmp *= 10;
+	}
+	Uint8 char_nums[text_len];
+	for(unsigned int i = 0U; i < text_len; ++i){
+		tmp /= 10;
+		unsigned int cipher = num / tmp;
+		*(char_nums + i) = *(cipher_nums + cipher);
+		num %= tmp;
+	}
+	RenderTextFromRight(rend_data, x, y, size, char_nums, text_len);
 }
 
 extern inline void ResetTextTextureAlpha(Render_data* const rend_data){
@@ -1616,7 +1733,11 @@ unsigned int GetMouseShopSelection(const Render_data* const rend_data){
 	const unsigned int col = (unsigned int)(mouse.x / width);
 	const unsigned int row = (unsigned int)(mouse.y / height);
 	if(col != SHOP_SIDE_COLS + 1U && col != SHOP_SIDE_COLS + 3U){
-		if((row < 2U || (row == SHOP_ROWS - 1U && col != SHOP_SIDE_COLS + 2U)) || (col == SHOP_SIDE_COLS || (col == SHOP_SIDE_COLS + 2U && row < SHOP_ROWS - 1U) || col == SHOP_SIDE_COLS + 4U)){
+		if(
+			(row < FIRST_SHOP_ROW || (row == SHOP_ROWS - 1U && col != SHOP_SIDE_COLS + 2U))
+		 	|| (col == SHOP_SIDE_COLS || (col == SHOP_SIDE_COLS + 2U && row < SHOP_ROWS - 1U) || col == SHOP_SIDE_COLS + 4U)
+			|| (row < FIRST_SHOP_ROW + 1U && col > SHOP_SIDE_COLS + 4U)
+		){
 			return SHOP_POSITIONS;
 		}
 	}
@@ -1667,8 +1788,8 @@ void RenderDefeatedScreen(Render_data* const rend_data){
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);
 	const float text_height = rend_data->window_h * 0.25F;
-	RenderText(rend_data, rend_data->window_w * 0.125F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])DEFEAT_TEXT);
-	SDL_SetTextureColorMod(texture(tx_chars), 255U, 255U, 255U);
+	RenderTextCentered(rend_data, 0.0F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])DEFEAT_TEXT, DEFEAT_TEXT_LEN, rend_data->window_w);
+	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	SDL_RenderPresent(rend_data->renderer);
 }
 
@@ -1677,8 +1798,8 @@ void RenderVictoryScreen(Render_data* const rend_data){
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetTextureColorMod(texture(tx_chars), 0U, 255U, 0U);
 	const float text_height = rend_data->window_h * 0.25F;
-	RenderText(rend_data, rend_data->window_w * 0.125F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])VICTORY_TEXT);
-	SDL_SetTextureColorMod(texture(tx_chars), 255U, 255U, 255U);
+	RenderTextCentered(rend_data, 0.0F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])VICTORY_TEXT, VICTORY_TEXT_LEN, rend_data->window_w);
+	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	SDL_RenderPresent(rend_data->renderer);
 }
 
@@ -1686,19 +1807,129 @@ extern inline void SetMouseBarrier(Render_data* const rend_data){
 	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
 }
 
-void RenderShop(Render_data* const rend_data, const Player* const pc, const Shop* const sh){
+static inline SDL_FRect GetScrollTextureSrcRect(unsigned int scroll_num){
+	return (SDL_FRect){
+		(scroll_num % TX_ICONS_IN_ROW) * ICON_TX_SIZE,
+		ICON_SCRL_0_Y + (scroll_num / TX_ICONS_IN_ROW) * ICON_TX_SIZE,
+		ICON_TX_SIZE,
+		ICON_TX_SIZE
+	};
+}
+
+static void RenderShopElement(Render_data* const rend_data, const float x, const float y, const float size, const int price, const unsigned int texture_num, const SDL_FRect* const src_rect){
+	const float texture_x = x + size * 0x1.0p-4F;
+	const float texture_size = size * 0x7.0p-3F;
+	const float text_y = y + size * 0x3.0p-2F;
+	SDL_RenderTexture(rend_data->renderer, texture(texture_num), src_rect, &(SDL_FRect){texture_x, y, texture_size, texture_size});
+	RenderIntCentered(rend_data, x, text_y, size * 0x1.0p-2F, price, size);
+}
+
+void RenderShop(Render_data* const rend_data, const Player* const pc, const Shop* const sh, const Uint8* const items_to_sell, const unsigned int items_to_sell_num, const Uint8* const items_to_get, const unsigned int items_to_get_num, const int profit){
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
+	const float width = (float)rend_data->window_w / SHOP_COLS;
+	const float height = (float)rend_data->window_h / SHOP_ROWS;
+	for(unsigned int i = 0U; i < scroll_empty; ++i){
+		if(*(pc->scrolls + i) > 0U){
+			SDL_FRect src_rect = GetScrollTextureSrcRect(i);
+			RenderShopElement(rend_data, width * (0.5F + (i % SHOP_SIDE_COLS)), height * ((i / SHOP_SIDE_COLS) + FIRST_SHOP_ROW), width, ItemPrice(i) / SELL_DIVIDER, tx_icons, &src_rect);
+		}
+	}
+	for(unsigned int i = 0U; i < items_to_sell_num; ++i){
+		SDL_FRect src_rect = GetScrollTextureSrcRect(*(items_to_sell + i));
+		RenderShopElement(rend_data, width * (0.5F + SHOP_SIDE_COLS + 1.0F), height * i, width, ItemPrice(*(items_to_sell + i)) / SELL_DIVIDER, tx_icons, &src_rect);
+	}
+	for(unsigned int i = 0U; i < items_to_get_num; ++i){
+		if(*(items_to_get + i) < shop_item_invalid){
+			SDL_FRect src_rect = GetScrollTextureSrcRect(*(items_to_get + i));
+			RenderShopElement(rend_data, width * (0.5F + SHOP_SIDE_COLS + 3.0F), height * i, width, ItemPrice(*(items_to_get + i)), tx_icons, &src_rect);
+		}else{
+			RenderShopElement(rend_data, width * (0.5F + SHOP_SIDE_COLS + 3.0F), height * i, width, ItemPrice(*(items_to_get + i)), tx_icon, NULL);
+		}
+	}
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){ICON_TX_SIZE * ic_mp, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+		width * 0.5F,
+		height * (FIRST_SHOP_ROW - 1.0F),
+		width,
+		width
+	});
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){ICON_TX_SIZE * ic_coin, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+		width * (0.5F + SHOP_SIDE_COLS - 3.0F),
+		height * (FIRST_SHOP_ROW - 1.0F),
+		width,
+		width
+	});
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){ICON_TX_SIZE * ic_mp, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
+		height * FIRST_SHOP_ROW,
+		width,
+		width
+	});
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){ICON_TX_SIZE * ic_key, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
+		height * FIRST_SHOP_ROW,
+		width,
+		width
+	});
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icon), NULL, &(SDL_FRect){
+		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS + 1.0F)),
+		height * FIRST_SHOP_ROW,
+		width,
+		width
+	});
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icon), NULL, &(SDL_FRect){
+		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
+		height * (FIRST_SHOP_ROW + 4.0F),
+		width,
+		width
+	});
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icon), NULL, &(SDL_FRect){
+		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
+		height * (FIRST_SHOP_ROW + 4.0F),
+		width,
+		width
+	});
+	SDL_SetTextureColorMod(texture(tx_chars), MP_TEXT_RGB);
+	RenderIntCentered(rend_data, width * 1.5F, height * (FIRST_SHOP_ROW - 1.0F) + width * 0.25F, half(width), pc->magic_points, width * 2.0F);
+	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
+	RenderIntCentered(rend_data, width * (0.5F + SHOP_SIDE_COLS - 2.0F), height * (FIRST_SHOP_ROW - 1.0F) + width * 0.25F, half(width), pc->coins, width * 2.0F);
+	if(profit){
+		RenderSignedIntCentered(rend_data, 0.0F, height * (SHOP_ROWS - 1.0F), height, profit, rend_data->window_w);
+	}else if(items_to_sell_num){
+		RenderTextCentered(rend_data, 0.0F, height * (SHOP_ROWS - 1.0F), height, (Uint8[]){O,K}, 2U, rend_data->window_w);
+	}
+	for(unsigned int i = 0U; i < SHOP_SCROLLS_NUM; ++i){
+		if(*(sh->scrolls + i) < scroll_empty){
+			SDL_FRect src_rect = GetScrollTextureSrcRect(*(sh->scrolls + i));
+			RenderShopElement(rend_data, width * (0.5F + SHOP_COLS - SHOP_SCROLLS_COLS - 1.0F + (i % SHOP_SCROLLS_COLS)), height * (FIRST_SHOP_ROW + 1.0F + (i / SHOP_SCROLLS_COLS)), width, ItemPrice(*(sh->scrolls + i)), tx_icons, &src_rect);
+		}
+	}
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_mp10), tx_icon, NULL);
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 2.0F), width, ItemPrice(shop_item_mp100), tx_icon, NULL);
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_key), tx_icon, NULL);
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS + 1.0F)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_key_location), tx_icon, NULL);
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 5.0F), width, ItemPrice(shop_item_armour), tx_icon, NULL);
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)), height * (FIRST_SHOP_ROW + 5.0F), width, ItemPrice(shop_item_dodge_speed), tx_icon, NULL);
 	if(pc->help_data.menu_position < SHOP_POSITIONS){
-		const float width = (float)rend_data->window_w / SHOP_COLS;
-		const float height = (float)rend_data->window_h / SHOP_ROWS;
-		const SDL_FRect menu_ptr_rect = {
-			width * (0.5F + (pc->help_data.menu_position % SHOP_COLS)),
-			height * (pc->help_data.menu_position / SHOP_COLS),
-			width,
-			height
-		};
-		SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
+		const unsigned int row = pc->help_data.menu_position / SHOP_COLS;
+		if(row == SHOP_ROWS - 1U){
+			if(profit || items_to_sell_num){
+				SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &(SDL_FRect){
+					width * (0.5F + SHOP_SIDE_COLS + 1U),
+					height * row,
+					width * 3.0F,
+					height
+				});
+			}
+		}else{
+			const SDL_FRect menu_ptr_rect = {
+				width * (0.5F + (pc->help_data.menu_position % SHOP_COLS)),
+				height * row,
+				width,
+				width
+			};
+			SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
+		}
 	}
 	SDL_RenderPresent(rend_data->renderer);
 }

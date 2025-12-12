@@ -219,6 +219,7 @@ struct Player{
 	float move_direction;
 	float velocity;
 	float max_velocity;
+	float dodge_velocity_multipl;
 	int hit_points;
 	int fatigue_points;
 	int magic_points;

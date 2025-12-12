@@ -10,6 +10,7 @@
 #include <Being.h>
 #include <game.h>
 #include <function.h>
+#include <Scroll.h>
 
 static inline void PopulateBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){
 	if(IsVoidBigSeg(gd->world.plan, x, y) || IsInPopulatedBigSeg(gd->world.plan, x, y)){
@@ -372,6 +373,33 @@ static int GetNearbyShopIndx(Game_data* const gd){
 	return -1;
 }
 
+static void AddScrollToShop(Shop* const sh, const unsigned int scroll_id){
+	for(unsigned int i = 0U; i < SHOP_SCROLLS_NUM; ++i){
+		if(*(sh->scrolls + i) == scroll_empty){
+			*(sh->scrolls + i) = scroll_id;
+			return;
+		}
+	}
+}
+
+static inline bool ItemNotChosen(const unsigned int item, const Uint8* const items, const unsigned int items_num){
+	for(unsigned int i = 0U; i < items_num; ++i){
+		if(*(items + i) == item){
+			return false;
+		}
+	}
+	return true;
+}
+
+static inline bool IsUnknowKey(const Game_data* const gd){
+	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
+		if(*(gd->keys_status + i) == key_location_unknown){
+			return true;
+		}
+	}
+	return false;
+}
+
 static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int shop_indx){
 	Render_data* const rend_data = gd->rend_data_ptr;
 	SDL_SetWindowRelativeMouseMode(rend_data->window, false);
@@ -381,14 +409,122 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 	unsigned int items_to_sell_num = 0U;
 	Uint8 items_to_get[MAX_ITEMS_TO_SELL];
 	unsigned int items_to_get_num = 0U;
+	int profit = 0;
 	pc->help_data.menu_position = SHOP_POSITIONS;
     while(option != -1){
-        RenderShop(rend_data, pc, gd->world.shops + shop_indx);
-        if((option = ShopEventsService(gd->ev_ptr, pc, rend_data)) > 0){
-			SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "s:%u", pc->help_data.menu_position);
+        RenderShop(rend_data, pc, gd->world.shops + shop_indx, items_to_sell, items_to_sell_num, items_to_get, items_to_get_num, profit);
+        if((option = ShopEventsService(gd->ev_ptr, pc, rend_data)) > 0 && pc->help_data.menu_position < SHOP_POSITIONS){
+			const unsigned int col = pc->help_data.menu_position % SHOP_COLS;
+			const unsigned int row = pc->help_data.menu_position / SHOP_COLS;
+			if(col < SHOP_SIDE_COLS && row >= FIRST_SHOP_ROW){
+				if(items_to_sell_num < MAX_ITEMS_TO_SELL){
+					const unsigned int item_num = col + (row - FIRST_SHOP_ROW) * SHOP_SIDE_COLS;
+					if(item_num < scroll_empty && *(pc->scrolls + item_num) > 0U){
+						*(items_to_sell + items_to_sell_num++) = item_num;
+						--(*(pc->scrolls + item_num));
+						profit += ItemPrice(item_num) / SELL_DIVIDER;
+					}
+				}
+			}else if(row == SHOP_ROWS - 1U && pc->coins >= -profit){
+				items_to_sell_num = 0U;
+				for(unsigned int i = 0U; i < items_to_get_num; ++i){
+					const unsigned int item_num = *(items_to_get + i);
+					if(item_num < shop_item_invalid){
+						++(*(pc->scrolls + item_num));
+					}else if(item_num == shop_item_mp10){
+						pc->magic_points += 10;
+					}else if(item_num == shop_item_mp100){
+						pc->magic_points += 100;
+					}else if(item_num == shop_item_key){
+						++gd->keys;
+					}else if(item_num == shop_item_key_location){
+						const unsigned int key_indx = SDL_rand(gd->needed_keys);
+						if(*(gd->keys_status + key_indx) == key_location_unknown){
+							*(gd->keys_status + key_indx) = key_location_known;
+						}else{
+							unsigned int key_indx1 = (key_indx + 1U) % gd->needed_keys;
+							do{
+								if(*(gd->keys_status + key_indx1) == key_location_unknown){
+									*(gd->keys_status + key_indx1) = key_location_known;
+									break;
+								}
+								key_indx1 = (key_indx1 + 1U) % gd->needed_keys;
+							}while(key_indx1 != key_indx);
+						}
+					}else if(item_num == shop_item_armour){
+						pc->max_armour = (Armour)PC_MAX_ARMOUR_II;
+					}else if(item_num == shop_item_dodge_speed){
+						pc->dodge_velocity_multipl = PC_DODGE_VELOCITY * 2.0F / PLAYER_VELOCITY;
+					}
+				}
+				items_to_get_num = 0U;
+				pc->coins += profit;
+				profit = 0;
+			}else if(col == SHOP_SIDE_COLS + 1U){
+				const unsigned int item_num = *(items_to_sell + row);
+				if(items_to_sell_num > row){
+					++(*(pc->scrolls + item_num));
+					*(items_to_sell + row) = *(items_to_sell + --items_to_sell_num);
+					profit -= ItemPrice(item_num) / SELL_DIVIDER;
+				}
+			}else if(col > SHOP_COLS - SHOP_SCROLLS_COLS - 2U){
+				if(items_to_get_num < MAX_ITEMS_TO_SELL){
+					const unsigned int indx = col - (SHOP_COLS - SHOP_SCROLLS_COLS - 1U) + (row - FIRST_SHOP_ROW - 1U) * SHOP_SCROLLS_COLS;
+					const unsigned int item_num = *((gd->world.shops + shop_indx)->scrolls + indx);
+					if(item_num < scroll_empty){
+						*(items_to_get + items_to_get_num++) = item_num;
+						profit -= ItemPrice(item_num);
+						*((gd->world.shops + shop_indx)->scrolls + indx) = scroll_empty;
+					}
+				}
+			}else if(col == SHOP_SIDE_COLS + 3U){
+				const unsigned int item_num = *(items_to_get + row);
+				if(items_to_get_num > row){
+					*(items_to_get + row) = *(items_to_get + --items_to_get_num);
+					profit += ItemPrice(item_num);
+					if(item_num < shop_item_invalid){
+						AddScrollToShop(gd->world.shops + shop_indx, item_num);
+					}
+				}
+			}else if(items_to_get_num < MAX_ITEMS_TO_SELL){
+				if(row == FIRST_SHOP_ROW + 1U){
+					if(col == SHOP_COLS - SHOP_SIDE_COLS - 1U){
+						*(items_to_get + items_to_get_num++) = shop_item_mp10;
+						profit -= ItemPrice(shop_item_mp10);
+					}else if(col == SHOP_COLS - SHOP_SIDE_COLS && gd->keys < gd->needed_keys && ItemNotChosen(shop_item_key, items_to_get, items_to_get_num)){
+						*(items_to_get + items_to_get_num++) = shop_item_key;
+						profit -= ItemPrice(shop_item_key);
+					}else if(col == SHOP_COLS - SHOP_SIDE_COLS + 1U && ItemNotChosen(shop_item_key_location, items_to_get, items_to_get_num) && gd->keys < gd->needed_keys && IsUnknowKey(gd)){
+						*(items_to_get + items_to_get_num++) = shop_item_key_location;
+						profit -= ItemPrice(shop_item_key_location);
+					}
+				}else if(row == FIRST_SHOP_ROW + 2U && col == SHOP_COLS - SHOP_SIDE_COLS - 1U){
+					*(items_to_get + items_to_get_num++) = shop_item_mp100;
+					profit -= ItemPrice(shop_item_mp100);
+				}else if(row == FIRST_SHOP_ROW + 5U){
+					if(col == SHOP_COLS - SHOP_SIDE_COLS - 1U && pc->max_armour.absorption < PC_MAX_ARMOUR_II_ABS && ItemNotChosen(shop_item_armour, items_to_get, items_to_get_num)){
+						*(items_to_get + items_to_get_num++) = shop_item_armour;
+						profit -= ItemPrice(shop_item_armour);
+					}else if(col == SHOP_COLS - SHOP_SIDE_COLS && pc->dodge_velocity_multipl < PC_DODGE_VELOCITY * 2.0F / PLAYER_VELOCITY && ItemNotChosen(shop_item_dodge_speed, items_to_get, items_to_get_num)){
+						*(items_to_get + items_to_get_num++) = shop_item_dodge_speed;
+						profit -= ItemPrice(shop_item_dodge_speed);
+					}
+				}
+			}
 		}
         SDL_Delay(FRAME_TIME_MS);
     }
+	for(unsigned int i = 0U; i < items_to_sell_num; ++i){
+		const unsigned int item_num = *(items_to_sell + i);
+		++(*(pc->scrolls + item_num));
+	}
+	for(unsigned int i = 0U; i < items_to_get_num; ++i){
+		const unsigned int item_num = *(items_to_get + i);
+		if(item_num < shop_item_invalid){
+			AddScrollToShop(gd->world.shops + shop_indx, item_num);
+		}
+	}
+	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
 	SDL_SetWindowRelativeMouseMode(rend_data->window, true);
 	SetMouseBarrier(rend_data);
 }
@@ -449,6 +585,11 @@ int ActivateMenuOption(const unsigned int option, Render_data* const rend_data){
 	}else{
 		return event_menu;
 	}
+}
+
+extern inline int ItemPrice(const unsigned int item){
+    const int prices[] = ITEMS_PRICES;
+    return *(prices + item);
 }
 
 static inline void UpdateEffects(Game_data* const gd){

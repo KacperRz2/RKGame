@@ -417,9 +417,18 @@ extern inline Segment* GetSegmentByIndxSafe(const World* const wld, const unsign
 	return *(*(wld->segments + c) + r);
 }
 
+static void FillShops(World* const wld){
+	for(unsigned int i = 0U; i < SHOPS_NUM; ++i){
+		for(unsigned int j = 0U; j < SHOP_SCROLLS_NUM; ++j){
+			*((wld->shops + i)->scrolls + j) = GetRandomScroll();
+		}
+	}
+}
+
 void StartLevel(Game_data* const gd){
 	PlaceBoxes(gd);
 	FillBoxes(gd);
+	FillShops(&gd->world);
 	gd->keys_status = (Uint8*)SDL_malloc(sizeof(Uint8) * gd->needed_keys);
 	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
 		*(gd->keys_status + i) = key_location_unknown;

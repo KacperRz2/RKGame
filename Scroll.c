@@ -8,7 +8,6 @@
 #include <Player.h>
 #include <World.h>
 
-
 extern inline int ScrollCost(const unsigned int scroll_id){
     const int costs[] = SCR_COSTS;
     return *(costs + scroll_id);

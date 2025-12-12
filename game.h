@@ -22,9 +22,10 @@ int CalculateDamage(const Impact* const, const Armour* const);
 float CalculateStunPower(const Impact* const, const Armour* const);
 static int UpdateGame(Game_data* const);
 int ActivateMenuOption(const unsigned int, Render_data* const);
-static void UpdateEffects(Game_data* const);
+int ItemPrice(const unsigned int);
 static SDL_FPoint GetBeingCreationPoint(Game_data* const, const float);
 
+static void UpdateEffects(Game_data* const);
 int HasEffect(Lasting_effect* const, const unsigned int, const unsigned int);
 void AddLastingEffect(Lasting_effect* const, const Lasting_effect, const int);
 void RemoveLastingEffect(Lasting_effect* const, const int, const int);

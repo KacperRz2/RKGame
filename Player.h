@@ -32,6 +32,7 @@ static void UpdatePlayerHitPoints(Player* const);
 static void BlockPlayerFatigue(Player* const, const int);
 static void BlockPlayerArmourRegen(Player* const, const int);
 static void PlayerGainArmour(Player* const, const float);
+void PlayerGainMaxArmour(Player* const, const float);
 void UpdatePlayers(Game_data* const);
 void UpdatePlayersEffects(Game_data* const);
 static void UpdateCPUPlayerFlags(Game_data* const, const unsigned int);

@@ -61,7 +61,11 @@ static void RenderPortrait(Render_data* const, SDL_Texture* const);
 static SDL_FPoint GetCharacterXPositionAndWidth(const int);
 static unsigned int GetCharacterRow(const int);
 static void RenderText(Render_data* const, float, const float, const float, const Uint8*);
+static void RenderTextCentered(Render_data* const, float, const float, const float, const Uint8*, const unsigned int, const float);
 static void RenderInt(Render_data* const, const float, const float, const float, int);
+static void RenderIntCentered(Render_data* const, const float, const float, const float, int, const float);
+static void RenderTextFromRight(Render_data* const, float, const float, const float, const Uint8*, const unsigned int);
+static void RenderIntFromRight(Render_data* const, const float, const float, const float, int);
 void ResetTextTextureAlpha(Render_data* const);
 void SetSelectetScrollMouseSelection(const Render_data* const, Player* const);
 void SetPointedScrollMouseSelection(const Render_data* const, Player* const);
@@ -72,7 +76,8 @@ static int GetMouseMenuPositionNum(const Render_data* const);
 void RenderDefeatedScreen(Render_data* const);
 void RenderVictoryScreen(Render_data* const);
 void SetMouseBarrier(Render_data* const);
-void RenderShop(Render_data* const, const Player* const, const Shop* const);
+static SDL_FRect GetScrollTextureSrcRect(unsigned int);
+void RenderShop(Render_data* const, const Player* const, const Shop* const, const Uint8* const, const unsigned int, const Uint8* const, const unsigned int, const int);
 void ToggleFullscreen(Render_data* const);
 
 #endif

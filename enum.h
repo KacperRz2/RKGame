@@ -152,6 +152,16 @@ enum game_update{
     update_shop
 };
 
+enum shop_item{
+    shop_item_invalid = scroll_empty,
+    shop_item_mp10,
+    shop_item_mp100,
+    shop_item_key,
+    shop_item_key_location,
+    shop_item_armour,
+    shop_item_dodge_speed
+};
+
 enum character{
     Ż,Ź,Ś,Ć,s0,Ń,Ó,J,Q,s1,Z,s2,Ą,L,
     Ę,Ł,S,C,D,E,s3,s4,j,T,s5,s6,s7,s8,f,B,s9,
@@ -159,7 +169,7 @@ enum character{
     h,l,I,M,O,P,R,Y,s14,ł,n1,n2,n6,n7,a,
     k,A,F,K,X,ź,ż,n0,n4,n5,n9,d,ń,ć,ó,i,
     ś,q,g,p,y,ą,ę,s15,t,z,m,n,o,r,s,v,w,
-    c,e,u,x,s16,s17,s18,s19,s20,s21,s22,s23,s24,s25,s26,s27,s28,s29,sp,
+    c,e,u,x,s16,s17,s_plus,s19,s20,s21,s22,s23,s24,s25,s_minus,s27,s28,s29,sp,
     char_end
 };
 
