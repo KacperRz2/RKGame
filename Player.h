@@ -49,5 +49,6 @@ int PlayerHasEffect(Player* const, const int);
 void SlowPlayer(Game_data* const, Player* const, const int);
 void PlayerHPRegeneration(Game_data* const, Player* const, const int);
 void PlayerWeakness(Game_data* const, Player* const, const int);
+void PlayerDodge(Game_data* const, Player* const, const int);
 
 #endif

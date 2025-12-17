@@ -170,7 +170,7 @@ static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const gd){
 	MoveProjectile(pr);
 	for(unsigned int i = 0U; i < gd->champions.num; ++i){
 		Player* const pc = gd->champions.array + i;
-		if(pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
+		if(!(pc->flags & dodge_time) && pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
 			if(pc->flags & block && (SineUnsafe(pc->direction) * pr->shift_per_tick.x) + (-CosiUnsafe(pc->direction) * pr->shift_per_tick.y) <= 0){
 				GetShiftFromAngle(pc->direction, PROJECTILE_VELOCITY, &pr->shift_per_tick.x, &pr->shift_per_tick.y);
 			}else{
@@ -191,7 +191,7 @@ static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const gd){
 
 static inline bool ProjectileHitsPlayer(Projectile* const pr, Game_data* const gd, const unsigned int pc_indx){
 	Player* const pc = gd->champions.array + pc_indx;
-	if(pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
+	if(!(pc->flags & dodge_time) && pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
 		if(pc->flags & block && (SineUnsafe(pc->direction) * pr->shift_per_tick.x) + (-CosiUnsafe(pc->direction) * pr->shift_per_tick.y) <= 0){
 			HitBarrier(pc, &pr->data.basic.impact);
 		}else{

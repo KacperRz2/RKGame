@@ -15,7 +15,8 @@ enum control{
     range_mode = 1 << 10,
     stunned = 1 << 11,
     map_look = 1 << 12,
-    tmp = 1 << 13
+    dodge_time = 1 << 13,
+    tmp = 1 << 14
 };
 
 enum being_status{
@@ -95,6 +96,7 @@ enum pc_effect{
     pc_effect_slow,
     pc_effect_hpregen,
     pc_effect_weak,
+    pc_effect_dodge,
     pc_no_effect
 };
 

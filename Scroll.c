@@ -40,7 +40,7 @@ void effect0(Game_data* const gd){
 }
 
 void effect1(Game_data* const gd){
-    AddPlayerEffect(human(gd), (Lasting_effect){pc_effect_hpregen, HP_REGEN_TICKS});
+    AddOrUpdatePlayerEffect(human(gd), (Lasting_effect){pc_effect_hpregen, HP_REGEN_TICKS});
 }
 
 void effect2(Game_data* const gd){
@@ -81,7 +81,7 @@ void effect5(Game_data* const gd){
 }
 
 void effect6(Game_data* const gd){
-    
+    SetPlayerPosition(human(gd), gd->world.shops->location.x, gd->world.shops->location.y);
 }
 
 void EffectEmpty(Game_data* const gd){}

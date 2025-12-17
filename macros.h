@@ -67,7 +67,7 @@
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       0x3000
+#define PC_HP                       0x800
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    0x10
 #define PC_M_MAGIC                  0x10000000
@@ -162,6 +162,7 @@
 #define MAX_MORALE                  0x4000
 #define MORALE_BREAK_DROP           0x2000
 #define SELL_DIVIDER                10
+#define DODGE_EFFECT_TICKS          64
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -236,7 +237,8 @@
 #define PLAYER_LASTING_EFFECTS      {\
                                         SlowPlayer,\
                                         PlayerHPRegeneration,\
-                                        PlayerWeakness\
+                                        PlayerWeakness,\
+                                        PlayerDodge\
                                     }
 #define BEING_TYPES                 {\
                                         {\
@@ -328,23 +330,23 @@
 #define PC_BLADE_BASE_PLCMNT        {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_PC}
 #define PC_BLADE_FRAMES0	        {\
                                         {{16.0F, -8.0F}, SDL_PI_F * 0.55F},\
-                                        {{6.0F, 8.0F}, SDL_PI_F * 0.25F},\
-                                        {{-4.0F, 10.0F}, 0.0F},\
-                                        {{-4.0F, 10.0F}, SDL_PI_F * -0.416F},\
+                                        {{20.0F, 12.0F}, SDL_PI_F * 0.25F},\
+                                        {{-4.0F, 24.0F}, 0.0F},\
+                                        {{-16.0F, 20.0F}, SDL_PI_F * -0.416F},\
                                         {{-14.0F, 0.0F}, SDL_PI_F * -0.55F}\
                                     }
 #define PC_BLADE_FRAMES1	        {\
                                         {{-14.0F, 0.0F}, SDL_PI_F * -0.65F},\
-                                        {{-4.0F, 10.0F}, SDL_PI_F * -0.38F},\
-                                        {{6.0F, 8.0F}, SDL_PI_F * -0.138F},\
-                                        {{16.0F, -8.0F}, SDL_PI_F * 0.45F},\
+                                        {{-16.0F, 26.0F}, SDL_PI_F * -0.38F},\
+                                        {{12.0F, 24.0F}, SDL_PI_F * -0.138F},\
+                                        {{20.0F, -8.0F}, SDL_PI_F * 0.45F},\
                                         {{16.0F, -8.0F}, SDL_PI_F * 0.55F}\
                                     }
 #define PC_BLADE_FRAMES2	        {\
-                                        {{16.0F, -8.0F}, SDL_PI_F * 0.45F},\
+                                        {{16.0F, -16.0F}, SDL_PI_F * 0x1.0p-3F},\
                                         {{16.0F, 0.0}, 0.0F},\
-                                        {{-1.0F, 24.0F}, 0.0F},\
-                                        {{0.0F, 25.0F}, 0.0F}\
+                                        {{-1.0F, 28.0F}, 0.0F},\
+                                        {{0.0F, 32.0F}, 0.0F}\
                                     }
 #define BEINGS_INCIDENCES           {\
                                         200,\

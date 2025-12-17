@@ -144,6 +144,8 @@ static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){
 					pc->move_direction = pc->direction + SDL_PI_F;
 				}
 				pc->velocity = pc->max_velocity * pc->dodge_velocity_multipl;
+				pc->flags |= dodge_time;
+				AddOrUpdatePlayerEffect(pc, (Lasting_effect){pc_effect_dodge, DODGE_EFFECT_TICKS});
 			}else{
 				BlockPlayerFatigue(pc, PC_FAILURE_FATIG_BLOCK_TIME);
 				if(!(pc->flags & tmp)){
@@ -504,14 +506,14 @@ static void UpdatePlayerCast(Game_data* const gd, const unsigned int indx){
 	}
 }
 
-extern inline void HealPlayer(Player* const p, const int points){
-	p->hit_points += points;
-	UpdatePlayerHitPoints(p);
+extern inline void HealPlayer(Player* const pc, const int points){
+	pc->hit_points += points;
+	UpdatePlayerHitPoints(pc);
 }
 
-static inline void UpdatePlayerHitPoints(Player* const p){
-	if(p->hit_points > p->max_h_p){
-		p->hit_points = p->max_h_p;
+static inline void UpdatePlayerHitPoints(Player* const pc){
+	if(pc->hit_points > pc->max_h_p){
+		pc->hit_points = pc->max_h_p;
 	}
 }
 
@@ -766,7 +768,7 @@ void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
 }
 
 void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
-    HealPlayer(pc, 1);
+    HealPlayer(pc, 2);
 }
 
 void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left){
@@ -791,5 +793,11 @@ void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left)
 		}
     }else if(ticks_left % 64 == 0){
         AddCurseVisualEffect(&gd->rend_data_ptr->visual_effects, &pc->position);
+    }
+}
+
+void PlayerDodge(Game_data* const gd, Player* const pc, const int ticks_left){
+	if(ticks_left < 2){
+		pc->flags &= ~(dodge_time);
     }
 }

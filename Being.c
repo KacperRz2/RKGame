@@ -349,32 +349,32 @@ static inline void UpdateBeingStrikeAlly(Being* const b, float const distance_sq
     --b->status_ticks_left;
 }
 
-static inline void UpdateBeingStrike(Being* const b, Player* const pc, float const distance_squared, float const distance_x, float const distance_y, Game_data* const gd){
-    if(b->status_ticks_left == 0){
-        StartBeingFollow(b, BEING_RELOAD_TICKS, distance_squared, distance_x, distance_y);
+static inline void UpdateBeingStrike(Being* const bg, Player* const pc, float const distance_squared, float const distance_x, float const distance_y, Game_data* const gd){
+    if(bg->status_ticks_left == 0){
+        StartBeingFollow(bg, BEING_RELOAD_TICKS, distance_squared, distance_x, distance_y);
         return;
     }
     if(distance_squared >= pow2(BEING_HALT_DISTANCE)){
         const float distance = SDL_sqrtf(distance_squared);
-        MoveStrikingBeing(b, distance, distance_x, distance_y, gd);
+        MoveStrikingBeing(bg, distance, distance_x, distance_y, gd);
     }else if(distance_squared < pow2(BEING_MIN_DISTANCE)){
         const float distance = SDL_sqrtf(distance_squared);
-        MoveBackStrikingBeing(b, distance, distance_x, distance_y, gd);
+        MoveBackStrikingBeing(bg, distance, distance_x, distance_y, gd);
     }
-    if(b->status_ticks_left == BEING_ATTACK_STEPS + 1){
-        const float b_sine = SineSafe(b->direction);
-        const float b_cosine = CosiSafe(b->direction);
-        const SDL_FPoint dangerous_point = GetHBladeAttackHittingPoint(b, b_sine, b_cosine);
-        if(CircleMeetsPlayer(dangerous_point.x, dangerous_point.y, BEING_HIT_CIRCLE_DIAMET, pc)){
+    if(bg->status_ticks_left == BEING_ATTACK_STEPS + 1){
+        const float b_sine = SineSafe(bg->direction);
+        const float b_cosine = CosiSafe(bg->direction);
+        const SDL_FPoint dangerous_point = GetHBladeAttackHittingPoint(bg, b_sine, b_cosine);
+        if(!(pc->flags & dodge_time) && CircleMeetsPlayer(dangerous_point.x, dangerous_point.y, BEING_HIT_CIRCLE_DIAMET, pc)){
             if(pc->flags & block && (SineUnsafe(pc->direction) * b_sine) + (-CosiUnsafe(pc->direction) * -b_cosine) <= 0){
-                HitBarrier(pc, &b->impact);
+                HitBarrier(pc, &bg->impact);
             }else{
-                DamagePlayer(pc, &b->impact);
+                DamagePlayer(pc, &bg->impact);
 			    AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &dangerous_point);
             }
         }
     }
-    --b->status_ticks_left;
+    --bg->status_ticks_left;
 }
 
 static inline void StartBeingSearch(Being* const b, const int duration){
