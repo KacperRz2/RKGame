@@ -696,31 +696,14 @@ void HordeAttack(Game_data* const gd, const int ticks_left){
 	}
 }
 
-struct Save_data{
-	struct nums{
-		Uint8 champions;
-		Uint16 beings;
-		Uint16 projectiles;
-		Uint16 boxes;
-		Uint8 needed_keys;
-	}nums;
-	unsigned int flags;
-	Player champions[MAX_PLAYERS_NUM];
-	Being beings[MAX_BEINGS_NUM];
-	Projectile projectiles[MAX_PROJECTILES_NUM];
-	Uint64 plan[BIG_SEGMENTS_X];
-	Key_location key_locations[MAX_KEYS];
-	Shop shops[SHOPS_NUM];
-	Box boxes[BOXES_NUM];
-	Uint8 human_indx;
-	Uint8 keys;
-	int enemy_morale;
-	Uint8 keys_status[MAX_KEYS];
-	Uint8 effects_num;
-	Lasting_effect effects[MAX_GAME_EFFECTS];
-	union horde_data horde_data;
-	Uint64 seed;
-};
+struct nums{
+	Uint8 champions;
+	Uint16 beings;
+	Uint16 projectiles;
+	Uint16 boxes;
+	Uint8 needed_keys;
+	Uint8 effects;
+}nums;
 
 void SaveGame(const Game_data* const gd){
     SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
@@ -730,37 +713,66 @@ void SaveGame(const Game_data* const gd){
     while(!SDL_StorageReady(user)){
         SDL_Delay(1);
     }
-	struct Save_data* save_data = (struct Save_data*)SDL_malloc(sizeof(struct Save_data));
-	save_data->nums = (struct nums){
+	struct nums nums = {
 		gd->champions.num,
 		gd->beings.num,
 		gd->projectiles.num,
 		gd->boxes.num,
-		gd->needed_keys
+		gd->needed_keys,
+		gd->effects_num
 	};
-	save_data->flags = gd->flags;
-	SDL_memcpy(save_data->champions, gd->champions.array, sizeof(Player) * save_data->nums.champions);
-	for(unsigned int i = 0U; i < save_data->nums.beings; ++i){
-		*(save_data->beings + i) = *(gd->beings.array + *(gd->beings.indices + i));
+    Uint64 save_len = sizeof(struct nums)
+		+ sizeof(unsigned int)
+		+ sizeof(Player) * nums.champions
+		+ sizeof(Being) * nums.beings
+		+ sizeof(Projectile) * nums.projectiles
+		+ sizeof(Uint64) * (BIG_SEGMENTS_X + 1U)
+		+ sizeof(Key_location) * nums.needed_keys
+		+ sizeof(Shop) * SHOPS_NUM
+		+ sizeof(Box) * nums.boxes
+		+ sizeof(Uint8) * (nums.needed_keys + 3U)
+		+ sizeof(int)
+		+ sizeof(Lasting_effect) * nums.effects
+		+ sizeof(union horde_data);
+	void* const save_data = (void*)SDL_malloc(save_len);
+	void* ptr = save_data;
+	*(Uint64*)ptr = gd->seed;
+	ptr += sizeof(Uint64);
+	*(struct nums*)ptr = nums;
+	ptr += sizeof(nums);
+	*(unsigned int*)ptr = gd->flags;
+	ptr += sizeof(unsigned int);
+	SDL_memcpy(ptr, gd->champions.array, sizeof(Player) * nums.champions);
+	ptr += sizeof(Player) * nums.champions;
+	*(Uint8*)ptr = gd->human_indx;
+	ptr += sizeof(Uint8);
+	for(unsigned int i = 0U; i < nums.beings; ++i){
+		*(Being*)ptr = *(gd->beings.array + *(gd->beings.indices + i));
+		ptr += sizeof(Being);
 	}
-	SDL_memcpy(save_data->projectiles, gd->projectiles.array, sizeof(Projectile) * save_data->nums.projectiles);
-	SDL_memcpy(save_data->plan, gd->world.plan, sizeof(Uint64) * BIG_SEGMENTS_X);
-	SDL_memcpy(save_data->key_locations, gd->world.key_locations, sizeof(Key_location) * save_data->nums.needed_keys);
-	SDL_memcpy(save_data->shops, gd->world.shops, sizeof(Shop) * SHOPS_NUM);
-	SDL_memcpy(save_data->boxes, gd->boxes.array, sizeof(Box) * save_data->nums.boxes);
-	save_data->human_indx = gd->human_indx;
-	save_data->keys = gd->keys;
-	save_data->enemy_morale = gd->enemy_morale;
-	SDL_memcpy(save_data->keys_status, gd->keys_status, sizeof(Uint8) * save_data->nums.needed_keys);
-	save_data->effects_num = gd->effects_num;
-	SDL_memcpy(save_data->effects, gd->effects, sizeof(Lasting_effect) * MAX_GAME_EFFECTS);
+	SDL_memcpy(ptr, gd->projectiles.array, sizeof(Projectile) * nums.projectiles);
+	ptr += sizeof(Projectile) * nums.projectiles;
+	SDL_memcpy(ptr, gd->world.plan, sizeof(Uint64) * BIG_SEGMENTS_X);
+	ptr += sizeof(Uint64) * BIG_SEGMENTS_X;
+	SDL_memcpy(ptr, gd->world.key_locations, sizeof(Key_location) *nums.needed_keys);
+	ptr += sizeof(Key_location) *nums.needed_keys;
+	SDL_memcpy(ptr, gd->world.shops, sizeof(Shop) * SHOPS_NUM);
+	ptr += sizeof(Shop) * SHOPS_NUM;
+	SDL_memcpy(ptr, gd->boxes.array, sizeof(Box) * nums.boxes);
+	ptr += sizeof(Box) * nums.boxes;
+	*(Uint8*)ptr = gd->keys;
+	ptr += sizeof(Uint8);
+	*(int*)ptr = gd->enemy_morale;
+	ptr += sizeof(int);
+	SDL_memcpy(ptr, gd->keys_status, sizeof(Uint8) * nums.needed_keys);
+	ptr += sizeof(Uint8) * nums.needed_keys;
+	SDL_memcpy(ptr, gd->effects, sizeof(Lasting_effect) * nums.effects);
+	ptr += sizeof(Lasting_effect) * nums.effects;
 	if(gd->flags & gamef_horde_attack){
-		SDL_memcpy(save_data->horde_data.creation_points, gd->horde_data.creation_points, sizeof(SDL_FPoint) * HORDE_ATTACK_POINTS);
+		SDL_memcpy(ptr, gd->horde_data.creation_points, sizeof(SDL_FPoint) * HORDE_ATTACK_POINTS);
 	}else{
-		save_data->horde_data.ticks_from_attack = gd->horde_data.ticks_from_attack;
+		*(unsigned int*)ptr = gd->horde_data.ticks_from_attack;
 	}
-	save_data->seed = gd->seed;
-    Uint64 save_len = sizeof(struct Save_data);
     if(!SDL_WriteStorageFile(user, "save", save_data, save_len)){
         exit(-1);
     }
@@ -778,47 +790,64 @@ void LoadGame(Game_data* const gd){
     }
     Uint64 save_len = 0U;
     if(SDL_GetStorageFileSize(user, "save", &save_len) && save_len > 0U){
-		struct Save_data* save_data = (struct Save_data*)SDL_malloc(save_len);
+		void* save_data = (void*)SDL_malloc(save_len);
         if(SDL_ReadStorageFile(user, "save", save_data, save_len)){
-            gd->seed = save_data->seed;
+			void* ptr = save_data;
+            gd->seed = *(Uint64*)ptr;
+			ptr += sizeof(Uint64);
 			SetGameData(gd);
-			gd->champions.num = save_data->nums.champions;
-			gd->beings.num = save_data->nums.beings;
-			gd->projectiles.num = save_data->nums.projectiles;
-			gd->boxes.num = save_data->nums.boxes;
-			gd->needed_keys = save_data->nums.needed_keys;
-			gd->flags = save_data->flags;
-			SDL_memcpy(gd->champions.array, save_data->champions, sizeof(Player) * save_data->nums.champions);
-			for(unsigned int i = 0U; i < save_data->nums.champions; ++i){
+			struct nums nums = *(struct nums*)ptr;
+			ptr += sizeof(struct nums);
+			gd->champions.num = nums.champions;
+			gd->beings.num = nums.beings;
+			gd->projectiles.num = nums.projectiles;
+			gd->boxes.num = nums.boxes;
+			gd->needed_keys = nums.needed_keys;
+			gd->effects_num = nums.effects;
+			gd->flags = *(unsigned int*)ptr;
+			ptr += sizeof(unsigned int);
+			SDL_memcpy(gd->champions.array, ptr, sizeof(Player) * nums.champions);
+			ptr += sizeof(Player) * nums.champions;
+			for(unsigned int i = 0U; i < nums.champions; ++i){
 				(gd->champions.array + i)->segment = GetSegmentUnsafe(&gd->world, (gd->champions.array + i)->position.x, (gd->champions.array + i)->position.y);
 				(gd->champions.array + i)->last_seen_in = (gd->champions.array + i)->segment;
 			}
-			gd->human_indx = save_data->human_indx;
-			for(unsigned int i = 0U; i < save_data->nums.beings; ++i){
-				*(gd->beings.array + i) = *(save_data->beings + i);
+			gd->human_indx = *(Uint8*)ptr;
+			ptr += sizeof(Uint8);
+			for(unsigned int i = 0U; i < nums.beings; ++i){
+				*(gd->beings.array + i) = *(Being*)ptr;
 				(gd->beings.array + i)->target.player = human(gd);
 				(gd->beings.array + i)->main_indx = i;
 				Segment* seg = GetSegmentUnsafe(&gd->world, (gd->beings.array + i)->position.x, (gd->beings.array + i)->position.y);
 				if(seg){
 					AddBeingToSegment(seg, (gd->beings.array + i), IsAlly(gd->beings.array + i) ? &seg->ally_beings : &seg->beings);
 				}
+				ptr += sizeof(Being);
 			}
-			SDL_memcpy(gd->projectiles.array, save_data->projectiles, sizeof(Projectile) * save_data->nums.projectiles);
-			SDL_memcpy(gd->world.plan, save_data->plan, sizeof(Uint64) * BIG_SEGMENTS_X);
+			SDL_memcpy(gd->projectiles.array, ptr, sizeof(Projectile) * nums.projectiles);
+			ptr += sizeof(Projectile) * nums.projectiles;
+			SDL_memcpy(gd->world.plan, ptr, sizeof(Uint64) * BIG_SEGMENTS_X);
+			ptr += sizeof(Uint64) * BIG_SEGMENTS_X;
 			gd->keys_status = (Uint8*)SDL_malloc(sizeof(Uint8) * gd->needed_keys);
 			gd->world.key_locations = (Key_location*)SDL_malloc(sizeof(Key_location) * gd->needed_keys);
-			SDL_memcpy(gd->world.key_locations, save_data->key_locations, sizeof(Key_location) * save_data->nums.needed_keys);
-			SDL_memcpy(gd->world.shops, save_data->shops, sizeof(Shop) * SHOPS_NUM);
-			SDL_memcpy(gd->boxes.array, save_data->boxes, sizeof(Box) * save_data->nums.boxes);
-			gd->keys = save_data->keys;
-			gd->enemy_morale = save_data->enemy_morale;
-			SDL_memcpy(gd->keys_status, save_data->keys_status, sizeof(Uint8) * save_data->nums.needed_keys);
-			gd->effects_num = save_data->effects_num;
-			SDL_memcpy(gd->effects, save_data->effects, sizeof(Lasting_effect) * MAX_GAME_EFFECTS);
+			SDL_memcpy(gd->world.key_locations, ptr, sizeof(Key_location) * nums.needed_keys);
+			ptr += sizeof(Key_location) * nums.needed_keys;
+			SDL_memcpy(gd->world.shops, ptr, sizeof(Shop) * SHOPS_NUM);
+			ptr += sizeof(Shop) * SHOPS_NUM;
+			SDL_memcpy(gd->boxes.array, ptr, sizeof(Box) * nums.boxes);
+			ptr += sizeof(Box) * nums.boxes;
+			gd->keys = *(Uint8*)ptr;
+			ptr += sizeof(Uint8);
+			gd->enemy_morale = *(int*)ptr;
+			ptr += sizeof(int);
+			SDL_memcpy(gd->keys_status, ptr, sizeof(Uint8) * nums.needed_keys);
+			ptr += sizeof(Uint8) * nums.needed_keys;
+			SDL_memcpy(gd->effects, ptr, sizeof(Lasting_effect) * nums.effects);
+			ptr += sizeof(Lasting_effect) * nums.effects;
 			if(gd->flags & gamef_horde_attack){
-				SDL_memcpy(gd->horde_data.creation_points, save_data->horde_data.creation_points, sizeof(SDL_FPoint) * HORDE_ATTACK_POINTS);
+				SDL_memcpy(gd->horde_data.creation_points, ptr, sizeof(SDL_FPoint) * HORDE_ATTACK_POINTS);
 			}else{
-				gd->horde_data.ticks_from_attack = save_data->horde_data.ticks_from_attack;
+				gd->horde_data.ticks_from_attack = *(unsigned int*)ptr;
 			}
         }else{
         	exit(-1);
