@@ -703,6 +703,7 @@ struct nums{
 	Uint16 boxes;
 	Uint8 needed_keys;
 	Uint8 effects;
+	Uint16 known_segs;
 }nums;
 
 void SaveGame(const Game_data* const gd){
@@ -713,13 +714,30 @@ void SaveGame(const Game_data* const gd){
     while(!SDL_StorageReady(user)){
         SDL_Delay(1);
     }
+	struct coordinates known_segs[MAX_NOT_NULL_SEGS];
+	unsigned int known_segs_num = 0U;
+	for(unsigned int bigc = 0U; bigc < BIG_SEGMENTS_X; ++bigc){
+		for(unsigned int bigr = 0U; bigr < BIG_SEGMENTS_X; ++bigr){
+			if(IsInPopulatedBigSeg(gd->world.plan, bigc, bigr)){
+				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++c){
+					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++r){
+						const Segment* const seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
+						if(seg && (seg->flags & segment_known)){
+							*(known_segs + known_segs_num++) = (struct coordinates){c, r};
+						}
+					}
+				}
+			}
+		}
+	}
 	struct nums nums = {
 		gd->champions.num,
 		gd->beings.num,
 		gd->projectiles.num,
 		gd->boxes.num,
 		gd->needed_keys,
-		gd->effects_num
+		gd->effects_num,
+		known_segs_num
 	};
     Uint64 save_len = sizeof(struct nums)
 		+ sizeof(unsigned int)
@@ -733,7 +751,8 @@ void SaveGame(const Game_data* const gd){
 		+ sizeof(Uint8) * (nums.needed_keys + 3U)
 		+ sizeof(int)
 		+ sizeof(Lasting_effect) * nums.effects
-		+ sizeof(union horde_data);
+		+ sizeof(union horde_data)
+		+ sizeof(struct coordinates) * nums.known_segs;
 	void* const save_data = (void*)SDL_malloc(save_len);
 	void* ptr = save_data;
 	*(Uint64*)ptr = gd->seed;
@@ -773,6 +792,8 @@ void SaveGame(const Game_data* const gd){
 	}else{
 		*(unsigned int*)ptr = gd->horde_data.ticks_from_attack;
 	}
+	ptr += sizeof(union horde_data);
+	SDL_memcpy(ptr, known_segs, sizeof(struct coordinates) * nums.known_segs);
     if(!SDL_WriteStorageFile(user, "save", save_data, save_len)){
         exit(-1);
     }
@@ -848,6 +869,11 @@ void LoadGame(Game_data* const gd){
 				SDL_memcpy(gd->horde_data.creation_points, ptr, sizeof(SDL_FPoint) * HORDE_ATTACK_POINTS);
 			}else{
 				gd->horde_data.ticks_from_attack = *(unsigned int*)ptr;
+			}
+			ptr += sizeof(union horde_data);
+			for(unsigned int i = 0U; i < nums.known_segs; ++i){
+				GetSegmentByIndxUnsafe(&gd->world, ((struct coordinates*)ptr)->x, ((struct coordinates*)ptr)->y)->flags |= segment_known;
+				ptr += sizeof(struct coordinates);
 			}
         }else{
         	exit(-1);

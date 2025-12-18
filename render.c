@@ -1035,10 +1035,10 @@ static void RenderFrame(Render_data* const rend_data, SDL_Texture* const tx_back
 
 static void RenderDirectionArrow(Render_data* const rend_data, const double rotation){
 	SDL_RenderTextureRotated(rend_data->renderer, texture(tx_arrow), NULL, &(SDL_FRect){
-		RIGHT_AREA_X + FRAME_W + 10.0F,
-		FRAME_W * 2.0F + 10.0F,
-		30.0F,
-		30.0F
+		RIGHT_AREA_X + FRAME_W,
+		FRAME_W * 2.0F,
+		50.0F,
+		50.0F
 	}, rotation, NULL, SDL_FLIP_NONE);
 }
 

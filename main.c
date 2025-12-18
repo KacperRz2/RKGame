@@ -13,7 +13,7 @@ int main(int argc, char* argv[]){
 			Game_data game_data;
 			game_data.rend_data_ptr = &rend_data;
 			game_data.ev_ptr = &event;
-			game_data.seed = (Uint64)(SDL_randf() * (UINT64_MAX - 1ULL)) + 1ULL;
+			game_data.seed = (((Uint64)SDL_rand_bits() << 32ULL) + (Uint64)SDL_rand_bits());
 			SetGameData(&game_data);
 			StartNewLevel(&game_data);
 			DrawMap(&rend_data, &game_data.world);

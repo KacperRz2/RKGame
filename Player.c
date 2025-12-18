@@ -768,7 +768,7 @@ void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
 }
 
 void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
-    HealPlayer(pc, 2);
+    HealPlayer(pc, 1);
 }
 
 void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left){
