@@ -811,7 +811,7 @@ void LoadGame(Game_data* const gd){
     }
     Uint64 save_len = 0U;
     if(SDL_GetStorageFileSize(user, "save", &save_len) && save_len > 0U){
-		void* save_data = (void*)SDL_malloc(save_len);
+		void* const save_data = (void*)SDL_malloc(save_len);
         if(SDL_ReadStorageFile(user, "save", save_data, save_len)){
 			void* ptr = save_data;
             gd->seed = *(Uint64*)ptr;

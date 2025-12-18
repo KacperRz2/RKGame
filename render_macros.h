@@ -87,8 +87,20 @@
                                         SCROLL_SIZE,\
                                         SCROLL_SIZE\
                                     }
+#define PC_SCROLL_ICON_RECT         {\
+                                        VIEWFINDER_CENTER + SCROLL_SIZE * (7.0F / 32.0F),\
+                                        VIEWFINDER_CENTER + SCROLL_SIZE * (13.0F / 64.0F - 1.0F) + PLAYER_REND_Y_SHIFT,\
+                                        SCROLL_SIZE * (37.0F / 64.0F),\
+                                        SCROLL_SIZE * (37.0F / 64.0F)\
+                                    }
 #define SRC_SCROLL_RECT             {\
                                         0.0F,\
+                                        0.0F,\
+                                        SCROLL_TX_SIZE,\
+                                        SCROLL_TX_SIZE\
+                                    }
+#define SRC_UNR_SCROLL_RECT         {\
+                                        128.0F,\
                                         0.0F,\
                                         SCROLL_TX_SIZE,\
                                         SCROLL_TX_SIZE\

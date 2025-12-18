@@ -562,8 +562,10 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 	RenderStaticThings(rend_data, gd);
 	if(!(pc->flags & range_mode)){
 		RenderHumanPlayerBlade(rend_data, &pc->blade);
+	}else if((pc->flags & attack)){
+		RenderHumanPlayerScrollUnrolled(rend_data, pc->selected_scroll);
 	}else{
-		RenderHumanPlayerScroll(rend_data, (bool)(pc->flags & attack));
+		RenderHumanPlayerScroll(rend_data);
 	}
 	Player* players_to_rend[gd->champions.num - 1U];
 	SDL_FPoint players_rend_points[gd->champions.num - 1U];
@@ -843,12 +845,16 @@ static inline void RenderHumanPlayerBarrier(Render_data* const rend_data, const 
 	}
 }
 
-static inline void RenderHumanPlayerScroll(Render_data* const rend_data, const bool unrolled){
-	SDL_FRect src_rect = SRC_SCROLL_RECT;
-	if(unrolled){
-		src_rect.x = SCROLL_TX_SIZE;
-	}
+static inline void RenderHumanPlayerScroll(Render_data* const rend_data){
+	const SDL_FRect src_rect = SRC_SCROLL_RECT;
 	SDL_RenderTexture(rend_data->renderer, texture(tx_scroll), &src_rect, &(SDL_FRect)PC_SCROLL_RECT);
+}
+
+static inline void RenderHumanPlayerScrollUnrolled(Render_data* const rend_data, unsigned int scroll_num){
+	SDL_FRect src_rect = SRC_UNR_SCROLL_RECT;
+	SDL_RenderTexture(rend_data->renderer, texture(tx_scroll), &src_rect, &(SDL_FRect)PC_SCROLL_RECT);
+	src_rect = GetScrollTextureSrcRect(scroll_num);
+	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &(SDL_FRect)PC_SCROLL_ICON_RECT);
 }
 
 static void	RenderPlayersBladesAndScrolls(Render_data* const rend_data, const float human_player_direction, Player** plys, SDL_FPoint* points, const unsigned int num){

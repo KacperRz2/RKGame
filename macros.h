@@ -163,6 +163,7 @@
 #define MORALE_BREAK_DROP           0x2000
 #define SELL_DIVIDER                10
 #define DODGE_EFFECT_TICKS          64
+#define MAX_NOT_NULL_SEGS           (11U * 37U * pow2(BIG_SEGMENT_SEGMENTS_X))
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
