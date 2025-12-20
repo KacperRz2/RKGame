@@ -49,6 +49,7 @@
 #define CREATION_POINT_SIZE         96.0F
 #define VORTEX_ROTAT_SPEED          (1024.0F / (0x40000000ULL / FRAME_TIME))
 #define TEXTURE_ROTA_SPEED          (512.0F / (0x40000000ULL / FRAME_TIME))
+#define SCROLL_ICON_SIZE            (SCROLL_SIZE * (37.0F / 64.0F))
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
@@ -90,8 +91,8 @@
 #define PC_SCROLL_ICON_RECT         {\
                                         VIEWFINDER_CENTER + SCROLL_SIZE * (7.0F / 32.0F),\
                                         VIEWFINDER_CENTER + SCROLL_SIZE * (13.0F / 64.0F - 1.0F) + PLAYER_REND_Y_SHIFT,\
-                                        SCROLL_SIZE * (37.0F / 64.0F),\
-                                        SCROLL_SIZE * (37.0F / 64.0F)\
+                                        SCROLL_ICON_SIZE,\
+                                        SCROLL_ICON_SIZE\
                                     }
 #define SRC_SCROLL_RECT             {\
                                         0.0F,\

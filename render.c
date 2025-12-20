@@ -859,16 +859,16 @@ static inline void RenderHumanPlayerScrollUnrolled(Render_data* const rend_data,
 
 static void	RenderPlayersBladesAndScrolls(Render_data* const rend_data, const float human_player_direction, Player** plys, SDL_FPoint* points, const unsigned int num){
 	SDL_FRect rect_blade = {
-		0.0F,
-		0.0F,
-		BLADE_SIZE,
-		BLADE_SIZE
+		0.0F, 0.0F,
+		BLADE_SIZE, BLADE_SIZE
 	};
 	SDL_FRect rect_scroll = {
-		0.0F,
-		0.0F,
-		SCROLL_SIZE,
-		SCROLL_SIZE
+		0.0F, 0.0F,
+		SCROLL_SIZE, SCROLL_SIZE
+	};
+	SDL_FRect rect_scroll_icon = {
+		0.0F, 0.0F,
+		SCROLL_ICON_SIZE, SCROLL_ICON_SIZE
 	};
 	for(unsigned int i = 0U; i < num; ++i){
 		const float player_direction = (*(plys + i))->direction - human_player_direction;
@@ -879,13 +879,19 @@ static void	RenderPlayersBladesAndScrolls(Render_data* const rend_data, const fl
 			rect_blade.y = (points + i)->y + ((*(plys + i))->blade.placement.position.x * sine - (*(plys + i))->blade.placement.position.y * cosine) - BLADE_SIZE * BLADE_HANDLER_POSITION;
 			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_pc_blade), NULL, &rect_blade, (double)RadToDeg(player_direction + (*(plys + i))->blade.placement.direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
 		}else{
-			SDL_FRect src_rect = SRC_SCROLL_RECT;
-			if((*(plys + i))->flags & attack){
-				src_rect.x = SCROLL_TX_SIZE;
-			}
 			rect_scroll.x = (points + i)->x + (half(SCROLL_SIZE) * cosine + half(SCROLL_SIZE) * sine) - half(SCROLL_SIZE);
 			rect_scroll.y = (points + i)->y + (half(SCROLL_SIZE) * sine - half(SCROLL_SIZE) * cosine) - half(SCROLL_SIZE);
-			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_scroll), &src_rect, &rect_scroll, (double)RadToDeg(player_direction), NULL, SDL_FLIP_NONE);
+			if((*(plys + i))->flags & attack){
+				rect_scroll_icon.x = (points + i)->x + (half(SCROLL_SIZE) * cosine + half(SCROLL_SIZE) * sine) - half(SCROLL_ICON_SIZE);
+				rect_scroll_icon.y = (points + i)->y + (half(SCROLL_SIZE) * sine - half(SCROLL_SIZE) * cosine) - half(SCROLL_ICON_SIZE);
+				SDL_FRect src_rect = SRC_UNR_SCROLL_RECT;
+				SDL_RenderTextureRotated(rend_data->renderer, texture(tx_scroll), &src_rect, &rect_scroll, (double)RadToDeg(player_direction), NULL, SDL_FLIP_NONE);
+				src_rect = GetScrollTextureSrcRect((*(plys + i))->selected_scroll);
+				SDL_RenderTextureRotated(rend_data->renderer, texture(tx_icons), &src_rect, &rect_scroll_icon, (double)RadToDeg(player_direction), NULL, SDL_FLIP_NONE);
+			}else{
+				const SDL_FRect src_rect = SRC_SCROLL_RECT;
+				SDL_RenderTextureRotated(rend_data->renderer, texture(tx_scroll), &src_rect, &rect_scroll, (double)RadToDeg(player_direction), NULL, SDL_FLIP_NONE);
+			}
 		}
 	}
 }
@@ -1793,7 +1799,7 @@ void RenderDefeatedScreen(Render_data* const rend_data){
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);
-	const float text_height = rend_data->window_h * 0.25F;
+	const float text_height = rend_data->window_h * 0.125F;
 	RenderTextCentered(rend_data, 0.0F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])DEFEAT_TEXT, DEFEAT_TEXT_LEN, rend_data->window_w);
 	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	SDL_RenderPresent(rend_data->renderer);
@@ -1803,7 +1809,7 @@ void RenderVictoryScreen(Render_data* const rend_data){
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetTextureColorMod(texture(tx_chars), 0U, 255U, 0U);
-	const float text_height = rend_data->window_h * 0.25F;
+	const float text_height = rend_data->window_h * 0.125F;
 	RenderTextCentered(rend_data, 0.0F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])VICTORY_TEXT, VICTORY_TEXT_LEN, rend_data->window_w);
 	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	SDL_RenderPresent(rend_data->renderer);
