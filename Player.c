@@ -293,10 +293,17 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 					continue;
 				}
 			}else{
-				const float stun_power = CalculateStunPower(&bl->impact, &bg->armour);
-				if(stun_power >= 1.0F){
-					const float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &bg->position);
-					CatapultBeing(bg, SineSafe(angle) * stun_power, -CosiSafe(angle) * stun_power, BEING_DEFAULT_LEFT_TICKS * 2);
+				if(bg->status != being_fly){
+					const float stun_power = CalculateStunPower(&bl->impact, &bg->armour);
+					if(stun_power >= 1.0F){
+						if(bg->status == being_stunned){
+							const float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &bg->position);
+							const float vel = BASE_FLY_VELOCITY * stun_power;
+							CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * stun_power);
+						}else{
+							StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * stun_power));
+						}
+					}
 				}
 				if(bl->hits < bl->penetration){
 					*(bl->hit_targets + bl->hits++) = bg->main_indx;
@@ -458,15 +465,21 @@ static void UpdatePlayerPush(Game_data* const gd, const unsigned int indx){
 			Segment* neighbour = *(neighbour_segs + k);
 			if(neighbour == NULL) continue;
 			for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
-				Being* b = (gd->beings.array + *(neighbour->beings.beings_ind + i));
-				if(pow2((gd->champions.array + indx)->position.x - b->position.x) + pow2((gd->champions.array + indx)->position.y - b->position.y) < pow2(PC_PUSH_REACH)){
-					float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &b->position);
+				Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
+				if(bg->status != being_fly && pow2((gd->champions.array + indx)->position.x - bg->position.x) + pow2((gd->champions.array + indx)->position.y - bg->position.y) < pow2(PC_PUSH_REACH)){
+					float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &bg->position);
 					if(angle < 0.0F){
 						angle += FULL_ANGLE;
 					}
 					const float difference = SDL_fabsf((gd->champions.array + indx)->direction - angle);
 					if(difference <= SDL_PI_F * 0.5F || difference >= SDL_PI_F * 1.5F){
-						CatapultBeing(b, SineUnsafe(angle) * DEFAULT_FLY_VELOCITY, -CosiUnsafe(angle) * DEFAULT_FLY_VELOCITY, BEING_DEFAULT_LEFT_TICKS * 4);
+						const float power = PC_PUSH_POWER * bg->armour.unstability;
+						if(bg->status == being_stunned){
+                			const float vel = BASE_FLY_VELOCITY * power;
+							CatapultBeing(bg, SineUnsafe(angle) * vel, -CosiUnsafe(angle) * vel, BASE_FLY_TICKS * power);
+						}else{
+							StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * power));
+						}
 					}
 				}
 			}
@@ -487,7 +500,7 @@ extern inline void HitBarrier(Player* const p, const Impact* const impact){
 	}
 }
 
-extern inline float GetDirectionToPush(SDL_FPoint* const pushing, SDL_FPoint* const pushed){
+extern inline float GetDirectionToPush(const SDL_FPoint* const pushing, const SDL_FPoint* const pushed){
     return arctan2(pushed->y - pushing->y, pushed->x - pushing->x) + SDL_PI_F * 0.5F;
 }
 
@@ -497,10 +510,9 @@ static void UpdatePlayerCast(Game_data* const gd, const unsigned int indx){
 	}else if((gd->champions.array + indx)->flags & cast){
 		(gd->champions.array + indx)->flags &= ~(cast);
 		const int cost = ScrollCost((gd->champions.array + indx)->selected_scroll);
-		if(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll) > 0U && (gd->champions.array + indx)->magic_points >= cost){
+		if(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll) > 0U && (gd->champions.array + indx)->magic_points >= cost && UseScroll(gd)){
 			(gd->champions.array + indx)->magic_points -= cost;
 			--(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll));
-			UseScroll(gd);
 			(gd->champions.array + indx)->block_times.cast = PC_CAST_RELOAD;
 		}
 	}

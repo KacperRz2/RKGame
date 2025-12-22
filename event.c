@@ -97,6 +97,7 @@ int EventsService(SDL_Event* const e, Player* const pc, Render_data* const rend_
 			}
 		}else if(e->type == SDL_EVENT_MOUSE_MOTION){
 			pc->direction += e->motion.xrel * ((e->motion.y / (float)rend_data->window_h + 0.125F) * ROTATION_SPEED);
+			rend_data->mouse_y = e->motion.y;
 		}else if(e->type == SDL_EVENT_QUIT){
 			return 1;
 		}
@@ -167,6 +168,7 @@ int ManageScrollsEventsService(SDL_Event* const e, Player* const pc, Render_data
 				SetQuickScroll(pc, (int)e->key.scancode - 31); break;
 			case KEY_MANAGE_SCROLLS:
 				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+				SDL_GetMouseState(NULL, &rend_data->mouse_y);
 				return 0;
 			default: break;
 			}
@@ -174,6 +176,7 @@ int ManageScrollsEventsService(SDL_Event* const e, Player* const pc, Render_data
 			switch (e->key.scancode){
 			case SDL_SCANCODE_ESCAPE:
 				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
+				SDL_GetMouseState(NULL, &rend_data->mouse_y);
 				return 0;
 			default: break;
 			}
@@ -207,6 +210,7 @@ int MenuEventsService(Game_data* const gd){
 				--pc->help_data.menu_position; break;
 			case SDL_SCANCODE_ESCAPE:
 				SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
+				SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 				return 0;
 			default: break;
 			}

@@ -78,13 +78,13 @@ extern inline void AddHordeBeingToArray(Beings_array* const bs, const Uint8 type
     }
 }
 
-extern inline void AddIdleBeingToArray(Beings_array* const bs, const Uint8 type_id, const float x, const float y, Segment* const s, Player* const target){
+extern inline void AddIdleBeingToArray(Beings_array* const bs, const Uint8 type_id, const float x, const float y, Segment* const seg, Player* const target){
     Being* const bg = AddBeingToArray(bs, type_id, x, y, target);
     if(IsAlly(bg)){
-        AddBeingToSegment(s, bg, &s->ally_beings);
+        AddBeingToSegment(seg, bg, &seg->ally_beings);
         bg->target_last_seen_at = (position16){bg->target.player->position.x, bg->target.player->position.y};
     }else{
-        AddBeingToSegment(s, bg, &s->beings);
+        AddBeingToSegment(seg, bg, &seg->beings);
         bg->target_last_seen_at.x = 0.0F;
     }
     if(bg->type_id == being_commander){
@@ -636,7 +636,7 @@ void UpdateBeings(Game_data* const gd){
                     --i;
                     continue;
                 }
-                if(IsAlly(bg) || bg->status == being_walk || bg->status == being_fly || bg->status == being_stunned || (bg->status_ticks_left < 0 && bg->status == being_idle)){
+                if(IsAlly(bg) || bg->status == being_walk || bg->status == being_fly || bg->status == being_stunned || (bg->status_ticks_left < 0 && bg->status == being_idle) || bg->target_last_seen_at.x == 0.0F){
                     (being_types + bg->type_id)->update(bg, gd);
                 }else if(bg->status != being_in_void){
                     BeingFlee(bg, gd);
@@ -699,45 +699,49 @@ extern inline bool DamageAlly(Being* const b, const Impact* const impact, Being*
     return false;
 }
 
-extern inline void StunBeing(Being* const b, const int duration){
-    b->status = being_stunned;
-    b->status_ticks_left = duration;
+extern inline void StunBeing(Being* const bg, const int duration){
+    bg->status = being_stunned;
+    bg->status_ticks_left = duration;
 }
 
-extern inline void CatapultBeing(Being* const b, const float shift_x, const float shift_y, const int duration){
-    b->status = being_fly;
-    b->status_ticks_left = duration;
-    b->special_move_shift = (SDL_FPoint){shift_x, shift_y};
-    b->rend_fly_help_data.start_angle = b->direction;
-    b->rend_fly_help_data.ticks = SDL_rand(2) ? duration : -duration;
+extern inline void CatapultBeing(Being* const bg, const float shift_x, const float shift_y, const int duration){
+    bg->status = being_fly;
+    bg->status_ticks_left = duration;
+    bg->special_move_shift = (SDL_FPoint){shift_x, shift_y};
+    if(duration < 16){
+        bg->rend_fly_help_data.ticks = 0;
+    }else{
+        bg->rend_fly_help_data.start_angle = bg->direction;
+        bg->rend_fly_help_data.ticks = SDL_rand(2) ? duration : -duration;
+    }
 }
 
-static inline void UpdateBeingStunned(Being* const b){
-    if(b->status_ticks_left == 0){
-        b->status = being_idle;
+static inline void UpdateBeingStunned(Being* const bg){
+    if(bg->status_ticks_left == 0){
+        bg->status = being_idle;
         return;
     }
-    --b->status_ticks_left;
+    --bg->status_ticks_left;
 }
 
-static inline void UpdateBeingFly(Being* const b, Game_data* const gd){
-    if(b->status_ticks_left == 0){
-        StunBeing(b, BEING_STUN_DURATION * b->armour.unstability);
+static inline void UpdateBeingFly(Being* const bg, Game_data* const gd){
+    if(bg->status_ticks_left == 0){
+        StunBeing(bg, BEING_STUN_DURATION / bg->armour.unstability);
         return;
     }
-    float new_x = b->position.x + b->special_move_shift.x;
-    float new_y = b->position.y + b->special_move_shift.y;
+    float new_x = bg->position.x + bg->special_move_shift.x;
+    float new_y = bg->position.y + bg->special_move_shift.y;
     Segment* new_segment = GetSegmentUnsafe(&gd->world, new_x, new_y);
-    if(new_segment != b->segment){
+    if(new_segment != bg->segment){
         if (new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS){
-            StunBeing(b, BEING_STUN_DURATION * b->armour.unstability);
+            StunBeing(bg, BEING_STUN_DURATION * bg->armour.unstability);
         }else{
-            SetBeingPositionInNewSegment(b, new_x, new_y, new_segment, gd->beings.array);
+            SetBeingPositionInNewSegment(bg, new_x, new_y, new_segment, gd->beings.array);
         }
     }else{
-        SetBeingPosition(b, new_x, new_y);
+        SetBeingPosition(bg, new_x, new_y);
     }
-    --b->status_ticks_left;
+    --bg->status_ticks_left;
 }
 
 static inline void FindTargetForBeing(Being* const b, Players* const plys){

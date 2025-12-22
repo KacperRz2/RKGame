@@ -116,6 +116,8 @@
 #define BLOCK_COST                  16
 #define PC_BLOCK_FATIG_BLOCK_TIME   50
 #define DEFAULT_FLY_VELOCITY        0.5F
+#define BASE_FLY_VELOCITY           0x3.0p-4F
+#define BASE_FLY_TICKS              10
 #define QUICK_SCROLLS               9U
 #define SCROLLS_NUM                 35U
 #define OPTIONS_NUM                 5U
@@ -164,6 +166,8 @@
 #define SELL_DIVIDER                10
 #define DODGE_EFFECT_TICKS          64
 #define MAX_NOT_NULL_SEGS           (11U * 37U * pow2(BIG_SEGMENT_SEGMENTS_X))
+#define PC_PUSH_POWER               8.0F
+#define SCROLL_PUSH_POWER           12.0F
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -246,7 +250,7 @@
                                             32,\
                                             PLAYER_VELOCITY * 2.5F,\
                                             1000,\
-                                            {0.0F, 1.0F, 1.0F, 1.5F},\
+                                            {0.0F, 1.0F, 1.0F, 1.125F},\
                                             {10.0F, 0.0F, 0.0F, 0.25F},\
                                             UpdateBeingOrdinary\
                                         },\
@@ -270,7 +274,7 @@
                                             40,\
                                             PLAYER_VELOCITY * 1.875F,\
                                             2000,\
-                                            {20.0F, 0.25F, 0.875F, 0.5F},\
+                                            {20.0F, 0.25F, 0.875F, 0.875F},\
                                             {30.0F, 0.5F, 5.0F, 0.75F},\
                                             UpdateBeingOrdinary\
                                         },\
@@ -278,7 +282,7 @@
                                             48,\
                                             PLAYER_VELOCITY * 1.375F,\
                                             2000,\
-                                            {15.0F, 0.5F, 0.5F, 0.5F},\
+                                            {15.0F, 0.5F, 0.5F, 0.875F},\
                                             {20.0F, 0.5F, 10.0F, 0.25F},\
                                             UpdateBeingRanger\
                                         },\
@@ -286,7 +290,7 @@
                                             32,\
                                             PLAYER_VELOCITY * 2.0F,\
                                             4000,\
-                                            {25.0F, 0.125F, 0.875F, 0.25F},\
+                                            {25.0F, 0.125F, 0.875F, 0.75F},\
                                             {1.0F, 0.875F, 0.0F, 0.5F},\
                                             UpdateBeingCommander\
                                         },\
@@ -294,7 +298,7 @@
                                             40,\
                                             PLAYER_VELOCITY * 1.5F,\
                                             2000,\
-                                            {10.0F, 0.875F, 0.125F, 0.5F},\
+                                            {10.0F, 0.875F, 0.125F, 0.875F},\
                                             {5.0F, 0.875F, 20.0F, 0.25F},\
                                             UpdateBeingWarlock\
                                         },\
@@ -302,7 +306,7 @@
                                             34,\
                                             PLAYER_VELOCITY * 2.25F,\
                                             1000,\
-                                            {0.0F, 1.0F, 1.0F, 1.5F},\
+                                            {0.0F, 1.0F, 1.0F, 1.125F},\
                                             {128.0F, 0.125F, 16.0F, 0.5F},\
                                             UpdateAlly0\
                                         }\
@@ -313,7 +317,7 @@
 #define PC_RANGE_DMG                10.0F
 #define PC_RANGE_MAGIC              350.0F
 #define PC_RANGE_PENETR             0.5F
-#define PC_BLADE_IMPACT             {PC_BLADE_DMG, PC_BLADE_PENETR, PC_BLADE_MAGIC, 3.0F}//dmg, penetr, magic, stun
+#define PC_BLADE_IMPACT             {PC_BLADE_DMG, PC_BLADE_PENETR, PC_BLADE_MAGIC, PC_PUSH_POWER}//dmg, penetr, magic, stun
 #define PC_RANGE_IMPACT             {PC_RANGE_DMG, PC_RANGE_PENETR, PC_RANGE_MAGIC, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
 #define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}//absorption, multipl, magic_multipl, unstability

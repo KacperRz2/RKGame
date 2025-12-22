@@ -83,6 +83,7 @@ struct Render_data{
 	float sin_player_direction;
 	float cos_player_direction;
 	unsigned int counter;
+	float mouse_y;
 	Visual_effects visual_effects;
 	SDL_Window* window;
 	SDL_Renderer* renderer;

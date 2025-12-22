@@ -63,3 +63,7 @@ void SetSineCosineArrays(){
 		*(co + i) = SDL_cosf(MIN_ANGLE * i);
 	}
 }
+
+extern inline float GetDistanceSquared(const SDL_FPoint* const point0, const SDL_FPoint* const point1){
+    return pow2(point0->x - point1->x) + pow2(point0->y - point1->y);
+}

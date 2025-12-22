@@ -12,6 +12,7 @@ static void PlaceBoxes(Game_data* const);
 static void PlaceShops(World* const);
 void DestroyWorld(World* const);
 Segment* GetSegmentUnsafe(const World* const, const float, const float);
+Segment* GetSegmentSafe(const World* const, const float, const float);
 Segment* GetSegmentByIndxUnsafe(const World* const, const unsigned int, const unsigned int);
 Segment* GetSegmentByIndxSafe(const World* const, const unsigned int, const unsigned int);
 void StartNewLevel(Game_data* const);

@@ -403,6 +403,15 @@ extern inline Segment* GetSegmentUnsafe(const World* const wld, const float x, c
 	return *(*(wld->segments + c) + r);
 }
 
+extern inline Segment* GetSegmentSafe(const World* const wld, const float x, const float y){
+	const unsigned int c = (unsigned int)(x / SEGMENT_SIZE);
+	const unsigned int r = (unsigned int)(y / SEGMENT_SIZE);
+	if(c >= SEGMENTS_X || r >= SEGMENTS_Y){
+		return NULL;
+	}
+	return *(*(wld->segments + c) + r);
+}
+
 extern inline Segment* GetSegmentByIndxUnsafe(const World* const wld, const unsigned int c, const unsigned int r){
 	return *(*(wld->segments + c) + r);
 }

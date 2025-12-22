@@ -53,6 +53,7 @@ void GameLoop(Game_data* const gd){
 	Uint64 now = 0ULL;
 	Uint64 timer;
     int quit = 0;
+	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 	Uint64 time = SDL_GetTicksNS();
 	Uint64 prev_frame_time = time;
 	Uint64 TPS_time = SDL_GetTicks();
@@ -525,6 +526,7 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
 	SDL_SetWindowRelativeMouseMode(rend_data->window, true);
 	SetMouseBarrier(rend_data);
+	rend_data->mouse_y = half(rend_data->window_h);
 }
 
 extern inline int CalculateDamage(const Impact* const impact, const Armour* const armour){
@@ -629,7 +631,7 @@ static inline SDL_FPoint GetBeingCreationPoint(Game_data* const gd, const float 
 		control_point_old = control_point;
 	}
 }
-
+//---------------------------------------------------------------------------------------------------------------
 extern inline int HasEffect(Lasting_effect* const efs, const unsigned int efs_num, const unsigned int effect_id){
     for(unsigned int i = 0U; i < efs_num; ++i){
         if((efs + i)->id == effect_id){

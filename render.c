@@ -39,6 +39,7 @@ int GraphicsInitiation(Render_data* const rend_data){
 	DrawBeings(rend_data, surface, bmp_path);
 	DrawColouredThings(rend_data, surface, bmp_path);
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
+	rend_data->mouse_y = half(rend_data->window_h);
 	SetMouseBarrier(rend_data);
 	DrawBackgroud(rend_data, surface, bmp_path);
 	SDL_free(bmp_path);
@@ -76,11 +77,12 @@ static void RenderVisualEffects(Render_data* const rend_data, Game_data* const g
 				}else{
 					SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.75F));
 				}
+				const float size = ve->size * (1.5F - ve->ticks_left / (float)ve->start_ticks);
 				SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
-					rend_point.x - half(ve->size),
-					rend_point.y - half(ve->size),
-					ve->size,
-					ve->size
+					rend_point.x - half(size),
+					rend_point.y - half(size),
+					size,
+					size
 				});
 				SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 1.0F);
 			}else if(ve->type == visual_effect_t1){
@@ -269,6 +271,7 @@ void ResetRenderData(Render_data* const rend_data){
 	rend_data->viewfinder_rect = (SDL_Rect)VIEWFINDER_RECT;
 	rend_data->visible_rect = (SDL_FRect)VISIBLE_RECT;
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
+	rend_data->mouse_y = half(rend_data->window_h);
 	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
@@ -312,7 +315,7 @@ static inline void RenderBeing(Render_data* const rend_data, Game_data* const gd
 			BeingSize(bg),
 			BeingSize(bg)
 		};
-		if(bg->status == being_fly){
+		if(bg->status == being_fly && bg->rend_fly_help_data.ticks != 0){
 			bg->direction = bg->rend_fly_help_data.start_angle + FULL_ANGLE * (1.0F - (float)bg->status_ticks_left / (float)bg->rend_fly_help_data.ticks);
 		}else if(bg->status <= being_strike){
 			bg->direction = arctan2(bg->position.y - bg->target.player->position.y, bg->position.x - bg->target.player->position.x) - SDL_PI_F * 0.5F;
@@ -701,12 +704,10 @@ static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, 
 }
 
 static void RenderGunSight(Render_data* const rend_data){
-    float cursor_y;
-	SDL_GetMouseState(NULL, &cursor_y);
-	const float spread = (PLAYER_REND_Y - cursor_y) / (float)rend_data->viewfinder * GUN_SIGHT_SPREAD_RANGE + GUN_SIGHT_SPREAD_MIN;
+	const float spread = (PLAYER_REND_Y - rend_data->mouse_y) / (float)rend_data->viewfinder * GUN_SIGHT_SPREAD_RANGE + GUN_SIGHT_SPREAD_MIN;
 	SDL_FRect rect = {
 		VIEWFINDER_CENTER - half(GUN_SIGHT_SIZE),
-		cursor_y - half(GUN_SIGHT_SIZE) - spread,
+		rend_data->mouse_y - half(GUN_SIGHT_SIZE) - spread,
 		(float)GUN_SIGHT_SIZE,
 		(float)GUN_SIGHT_SIZE
 	};
@@ -714,7 +715,7 @@ static void RenderGunSight(Render_data* const rend_data){
 	rect.y += spread * 2.0F;
 	SDL_RenderTexture(rend_data->renderer, texture(tx_gunsightpart), NULL, &rect);
 	rect.x -= spread;
-	rect.y = cursor_y - half(GUN_SIGHT_SIZE);
+	rect.y = rend_data->mouse_y - half(GUN_SIGHT_SIZE);
 	SDL_RenderTextureRotated(rend_data->renderer, texture(tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
 	rect.x += spread * 2.0F;
 	SDL_RenderTextureRotated(rend_data->renderer, texture(tx_gunsightpart), NULL, &rect, 90.0, NULL, SDL_FLIP_NONE);
@@ -1955,4 +1956,13 @@ void ToggleFullscreen(Render_data* const rend_data){
 	}
 	SDL_SyncWindow(rend_data->window);
 	ResetRenderData(rend_data);
+}
+
+extern inline SDL_FPoint GetMouseWorldPosition(const Game_data* const gd){
+	const Render_data* const rend_data = gd->rend_data_ptr;
+	const float distance = PLAYER_REND_Y - rend_data->mouse_y;
+	return (SDL_FPoint){
+		human(gd)->position.x + rend_data->sin_player_direction * distance,
+		human(gd)->position.y - rend_data->cos_player_direction * distance
+	};
 }

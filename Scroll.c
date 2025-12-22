@@ -7,59 +7,82 @@
 #include <Being.h>
 #include <Player.h>
 #include <World.h>
+#include <render.h>
 
 extern inline int ScrollCost(const unsigned int scroll_id){
     const int costs[] = SCR_COSTS;
     return *(costs + scroll_id);
 }
 
-extern inline void UseScroll(Game_data* const gd){
-    const void (*effect[])(Game_data* const) = SCR_EFFECTS;
-    (*(effect + human(gd)->selected_scroll))(gd);
+extern inline bool UseScroll(Game_data* const gd){
+    const bool (*effect[])(Game_data* const) = SCR_EFFECTS;
+    return (*(effect + human(gd)->selected_scroll))(gd);
 }
 
 Uint8 GetRandomScroll(){
     return SDL_rand(scroll_empty);
 }
 
-void effect0(Game_data* const gd){
-    const unsigned int range = 1U;
-    const unsigned int array_size = pow2(1U + range * 2);
+bool effect0(Game_data* const gd){
+    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
+    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+    if(!target_seg){
+        return false;
+    }
+    const int range = 2;
+    const unsigned int array_size = pow2(1 + range * 2);
     Segment* neighbour_segs[array_size];
-    GetNeighbourSegments(neighbour_segs, &gd->world, GetSegmentUnsafe(&gd->world, human(gd)->position.x, human(gd)->position.y));
+    GetNeighbourSegmentsFar(neighbour_segs, &gd->world, target_seg, range);
     for(unsigned int k = 0U; k < array_size; ++k){
         Segment* neighbour = *(neighbour_segs + k);
         if(neighbour == NULL) continue;
         for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
-            Being* b = (gd->beings.array + *(neighbour->beings.beings_ind + i));
-            const float angle = GetDirectionToPush(&human(gd)->position, &b->position);
-            const float stun = DEFAULT_FLY_VELOCITY * b->armour.unstability;
-            CatapultBeing(b, SineSafe(angle) * stun, -CosiSafe(angle) * stun, BEING_DEFAULT_LEFT_TICKS * 8);
+            Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
+            const float distance_squared = GetDistanceSquared(&bg->position, &target_xy);
+            if(distance_squared <= pow2(SEGMENT_SIZE * (range + 1))){
+                const float power = SCROLL_PUSH_POWER * bg->armour.unstability * (1.0F - distance_squared / pow2(SEGMENT_SIZE * (range + 1)));
+                const float angle = GetDirectionToPush(&target_xy, &bg->position);
+                const float vel = BASE_FLY_VELOCITY * power;
+                CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * power);
+            }
         }
     }
+    return true;
 }
 
-void effect1(Game_data* const gd){
+bool effect1(Game_data* const gd){
     AddOrUpdatePlayerEffect(human(gd), (Lasting_effect){pc_effect_hpregen, HP_REGEN_TICKS});
+    return true;
 }
 
-void effect2(Game_data* const gd){
-    if(gd->beings.num < MAX_BEINGS_NUM && human(gd)->segment->ally_beings.num < MAX_SEGM_BEINGS){
-        AddIdleBeingToArray(&gd->beings, ally_ordinary, human(gd)->position.x, human(gd)->position.y, human(gd)->segment, human(gd));
+bool effect2(Game_data* const gd){
+    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
+    Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+    if(target_seg && gd->beings.num < MAX_BEINGS_NUM && target_seg->ally_beings.num < MAX_SEGM_BEINGS){
+        AddIdleBeingToArray(&gd->beings, ally_ordinary, target_xy.x, target_xy.y, target_seg, human(gd));
+        return true;
     }
+    return false;
 }
 
-void effect3(Game_data* const gd){
+bool effect3(Game_data* const gd){
     human(gd)->armour.absorption = human(gd)->max_armour.absorption;
     human(gd)->armour.multipl = human(gd)->max_armour.multipl;
     human(gd)->armour.magic_multipl = human(gd)->max_armour.magic_multipl;
+    return true;
 }
 
-void slow(Game_data* const gd){
+bool slow(Game_data* const gd){
+    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
+    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+    if(!target_seg){
+        return false;
+    }
+    // AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &target_xy);
     const int range = 2;
     const unsigned int array_size = pow2(1 + range * 2);
     Segment* neighbour_segs[array_size];
-    GetNeighbourSegmentsFar(neighbour_segs, &gd->world, human(gd)->segment, range);
+    GetNeighbourSegmentsFar(neighbour_segs, &gd->world, target_seg, range);
     for(unsigned int k = 0U; k < array_size; ++k){
         Segment* neighbour = *(neighbour_segs + k);
         if(neighbour == NULL) continue;
@@ -74,14 +97,16 @@ void slow(Game_data* const gd){
             }
         }
     }
+    return true;
 }
 
-void effect5(Game_data* const gd){
-    
+bool effect5(Game_data* const gd){
+    return false;
 }
 
-void effect6(Game_data* const gd){
+bool effect6(Game_data* const gd){
     SetPlayerPosition(human(gd), gd->world.shops->location.x, gd->world.shops->location.y);
+    return true;
 }
 
-void EffectEmpty(Game_data* const gd){}
+bool EffectEmpty(Game_data* const gd){return false;}

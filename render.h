@@ -80,5 +80,6 @@ void SetMouseBarrier(Render_data* const);
 static SDL_FRect GetScrollTextureSrcRect(unsigned int);
 void RenderShop(Render_data* const, const Player* const, const Shop* const, const Uint8* const, const unsigned int, const Uint8* const, const unsigned int, const int);
 void ToggleFullscreen(Render_data* const);
+SDL_FPoint GetMouseWorldPosition(const Game_data* const);
 
 #endif

@@ -2,15 +2,15 @@
 #define SCROLL_H_
 
 int ScrollCost(const unsigned int);
-void UseScroll(Game_data* const);
+bool UseScroll(Game_data* const);
 Uint8 GetRandomScroll();
-void effect0(Game_data* const);
-void effect1(Game_data* const);
-void effect2(Game_data* const);
-void effect3(Game_data* const);
-void slow(Game_data* const);
-void effect5(Game_data* const);
-void effect6(Game_data* const);
-void EffectEmpty(Game_data* const);
+bool effect0(Game_data* const);
+bool effect1(Game_data* const);
+bool effect2(Game_data* const);
+bool effect3(Game_data* const);
+bool slow(Game_data* const);
+bool effect5(Game_data* const);
+bool effect6(Game_data* const);
+bool EffectEmpty(Game_data* const);
 
 #endif

@@ -99,8 +99,14 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const gd){
 				}else{
 					if(bg->status != being_fly){
 						const float power = CalculateStunPower(&pr->data.penetrating.impact, &bg->armour);
-						if(power > 1.0F){
-							StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * power));
+						if(power >= 1.0F){
+							if(bg->status == being_stunned){
+								const float angle = GetDirectionToPush(&pr->position, &bg->position);
+								const float vel = BASE_FLY_VELOCITY * power;
+								CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * power);
+							}else{
+								StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * power));
+							}
 						}
 					}
 					if(pr->data.penetrating.hits < pr->data.penetrating.penetration){
