@@ -76,49 +76,49 @@ void UpdateProjectiles(Game_data* const gd){
 }
 
 static bool UpdatePCProjectile(Projectile* const pr, Game_data* const gd){
-		MoveProjectile(pr);
-		Segment* seg = GetSegmentUnsafe(&gd->world, pr->position.x, pr->position.y);
-		if(seg == NULL){
+	MoveProjectile(pr);
+	Segment* seg = GetSegmentUnsafe(&gd->world, pr->position.x, pr->position.y);
+	if(seg == NULL){
+		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
+		return false;
+	}
+	Segment* neighbour_segs[4];
+	Get4NearestSegments(neighbour_segs, &gd->world, seg, pr->position.x, pr->position.y);
+	for(unsigned int k = 0U; k < 4; ++k){
+		Segment* neighbour = *(neighbour_segs + k);
+		if(neighbour == NULL) continue;
+		for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
+			Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + j));
+			if(!ProjectileHitsBeing(pr, bg)) continue;
+			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+			if(DamageBeing(bg, &pr->data.penetrating.impact, gd->beings.array)){
+				if(pr->data.penetrating.hits < --pr->data.penetrating.penetration){
+					--j;
+					continue;
+				}
+			}else{
+				if(bg->status != being_fly){
+					const float power = CalculateStunPower(&pr->data.penetrating.impact, &bg->armour);
+					if(power >= 1.0F){
+						if(bg->status == being_stunned){
+							const float angle = GetDirectionToPush(&pr->position, &bg->position);
+							const float vel = BASE_FLY_VELOCITY * power;
+							CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * power);
+						}else{
+							StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * power));
+						}
+					}
+				}
+				if(pr->data.penetrating.hits < pr->data.penetrating.penetration){
+					*(pr->data.penetrating.hit_targets + pr->data.penetrating.hits++) = bg->main_indx;
+					continue;
+				}
+			}
 			*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 			return false;
 		}
-		Segment* neighbour_segs[4];
-		Get4NearestSegments(neighbour_segs, &gd->world, seg, pr->position.x, pr->position.y);
-		for(unsigned int k = 0U; k < 4; ++k){
-			Segment* neighbour = *(neighbour_segs + k);
-			if(neighbour == NULL) continue;
-			for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
-				Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + j));
-				if(!ProjectileHitsBeing(pr, bg)) continue;
-				AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
-				if(DamageBeing(bg, &pr->data.penetrating.impact, gd->beings.array)){
-					if(pr->data.penetrating.hits < --pr->data.penetrating.penetration){
-						--j;
-						continue;
-					}
-				}else{
-					if(bg->status != being_fly){
-						const float power = CalculateStunPower(&pr->data.penetrating.impact, &bg->armour);
-						if(power >= 1.0F){
-							if(bg->status == being_stunned){
-								const float angle = GetDirectionToPush(&pr->position, &bg->position);
-								const float vel = BASE_FLY_VELOCITY * power;
-								CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * power);
-							}else{
-								StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * power));
-							}
-						}
-					}
-					if(pr->data.penetrating.hits < pr->data.penetrating.penetration){
-						*(pr->data.penetrating.hit_targets + pr->data.penetrating.hits++) = bg->main_indx;
-						continue;
-					}
-				}
-				*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
-				return false;
-			}
-		}
-		return true;
+	}
+	return true;
 }
 
 static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const gd){
@@ -159,6 +159,11 @@ static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const gd){
 }
 
 static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const gd){
+	const bool (*update[])(Projectile* const, Game_data* const) = SPEC_PROJECTILES_FUNC;
+	return (*(update + pr->data.special.effect_id))(pr, gd);
+}
+
+static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 	if(pr->data.special.ticks-- < 1U){
 		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 		return false;
@@ -192,6 +197,51 @@ static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const gd){
 			}
 		}
 	}
+	return true;
+}
+
+static bool FireProjectile(Projectile* const pr, Game_data* const gd){
+	Segment* seg = GetSegmentUnsafe(&gd->world, pr->position.x + pr->shift_per_tick.x, pr->position.y + pr->shift_per_tick.y);
+	if(pr->data.special.ticks-- < 1U || seg == NULL){
+		if(seg == NULL){
+			seg = GetSegmentUnsafe(&gd->world, pr->position.x, pr->position.y);
+		}else{
+			MoveProjectile(pr);
+		}
+		const int range = 2;
+		const unsigned int array_size = pow2(1 + range * 2);
+		Segment* neighbour_segs[array_size];
+		GetNeighbourSegmentsFar(neighbour_segs, &gd->world, seg, range);
+		for(unsigned int k = 0U; k < array_size; ++k){
+			Segment* neighbour = *(neighbour_segs + k);
+			if(neighbour == NULL) continue;
+			for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
+				Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
+				const float distance_squared = GetDistanceSquared(&bg->position, &pr->position);
+				const float range_squared = pow2(SEGMENT_SIZE * range);
+				if(distance_squared <= range_squared){
+					AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
+					const Impact impact = PC_FIRE_PROJECTILE_IMPACT;
+					const float impact_level = (1.0F - distance_squared / range_squared);
+					if(!DamageBeing(bg, &(Impact){
+						impact.damage * impact_level,
+						impact.armour_reduction,
+						impact.magic * impact_level,
+						impact.stun
+					}, gd->beings.array)){
+						const float power = SCROLL_PUSH_POWER * bg->armour.unstability * impact_level;
+						const float angle = GetDirectionToPush(&pr->position, &bg->position);
+						const float vel = BASE_FLY_VELOCITY * power;
+						CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * power);
+					}
+				}
+			}
+		}
+		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
+		return false;
+	}
+	MoveProjectile(pr);
+	AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
 	return true;
 }
 

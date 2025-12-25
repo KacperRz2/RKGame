@@ -74,7 +74,7 @@
 #define PROJECTILE_TEXTURES         {\
                                         tx_projectile,\
                                         tx_h_projectile,\
-                                        tx_h_projectile1\
+                                        tx_void\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\

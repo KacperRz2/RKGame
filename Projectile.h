@@ -15,4 +15,7 @@ static bool UpdatePCProjectile(Projectile* const, Game_data* const);
 static bool UpdateHostileProjectile(Projectile* const, Game_data* const);
 static bool UpdateSpecialProjectile(Projectile* const, Game_data* const);
 
+static bool WarlockProjectile(Projectile* const, Game_data* const);
+static bool FireProjectile(Projectile* const, Game_data* const);
+
 #endif

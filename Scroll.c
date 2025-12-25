@@ -8,6 +8,7 @@
 #include <Player.h>
 #include <World.h>
 #include <render.h>
+#include <Projectile.h>
 
 extern inline int ScrollCost(const unsigned int scroll_id){
     const int costs[] = SCR_COSTS;
@@ -29,7 +30,7 @@ bool effect0(Game_data* const gd){
     if(!target_seg){
         return false;
     }
-    const int range = 2;
+    const int range = 3;
     const unsigned int array_size = pow2(1 + range * 2);
     Segment* neighbour_segs[array_size];
     GetNeighbourSegmentsFar(neighbour_segs, &gd->world, target_seg, range);
@@ -39,8 +40,9 @@ bool effect0(Game_data* const gd){
         for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
             Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
             const float distance_squared = GetDistanceSquared(&bg->position, &target_xy);
-            if(distance_squared <= pow2(SEGMENT_SIZE * (range + 1))){
-                const float power = SCROLL_PUSH_POWER * bg->armour.unstability * (1.0F - distance_squared / pow2(SEGMENT_SIZE * (range + 1)));
+            const float range_squared = pow2(SEGMENT_SIZE * range);
+            if(distance_squared <= range_squared){
+                const float power = SCROLL_PUSH_POWER * bg->armour.unstability * (1.0F - distance_squared / range_squared);
                 const float angle = GetDirectionToPush(&target_xy, &bg->position);
                 const float vel = BASE_FLY_VELOCITY * power;
                 CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * power);
@@ -100,8 +102,13 @@ bool slow(Game_data* const gd){
     return true;
 }
 
-bool effect5(Game_data* const gd){
-    return false;
+bool fire(Game_data* const gd){
+    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
+    float sh_x, sh_y;
+    GetShift(&human(gd)->position, &target_xy, FIRE_PROJECTILE_VELOCITY, &sh_x, &sh_y);
+    const unsigned int ticks = sh_x != 0.0F ? (target_xy.x - human(gd)->position.x) / sh_x : (target_xy.y - human(gd)->position.y) / sh_y;
+    AddSpecialProjectileToArray(&gd->projectiles, &human(gd)->position, sh_x, sh_y, projectile_fire, ticks);
+    return true;
 }
 
 bool effect6(Game_data* const gd){

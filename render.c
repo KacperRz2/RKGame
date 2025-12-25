@@ -1113,10 +1113,6 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 		icon_size,
 		icon_size
 	};
-	SDL_FPoint dst_point_scrolls_num = {
-		4.0F + icon_size,
-		icon_size * 1.75F + FRAME_W * 3.0F 
-	};
 	const float shift = icon_size + FRAME_W;
 	const SDL_FRect menu_ptr_rect = {
 		FRAME_W + shift * (pc->help_data.menu_position % ICONS_IN_VIEWF_ROW),
@@ -1136,26 +1132,25 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 		icon_size,
 		icon_size
 	};
-	for(unsigned int i = 0U; i < ICONS_IN_VIEWF_ROW - 2U; ++i){
-		dst_rect.x = FRAME_W;
-		dst_point_scrolls_num.x = 4.0F + icon_size;
-		for(unsigned int j = 0U; j < ICONS_IN_VIEWF_ROW; ++j){
-			const unsigned int scroll_id = i * ICONS_IN_VIEWF_ROW + j;
-			const int scrolls_num = *(pc->scrolls + scroll_id);
-			const SDL_FRect src_rect = GetScrollTextureSrcRect(scroll_id);
-			if(scrolls_num < 1){
-				SDL_SetTextureAlphaMod(texture(tx_icons), 31U);
-				SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &dst_rect);
-			}else{
-				SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
-				SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &dst_rect);
-				RenderIntFromRight(rend_data, dst_point_scrolls_num.x, dst_point_scrolls_num.y, scrolls_num_text_height, scrolls_num);
-			}
-			dst_rect.x += shift;
-			dst_point_scrolls_num.x += shift;
+	for(unsigned int i = 0U; i < SCROLLS_NUM; ++i){
+		const unsigned int col = i % ICONS_IN_VIEWF_ROW;
+		const unsigned int row = i / ICONS_IN_VIEWF_ROW;
+		dst_rect.x = FRAME_W + shift * col;
+		dst_rect.y = icon_size + FRAME_W * 3.0F + shift * row;
+		const int scrolls_num = *(pc->scrolls + i);
+		const SDL_FRect src_rect = GetScrollTextureSrcRect(i);
+		if(scrolls_num < 1){
+			SDL_SetTextureAlphaMod(texture(tx_icons), 31U);
+			SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &dst_rect);
+		}else{
+			SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
+			SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &dst_rect);
+			const SDL_FPoint dst_point_scrolls_num = {
+				4.0F + icon_size + shift * col,
+				icon_size * 1.75F + FRAME_W * 3.0F + shift * row 
+			};
+			RenderIntFromRight(rend_data, dst_point_scrolls_num.x, dst_point_scrolls_num.y, scrolls_num_text_height, scrolls_num);
 		}
-		dst_rect.y += shift;
-		dst_point_scrolls_num.y += shift;
 	}
 	SDL_SetTextureColorMod(texture(tx_menu_ptr), 31U, 127U, 255U);
 	SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);

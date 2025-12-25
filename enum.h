@@ -70,7 +70,8 @@ enum scroll_type{
     scroll_slow,
     scroll_5,
     scroll_6,
-    scroll_empty = 34
+    scroll_7,
+    scroll_empty// = 34
 };
 
 enum being_type{
@@ -120,9 +121,8 @@ enum projectile_type{
 };
 
 enum special_projectile_effect{
-    projectile_effect_0,
-    projectile_effect_1,
-    projectile_effect_2
+    projectile_warlock,
+    projectile_fire
 };
 
 enum segment_flags{

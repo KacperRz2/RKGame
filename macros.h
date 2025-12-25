@@ -41,7 +41,7 @@
 #define BEING_HIT_CIRCLE_DIAMET     16.0F
 #define RANGE_SEGMENTS              ((unsigned int)(7000.0F / SEGMENT_SIZE))
 #define PROJECTILE_RAN_SEG          ((unsigned int)(2000.0F / SEGMENT_SIZE))
-#define MAX_HITS                    16U
+#define MAX_HITS                    12U
 #define BLADE_PENETRATION           MAX_HITS
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
 #define RANGE                       700.0F
@@ -62,6 +62,7 @@
 #define BEING_RELOAD_TICKS          128
 #define BEING_STUN_DURATION         256
 #define PROJECTILE_VELOCITY         4.0F
+#define FIRE_PROJECTILE_VELOCITY    3.0F
 #define BEING_HALT_DISTANCE         70.0F
 #define BEING_MIN_DISTANCE          64.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
@@ -69,7 +70,7 @@
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
 #define PC_HP                       0x800
 #define PC_FATIGUE                  1000
-#define PC_MAGIC                    0x10
+#define PC_MAGIC                    0x100
 #define PC_M_MAGIC                  0x10000000
 #define MOVING_BACK_VELO_MODI       0.93F
 #define PC_DODGE_FATIG              100
@@ -119,7 +120,7 @@
 #define BASE_FLY_VELOCITY           0x3.0p-4F
 #define BASE_FLY_TICKS              10
 #define QUICK_SCROLLS               9U
-#define SCROLLS_NUM                 35U
+#define SCROLLS_NUM                 (scroll_empty + 1U)
 #define OPTIONS_NUM                 5U
 #define BEING_TYPES_NUM             2U
 #define MAX_BEING_EFFECTS           8
@@ -128,6 +129,7 @@
 #define WEAPON_ATTACK_Y             24.0F
 #define MAX_PC_ARMOUR_ABSORP        200.0F
 #define ICONS_IN_VIEWF_ROW          7
+#define ICONS_IN_VIEWF_COL          (SCROLLS_NUM / ICONS_IN_VIEWF_ROW)
 #define BOX_MAX_COINS               256U
 #define BOX_MAX_MP                  32U
 #define MAX_KEYS                    16U
@@ -194,9 +196,8 @@
                                         1U,\
                                         1U,\
                                         1U,\
-                                        1U,1U,1U,1U,1U,1U,1U,1U,1U,1U,\
-                                        1U,1U,1U,1U,1U,1U,1U,1U,1U,1U,\
-                                        1U,1U,1U,1U,1U,1U,1U,1U,\
+                                        1U,\
+                                        1U,\
                                         0U\
                                     }
 #define ITEMS_PRICES                {\
@@ -206,9 +207,8 @@
                                         100,\
                                         100,\
                                         100,\
-                                        100,100,100,100,100,100,100,100,100,100,\
-                                        100,100,100,100,100,100,100,100,100,100,\
-                                        100,100,100,100,100,100,100,100,\
+                                        100,\
+                                        100,\
                                         0,\
                                         20,\
                                         200,\
@@ -223,11 +223,9 @@
                                         effect2,\
                                         effect3,\
                                         slow,\
-                                        effect5,\
+                                        fire,\
                                         effect6,\
-                                        EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
-                                        EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
-                                        EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,EffectEmpty,\
+                                        EffectEmpty,\
                                         EffectEmpty\
                                     }
 #define GAME_LASTING_EFFECTS        {\
@@ -319,6 +317,7 @@
 #define PC_RANGE_PENETR             0.5F
 #define PC_BLADE_IMPACT             {PC_BLADE_DMG, PC_BLADE_PENETR, PC_BLADE_MAGIC, PC_PUSH_POWER}//dmg, penetr, magic, stun
 #define PC_RANGE_IMPACT             {PC_RANGE_DMG, PC_RANGE_PENETR, PC_RANGE_MAGIC, 1.0F}
+#define PC_FIRE_PROJECTILE_IMPACT   {16.0F, PC_RANGE_PENETR, 700.0F, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
 #define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}//absorption, multipl, magic_multipl, unstability
 #define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.25F}
@@ -328,6 +327,10 @@
                                         UpdatePCProjectile,\
                                         UpdateHostileProjectile,\
                                         UpdateSpecialProjectile\
+                                    }
+#define SPEC_PROJECTILES_FUNC       {\
+                                        WarlockProjectile,\
+                                        FireProjectile\
                                     }
 #define BEING_WEAPON_BASE_PLCMNT    {{BLADE_BASE_X, BLADE_BASE_Y}, BLADE_BASE_DIRECTION_BEING}
 #define BEING_WEAPON_PREPARE_PLCMNT {{20.0F, -16.0F}, 0.5F}
