@@ -81,6 +81,7 @@ static void UpdateAllyWalk(Being* const, Game_data* const);
 static void UpdateAllySearch(Being* const, Game_data* const);
 
 void AddBeingEffect(Being* const, const Lasting_effect);
+void AddOrUpdateBeingEffect(Being* const, const Lasting_effect);
 static void RemoveBeingEffect(Being* const, const int);
 static void UpdateBeingEffects(Game_data* const, Being* const);
 static void UpdateBeingEffect(Game_data* const, Being* const, const int);
@@ -89,6 +90,7 @@ void SlowBeing(Game_data* const, Being* const, const int);
 void CommanderAura(Game_data* const, Being* const, const int);
 void CommanderIsNear(Game_data* const, Being* const, const int);
 void OpeningPortal(Game_data* const, Being* const, const int);
+void Burn(Game_data* const, Being* const, const int);
 
 static void UpdateBeingOrdinary(Being* const, Game_data* const);
 static void UpdateBeingRanger(Being* const, Game_data* const);

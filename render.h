@@ -12,6 +12,9 @@ void AddCurseVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddDeadVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddPortalVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddProjectileVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddBigBurnVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddSmallBurnVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddBoomVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 
 static void DrawBeings(Render_data* const, SDL_Surface*, char*);
 static void DrawColouredThings(Render_data* const, SDL_Surface*, char*);

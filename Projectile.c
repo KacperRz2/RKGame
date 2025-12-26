@@ -168,7 +168,9 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 		return false;
 	}
-	AddProjectileVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+	if(!(pr->data.special.ticks % 3U)){
+		AddProjectileVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+	}
 	Segment* seg = GetSegmentUnsafe(&gd->world, pr->position.x + pr->shift_per_tick.x, pr->position.y + pr->shift_per_tick.y);
 	if(!seg){
 		if(!GetSegmentUnsafe(&gd->world, pr->position.x + pr->shift_per_tick.x, pr->position.y)){
@@ -208,6 +210,12 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 		}else{
 			MoveProjectile(pr);
 		}
+		AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+		AddBoomVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+		AddBoomVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+			pr->position.x + (SDL_randf() - 0.5F) * half(BOOM_SIZE),
+			pr->position.y + (SDL_randf() - 0.5F) * half(BOOM_SIZE)
+		});
 		const int range = 2;
 		const unsigned int array_size = pow2(1 + range * 2);
 		Segment* neighbour_segs[array_size];
@@ -229,6 +237,7 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 						impact.magic * impact_level,
 						impact.stun
 					}, gd->beings.array)){
+						AddOrUpdateBeingEffect(bg, (Lasting_effect){being_effect_burn, BURN_TICKS});
 						const float power = SCROLL_PUSH_POWER * bg->armour.unstability * impact_level;
 						const float angle = GetDirectionToPush(&pr->position, &bg->position);
 						const float vel = BASE_FLY_VELOCITY * power;
@@ -241,7 +250,19 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 		return false;
 	}
 	MoveProjectile(pr);
-	AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+	if(!(pr->data.special.ticks % 2U)){
+		if(!(pr->data.special.ticks % 8U)){
+			AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
+				pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE
+			});
+		}else{
+			AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
+				pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE
+			});
+		}
+	}
 	return true;
 }
 

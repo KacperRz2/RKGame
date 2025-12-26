@@ -587,13 +587,17 @@ static inline int GetMoraleDrop(const Uint8 type){
     return *(morale_costs + type);
 }
 
+static inline void KillBeing(Being* const bg, Game_data* const gd, const unsigned int iter){
+    const int morale_drop = GetMoraleDrop(bg->type_id);
+    gd->enemy_morale = gd->enemy_morale + MAX_MORALE < morale_drop ? -MAX_MORALE : gd->enemy_morale - morale_drop;
+    AddDeadVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
+    *(gd->beings.indices + iter) = *(gd->beings.indices + --gd->beings.num);
+    *(gd->beings.indices + gd->beings.num) = bg->main_indx;
+}
+
 static inline bool IsDeadBeing(Being* const bg, Game_data* const gd, const unsigned int iter){
     if(bg->status == being_dead){
-        const int morale_drop = GetMoraleDrop(bg->type_id);
-        gd->enemy_morale = gd->enemy_morale + MAX_MORALE < morale_drop ? -MAX_MORALE : gd->enemy_morale - morale_drop;
-        AddDeadVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
-        *(gd->beings.indices + iter) = *(gd->beings.indices + --gd->beings.num);
-        *(gd->beings.indices + gd->beings.num) = bg->main_indx;
+        KillBeing(bg, gd, iter);
         return true;
     }
     return false;
@@ -1067,6 +1071,15 @@ extern inline void AddBeingEffect(Being* const bg, const Lasting_effect effect){
     }
 }
 
+extern inline void AddOrUpdateBeingEffect(Being* const bg, const Lasting_effect effect){
+	const int effect_indx = BeingHasEffect(bg, effect.id);
+	if(effect_indx == -1){
+		AddBeingEffect(bg, effect);
+	}else{
+		(bg->effects + effect_indx)->ticks_left = effect.ticks_left;
+	}
+}
+
 static inline void RemoveBeingEffect(Being* const bg, const int indx){
 	RemoveLastingEffect(bg->effects, indx, bg->effects_num--);
 }
@@ -1144,8 +1157,18 @@ void CommanderIsNear(Game_data* const gd, Being* const bg, const int ticks_left)
     }
 }
 
+void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
+    if(ticks_left % 4 == 0 && bg->status != being_in_void){
+        DamageBeing(bg, &(Impact){1.0F, 1.0F, 2.0F, 1.0F}, gd->beings.array);
+        AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+            bg->position.x + (SDL_randf() - 0.5F) * half(BeingSize(bg)),
+            bg->position.y + (SDL_randf() - 0.5F) * half(BeingSize(bg))
+        });
+    }
+}
+
 void OpeningPortal(Game_data* const gd, Being* const bg, const int ticks_left){
-    if(ticks_left < 2){
+    if(ticks_left < 2 && bg->status != being_dead){
         bg->status = being_in_void;
         RemoveBeingFromSegment(bg, &bg->segment->beings, gd->beings.array);
         bg->position = ZERO_POINT_F;

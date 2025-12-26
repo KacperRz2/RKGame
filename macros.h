@@ -18,6 +18,8 @@
 #define PLAYER_SIZE			        32
 #define GUN_SIGHT_SIZE		        16
 #define BULLET_SIZE			        16
+#define BOOM_SIZE			        320
+#define BOOM_EFFECTS_NUM		    2U
 #define BLADE_SIZE                  64.0F
 #define DECELERATION		        0.93F
 #define TICK_TIME			        0x200000ULL
@@ -62,7 +64,7 @@
 #define BEING_RELOAD_TICKS          128
 #define BEING_STUN_DURATION         256
 #define PROJECTILE_VELOCITY         4.0F
-#define FIRE_PROJECTILE_VELOCITY    3.0F
+#define FIRE_PROJECTILE_VELOCITY    2.0F
 #define BEING_HALT_DISTANCE         70.0F
 #define BEING_MIN_DISTANCE          64.0F
 #define CHECK_COLLISION_DISTANCE    768.0F
@@ -145,6 +147,7 @@
 #define HP_REGEN_TICKS              1024
 #define WEAK_EFFECT_TICKS           0x1000
 #define SLOW_EFFECT_TICKS           1024
+#define BURN_TICKS                  0x1000
 #define OPENING_PORTAL_TICKS        128
 #define ATTENTION_RECT_SIZE         (BIG_SEGMENT_SIZE * 3.0F)
 #define SPIRAL_STEPS(range)         (pow2(range * 2U + 1U))
@@ -235,7 +238,8 @@
                                         SlowBeing,\
                                         CommanderAura,\
                                         CommanderIsNear,\
-                                        OpeningPortal\
+                                        OpeningPortal,\
+                                        Burn\
                                     }
 #define PLAYER_LASTING_EFFECTS      {\
                                         SlowPlayer,\

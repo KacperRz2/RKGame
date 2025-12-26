@@ -50,6 +50,8 @@
 #define VORTEX_ROTAT_SPEED          (1024.0F / (0x40000000ULL / FRAME_TIME))
 #define TEXTURE_ROTA_SPEED          (512.0F / (0x40000000ULL / FRAME_TIME))
 #define SCROLL_ICON_SIZE            (SCROLL_SIZE * (37.0F / 64.0F))
+#define BIG_BURN_SIZE               320U
+#define SMALL_BURN_SIZE             64U
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
@@ -75,6 +77,11 @@
                                         tx_projectile,\
                                         tx_h_projectile,\
                                         tx_void\
+                                    }
+#define VISUAL_EFFECT_FUNCS         {\
+                                        RenderVisualEffectsType0,\
+                                        RenderVisualEffectsType1,\
+                                        RenderVisualEffectsType2\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\
@@ -258,6 +265,14 @@
                                         16U,\
                                         visual_effect_t0,\
                                         tx_creation_point\
+                                    })
+#define BURN_VIS_EF(position, size) ((Visual_effect){\
+                                        position,\
+                                        (0x40000000ULL / FRAME_TIME),\
+                                        (0x40000000ULL / FRAME_TIME),\
+                                        size,\
+                                        visual_effect_t2,\
+                                        tx_pixel\
                                     })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
 #define HORDE_ALERT                 {H,o,r,d,a,exclam_m,char_end}

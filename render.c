@@ -36,8 +36,11 @@ int GraphicsInitiation(Render_data* const rend_data){
 			return 3;
 		}
 	}
+	SDL_DestroySurface(surface);
 	DrawBeings(rend_data, surface, bmp_path);
+	SDL_DestroySurface(surface);
 	DrawColouredThings(rend_data, surface, bmp_path);
+	SDL_DestroySurface(surface);
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
 	rend_data->mouse_y = half(rend_data->window_h);
 	SetMouseBarrier(rend_data);
@@ -65,43 +68,73 @@ static inline void RemoveVisalEffect(Visual_effects* const ves, const unsigned i
 	--ves->num;
 }
 
+static void RenderVisualEffectsType0(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
+	if(ve->ticks_left < ve->start_ticks * 3 / 4){
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0.75F));
+	}else{
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.75F));
+	}
+	const float size = ve->size * (1.5F - ve->ticks_left / (float)ve->start_ticks);
+	SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
+		rend_point->x - half(size),
+		rend_point->y - half(size),
+		size,
+		size
+	});
+	SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 1.0F);
+}
+
+static void RenderVisualEffectsType1(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
+	float size;
+	if(ve->ticks_left < ve->start_ticks / 2){
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0.5F));
+		size = ve->size * (ve->ticks_left / (ve->start_ticks * 0.5F));
+	}else{
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.5F));
+		size = ve->size * (2.0F - ve->ticks_left / (ve->start_ticks * 0.5F));
+	}
+	SDL_RenderTextureRotated(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
+		rend_point->x - half(size),
+		rend_point->y - half(size),
+		size,
+		size
+	}, (double)(rend_data->counter * VORTEX_ROTAT_SPEED), NULL, SDL_FLIP_NONE);
+	SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 1.0F);
+}
+
+static void RenderVisualEffectsType2(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
+	if(ve->ticks_left >= ve->start_ticks * 15 / 16){
+		const float level = (ve->ticks_left - ve->start_ticks * 0xF.0p-4F) / (ve->start_ticks * 0x1.0p-4F);
+		const float red = 1.0F - half(level);
+		SDL_SetTextureColorModFloat(texture(ve->tx_num), red, half(red) * SDL_randf(), level);
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 0.5F - half(level));
+	}else{
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0xF.0p-4F) * 0.5F);
+		if(ve->ticks_left >= ve->start_ticks * 3 / 4){
+			const float level = (ve->ticks_left - ve->start_ticks * 0.75F) / (ve->start_ticks * 0x3.0p-4F);
+			SDL_SetTextureColorModFloat(texture(ve->tx_num), level, half(level) * SDL_randf(), 0.0F);
+		}else{
+			const float level = 1.0F - ve->ticks_left / (ve->start_ticks * 0.5F);
+			SDL_SetTextureColorModFloat(texture(ve->tx_num), level, level, level);
+		}
+	}
+	const float size = ve->size * (1.5F - ve->ticks_left / (float)ve->start_ticks);
+	SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
+		rend_point->x - half(size),
+		rend_point->y - half(size),
+		size,
+		size
+	});
+}
+
 static void RenderVisualEffects(Render_data* const rend_data, Game_data* const gd){
-    for(unsigned int i = 0U; i < rend_data->visual_effects.num; ++i){
+	const void (*render[])(Visual_effect* const, SDL_FPoint* const, Render_data* const) = VISUAL_EFFECT_FUNCS;
+	for(unsigned int i = 0U; i < rend_data->visual_effects.num; ++i){
 		Visual_effect* ve = rend_data->visual_effects.array + i;
 		SDL_FPoint rend_point;
 		Segment* seg = GetSegmentUnsafe(&gd->world, ve->position.x, ve->position.y);
 		if(seg && (seg->flags & segment_in_sight) && GetExtendedRenderPointFromTrue(rend_data, ve->position.x, ve->position.y, half(ve->size), human(gd), &rend_point)){
-			if(ve->type == visual_effect_t0){
-				if(ve->ticks_left < ve->start_ticks * 3 / 4){
-					SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0.75F));
-				}else{
-					SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.75F));
-				}
-				const float size = ve->size * (1.5F - ve->ticks_left / (float)ve->start_ticks);
-				SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
-					rend_point.x - half(size),
-					rend_point.y - half(size),
-					size,
-					size
-				});
-				SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 1.0F);
-			}else if(ve->type == visual_effect_t1){
-				float size;
-				if(ve->ticks_left < ve->start_ticks / 2){
-					SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0.5F));
-					size = ve->size * (ve->ticks_left / (ve->start_ticks * 0.5F));
-				}else{
-					SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.5F));
-					size = ve->size * (2.0F - ve->ticks_left / (ve->start_ticks * 0.5F));
-				}
-				SDL_RenderTextureRotated(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
-					rend_point.x - half(size),
-					rend_point.y - half(size),
-					size,
-					size
-				}, (double)(rend_data->counter * VORTEX_ROTAT_SPEED), NULL, SDL_FLIP_NONE);
-				SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 1.0F);
-			}
+			(*(render + ve->type))(ve, &rend_point, rend_data);
 		}
 		if(--ve->ticks_left < 1U){
 			RemoveVisalEffect(&rend_data->visual_effects, i--);
@@ -133,6 +166,18 @@ extern inline void AddProjectileVisualEffect(Visual_effects* const ves, const SD
 	AddVisalEffect(ves, &PROJE_VIS_EFFECT(*position));
 }
 
+extern inline void AddBigBurnVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
+	AddVisalEffect(ves, &BURN_VIS_EF(*position, SDL_rand(BIG_BURN_SIZE / 2) + BIG_BURN_SIZE / 2 + 1U));
+}
+
+extern inline void AddSmallBurnVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
+	AddVisalEffect(ves, &BURN_VIS_EF(*position, SDL_rand(SMALL_BURN_SIZE) + 1U));
+}
+
+extern inline void AddBoomVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
+	AddVisalEffect(ves, &BURN_VIS_EF(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 7U / 2U + 1U));
+}
+
 static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
 	texture(tx_pc) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BEING_TEXURE_SIZE, BEING_TEXURE_SIZE);
 	if(!texture(tx_pc)){
@@ -151,6 +196,7 @@ static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char*
 		exit(-1);
 	}
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PC_TX1_FILE_NAME);
+	SDL_DestroySurface(surface);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -170,6 +216,7 @@ static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char*
 		}
 	}
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE0_FILE_NAME);
+	SDL_DestroySurface(surface);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -181,6 +228,7 @@ static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char*
 		exit(-1);
 	}
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE1_FILE_NAME);
+	SDL_DestroySurface(surface);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -191,7 +239,6 @@ static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char*
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 		exit(-1);
 	}
-	
 	DrawBeing(rend_data, texture(tx_pc), tx_pc_0, tx_pc_1, PC_RGB_0, PC_RGB_1);
 	DrawBeing(rend_data, texture(tx_being_weak), tx_being_0, tx_being_1, BEING0_RGB_0, BEING0_RGB_1);
 	DrawBeing(rend_data, texture(tx_being_ordinary), tx_being_0, tx_being_1, BEING1_RGB_0, BEING1_RGB_1);
@@ -229,8 +276,15 @@ static void DrawColouredThings(Render_data* const rend_data, SDL_Surface* surfac
 	}
 	DrawColouredThing(rend_data, texture(tx_projectile), tx_projectile_0, PROJECTILE0_RGBA);
 	DrawColouredThing(rend_data, texture(tx_h_projectile), tx_projectile_0, PROJECTILE1_RGBA);
-	DrawColouredThing(rend_data, texture(tx_h_projectile1), tx_projectile_0, PROJECTILE1_RGBA);
 	SDL_DestroyTexture(tx_projectile_0);
+	SDL_DestroySurface(surface);
+	surface = SDL_CreateSurface(3, 3, SDL_PIXELFORMAT_RGBA8888);
+	SDL_WriteSurfacePixel(surface, 1, 1, 255U, 255U, 255U, 255U);
+	texture(tx_pixel) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!texture(tx_pixel)){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
 }
 
 static void DrawBeing(Render_data* const rend_data, SDL_Texture* const being_tx, SDL_Texture* const tx_0, SDL_Texture* const tx_1, const Uint8* const RGB_0, const Uint8* const RGB_1){
@@ -1213,6 +1267,7 @@ static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, ch
 		exit(-1);
 	}
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BACKGROUND_TX1_FILE_NAME);
+	SDL_DestroySurface(surface);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());

@@ -90,6 +90,7 @@ enum being_effect{
     being_effect_commander,
     being_effect_bonus,
     being_effect_open_portal,
+    being_effect_burn,
     being_no_effect
 };
 
@@ -109,7 +110,6 @@ enum game_effect{
 
 enum visual_effect_type{
     visual_effect_t0,
-    visual_effect_moving,
     visual_effect_t1,
     visual_effect_t2
 };
@@ -212,7 +212,7 @@ enum texture_num{
     tx_being_ally_ordinary,
     tx_projectile,
     tx_h_projectile,
-    tx_h_projectile1,
+    tx_pixel,
     tx_map,
     tx_background,
     txs_num
