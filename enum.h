@@ -111,7 +111,8 @@ enum game_effect{
 enum visual_effect_type{
     visual_effect_t0,
     visual_effect_t1,
-    visual_effect_t2
+    visual_effect_t2,
+    visual_effect_t2_timer
 };
 
 enum projectile_type{

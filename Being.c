@@ -794,7 +794,7 @@ static inline bool FindAllyTarget(Being* const bg, Game_data* const gd){
         bg->target.being = (gd->beings.array + *(bg->segment->beings.beings_ind));
         return true;
     }
-    for(unsigned int i = 0U; i < SPIRAL_STEPS(ALLY_ATTENTION_RANGE); ++i){
+    for(unsigned int i = 1U; i < SPIRAL_STEPS(ALLY_ATTENTION_RANGE); ++i){
         Segment* seg = GetDistantSegmentBySpiral(&gd->world, bg->segment, i);
         if(seg && seg->beings.num > 0U){
             Being* const target = gd->beings.array + *(seg->beings.beings_ind);
@@ -909,7 +909,7 @@ static inline bool AllyNear(Being* const bg, Game_data* const gd){
         bg->target.being = (gd->beings.array + *(bg->segment->ally_beings.beings_ind));
         return true;
     }
-    for(unsigned int i = 0U; i < SPIRAL_STEPS(BEING_ALLY_DETEC_RANGE); ++i){
+    for(unsigned int i = 1U; i < SPIRAL_STEPS(BEING_ALLY_DETEC_RANGE); ++i){
         Segment* seg = GetDistantSegmentBySpiral(&gd->world, bg->segment, i);
         if(seg && seg->ally_beings.num > 0U){
             Being* const target = gd->beings.array + *(seg->ally_beings.beings_ind);
@@ -922,7 +922,7 @@ static inline bool AllyNear(Being* const bg, Game_data* const gd){
     return false;
 }
 
-static inline Being* GetOtherBeingNearPlayer(Being* const bg, Game_data* const gd){
+static inline Being* GetOtherBeingNearPlayer(Being* const bg, Game_data* const gd){//
     if(bg->target.player->segment->beings.num > 0U){
         Being* target = (gd->beings.array + *(bg->target.player->segment->beings.beings_ind));
         if(target != bg){
@@ -931,19 +931,14 @@ static inline Being* GetOtherBeingNearPlayer(Being* const bg, Game_data* const g
             return (gd->beings.array + *(bg->target.player->segment->beings.beings_ind + 1U));
         }
     }
-    for(int i = 1; i < 3; ++i){
-        const unsigned int array_size = (i * 2) * 4;
-        Segment* segs[array_size];
-        GetSurroundingSegmentsFar(segs, &gd->world, bg->target.player->segment, i);
-        for(unsigned int k = 0U; k < array_size; ++k){
-            Segment* seg = *(segs + k);
-            if(seg == NULL || seg->beings.num == 0U) continue;
-            Being* target = (gd->beings.array + *(seg->beings.beings_ind));
-            if(target != bg){
-                return target;
-            }else if(seg->beings.num > 1U){
-                return (gd->beings.array + *(bg->target.player->segment->beings.beings_ind + 1U));
-            }
+    for(unsigned int i = 1U; i < SPIRAL_STEPS(2U); ++i){
+        Segment* seg = GetDistantSegmentBySpiral(&gd->world, bg->segment, i);
+        if(seg == NULL || seg->beings.num == 0U) continue;
+        Being* target = (gd->beings.array + *(seg->beings.beings_ind));
+        if(target != bg){
+            return target;
+        }else if(seg->beings.num > 1U){
+            return (gd->beings.array + *(bg->target.player->segment->beings.beings_ind + 1U));
         }
     }
     return NULL;

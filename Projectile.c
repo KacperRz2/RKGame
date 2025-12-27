@@ -212,10 +212,24 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 		}
 		AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
 		AddBoomVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
-		AddBoomVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+		AddBoomVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
 			pr->position.x + (SDL_randf() - 0.5F) * half(BOOM_SIZE),
 			pr->position.y + (SDL_randf() - 0.5F) * half(BOOM_SIZE)
-		});
+		}, SDL_rand(V_EFFECT_MAX_DELAY));
+		for(unsigned int i = 0U; i < BOOM_EFFECTS_NUM; ++i){
+			float angle = FULL_ANGLE * SDL_randf();
+			AddBigBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+				pr->position.x + SineUnsafe(angle) * half(BOOM_SIZE) * SDL_randf(),
+				pr->position.y - CosiUnsafe(angle) * half(BOOM_SIZE) * SDL_randf()
+			}, SDL_rand(V_EFFECT_MAX_DELAY));
+			for(unsigned int j = 0U; j < BOOM_EFFECTS_NUM; ++j){
+				angle = FULL_ANGLE * SDL_randf();
+				AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+					pr->position.x + SineUnsafe(angle) * half(BOOM_SIZE) * SDL_randf(),
+					pr->position.y - CosiUnsafe(angle) * half(BOOM_SIZE) * SDL_randf()
+				}, SDL_rand(V_EFFECT_MAX_DELAY));
+			}
+		}
 		const int range = 2;
 		const unsigned int array_size = pow2(1 + range * 2);
 		Segment* neighbour_segs[array_size];
@@ -251,7 +265,7 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 	}
 	MoveProjectile(pr);
 	if(!(pr->data.special.ticks % 2U)){
-		if(!(pr->data.special.ticks % 8U)){
+		if(!(pr->data.special.ticks % 16U)){
 			AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
 				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
 				pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE

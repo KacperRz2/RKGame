@@ -19,7 +19,7 @@
 #define GUN_SIGHT_SIZE		        16
 #define BULLET_SIZE			        16
 #define BOOM_SIZE			        320
-#define BOOM_EFFECTS_NUM		    2U
+#define BOOM_EFFECTS_NUM		    8U
 #define BLADE_SIZE                  64.0F
 #define DECELERATION		        0.93F
 #define TICK_TIME			        0x200000ULL
@@ -35,7 +35,7 @@
 #define MAX_PROJECTILES_NUM	        0x4000U
 #define MAX_SEGM_BEINGS		        0x10U
 #define MAX_BEINGS_NUM		        0x4000U
-#define MAX_VISUAL_EFFECTS_NUM		0x400U
+#define MAX_VISUAL_EFFECTS_NUM		0x800U
 #define MAX_PLAYERS_NUM		        0x4U
 #define START_PLAYERS_NUM		    0x1U
 #define ANGLE_PARTS		            512
@@ -173,6 +173,7 @@
 #define MAX_NOT_NULL_SEGS           (11U * 37U * pow2(BIG_SEGMENT_SEGMENTS_X))
 #define PC_PUSH_POWER               8.0F
 #define SCROLL_PUSH_POWER           12.0F
+#define V_EFFECT_MAX_DELAY          16
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S

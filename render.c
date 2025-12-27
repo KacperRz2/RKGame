@@ -104,27 +104,40 @@ static void RenderVisualEffectsType1(Visual_effect* const ve, SDL_FPoint* const 
 
 static void RenderVisualEffectsType2(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
 	if(ve->ticks_left >= ve->start_ticks * 15 / 16){
-		const float level = (ve->ticks_left - ve->start_ticks * 0xF.0p-4F) / (ve->start_ticks * 0x1.0p-4F);
-		const float red = 1.0F - half(level);
-		SDL_SetTextureColorModFloat(texture(ve->tx_num), red, half(red) * SDL_randf(), level);
-		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 0.5F - half(level));
+		const float level = ((float)ve->ticks_left - ve->start_ticks * 0xF.0p-4F) / (ve->start_ticks * 0x1.0p-4F);
+		const float level1 = 1.0F - level;
+		SDL_SetTextureColorModFloat(texture(ve->tx_num), level1, level1, 1.0F);
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 0.75F - level * 0.75F);
 	}else{
-		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0xF.0p-4F) * 0.5F);
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), (float)ve->ticks_left / (ve->start_ticks * 0xF.0p-4F) * 0.75F);
 		if(ve->ticks_left >= ve->start_ticks * 3 / 4){
-			const float level = (ve->ticks_left - ve->start_ticks * 0.75F) / (ve->start_ticks * 0x3.0p-4F);
-			SDL_SetTextureColorModFloat(texture(ve->tx_num), level, half(level) * SDL_randf(), 0.0F);
+			const float level = ((float)ve->ticks_left - ve->start_ticks * 0.75F) / (ve->start_ticks * 0x3.0p-4F);
+			SDL_SetTextureColorModFloat(texture(ve->tx_num), level, pow2(pow2(level)), 0.0F);
 		}else{
-			const float level = 1.0F - ve->ticks_left / (ve->start_ticks * 0.5F);
+			const float level = 1.0F - (float)ve->ticks_left / (ve->start_ticks * 0.75F);
 			SDL_SetTextureColorModFloat(texture(ve->tx_num), level, level, level);
 		}
 	}
-	const float size = ve->size * (1.5F - ve->ticks_left / (float)ve->start_ticks);
+	const float size = (float)ve->size * (1.5F - (float)ve->ticks_left / (float)ve->start_ticks);
 	SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
 		rend_point->x - half(size),
 		rend_point->y - half(size),
 		size,
 		size
 	});
+}
+
+static void RenderVisualEffectsTimer(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
+	if(ve->ticks_left == 1U){
+		AddVisalEffect(&rend_data->visual_effects, &(Visual_effect){
+			ve->position,
+			ve->start_ticks,
+			ve->start_ticks,
+			ve->size,
+			ve->type - 1,
+			ve->tx_num
+		});
+	}
 }
 
 static void RenderVisualEffects(Render_data* const rend_data, Game_data* const gd){
@@ -176,6 +189,18 @@ extern inline void AddSmallBurnVisualEffect(Visual_effects* const ves, const SDL
 
 extern inline void AddBoomVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
 	AddVisalEffect(ves, &BURN_VIS_EF(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 7U / 2U + 1U));
+}
+
+extern inline void AddBigBurnVisualEffectTimer(Visual_effects* const ves, const SDL_FPoint* const position, const unsigned int delay){
+	AddVisalEffect(ves, &BURN_EF_TIM(*position, SDL_rand(BIG_BURN_SIZE / 2) + BIG_BURN_SIZE / 2 + 1U, delay));
+}
+
+extern inline void AddSmallBurnVisualEffectTimer(Visual_effects* const ves, const SDL_FPoint* const position, const unsigned int delay){
+	AddVisalEffect(ves, &BURN_EF_TIM(*position, SDL_rand(SMALL_BURN_SIZE) + 1U, delay));
+}
+
+extern inline void AddBoomVisualEffectTimer(Visual_effects* const ves, const SDL_FPoint* const position, const unsigned int delay){
+	AddVisalEffect(ves, &BURN_EF_TIM(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 7U / 2U + 1U, delay));
 }
 
 static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){

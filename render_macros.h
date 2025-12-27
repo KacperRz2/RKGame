@@ -81,7 +81,8 @@
 #define VISUAL_EFFECT_FUNCS         {\
                                         RenderVisualEffectsType0,\
                                         RenderVisualEffectsType1,\
-                                        RenderVisualEffectsType2\
+                                        RenderVisualEffectsType2,\
+                                        RenderVisualEffectsTimer\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\
@@ -272,6 +273,14 @@
                                         (0x40000000ULL / FRAME_TIME),\
                                         size,\
                                         visual_effect_t2,\
+                                        tx_pixel\
+                                    })
+#define BURN_EF_TIM(posit, si, del) ((Visual_effect){\
+                                        posit,\
+                                        del,\
+                                        (0x40000000ULL / FRAME_TIME),\
+                                        si,\
+                                        visual_effect_t2_timer,\
                                         tx_pixel\
                                     })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}

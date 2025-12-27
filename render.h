@@ -15,6 +15,9 @@ void AddProjectileVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddBigBurnVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddSmallBurnVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddBoomVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddBigBurnVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
+void AddSmallBurnVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
+void AddBoomVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
 
 static void DrawBeings(Render_data* const, SDL_Surface*, char*);
 static void DrawColouredThings(Render_data* const, SDL_Surface*, char*);
