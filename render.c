@@ -69,10 +69,10 @@ static inline void RemoveVisalEffect(Visual_effects* const ves, const unsigned i
 }
 
 static void RenderVisualEffectsType0(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
-	if(ve->ticks_left < ve->start_ticks * 3 / 4){
+	if(ve->ticks_left < ve->start_ticks * 3U / 4U){
 		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0.75F));
 	}else{
-		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.75F));
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 1.0F - ((float)ve->ticks_left - ve->start_ticks * 0.75F) / (ve->start_ticks * 0.5F));
 	}
 	const float size = ve->size * (1.5F - ve->ticks_left / (float)ve->start_ticks);
 	SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
@@ -86,12 +86,13 @@ static void RenderVisualEffectsType0(Visual_effect* const ve, SDL_FPoint* const 
 
 static void RenderVisualEffectsType1(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
 	float size;
-	if(ve->ticks_left < ve->start_ticks / 2){
+	if(ve->ticks_left < ve->start_ticks / 2U){
 		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), ve->ticks_left / (ve->start_ticks * 0.5F));
 		size = ve->size * (ve->ticks_left / (ve->start_ticks * 0.5F));
 	}else{
-		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 2.0F - ve->ticks_left / (ve->start_ticks * 0.5F));
-		size = ve->size * (2.0F - ve->ticks_left / (ve->start_ticks * 0.5F));
+		const float level = 2.0F - ve->ticks_left / (ve->start_ticks * 0.5F);
+		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), level);
+		size = ve->size * level;
 	}
 	SDL_RenderTextureRotated(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
 		rend_point->x - half(size),
@@ -103,21 +104,16 @@ static void RenderVisualEffectsType1(Visual_effect* const ve, SDL_FPoint* const 
 }
 
 static void RenderVisualEffectsType2(Visual_effect* const ve, SDL_FPoint* const rend_point, Render_data* const rend_data){
-	if(ve->ticks_left >= ve->start_ticks * 15 / 16){
-		const float level = ((float)ve->ticks_left - ve->start_ticks * 0xF.0p-4F) / (ve->start_ticks * 0x1.0p-4F);
-		const float level1 = 1.0F - level;
-		SDL_SetTextureColorModFloat(texture(ve->tx_num), level1, level1, 1.0F);
-		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), 0.75F - level * 0.75F);
+	if(ve->ticks_left > ve->start_ticks - 2U){
+		SDL_SetTextureColorModFloat(texture(ve->tx_num), 0.625F, 0.5F, 1.0F);
+	}else if(ve->ticks_left >= ve->start_ticks * 3U / 4U){
+		const float red = ((float)ve->ticks_left - ve->start_ticks * 0.75F) / (ve->start_ticks * 0.25F);
+		SDL_SetTextureColorModFloat(texture(ve->tx_num), red, pow2(red) * 0.625F, 0.0F);
 	}else{
-		SDL_SetTextureAlphaModFloat(texture(ve->tx_num), (float)ve->ticks_left / (ve->start_ticks * 0xF.0p-4F) * 0.75F);
-		if(ve->ticks_left >= ve->start_ticks * 3 / 4){
-			const float level = ((float)ve->ticks_left - ve->start_ticks * 0.75F) / (ve->start_ticks * 0x3.0p-4F);
-			SDL_SetTextureColorModFloat(texture(ve->tx_num), level, pow2(pow2(level)), 0.0F);
-		}else{
-			const float level = 1.0F - (float)ve->ticks_left / (ve->start_ticks * 0.75F);
-			SDL_SetTextureColorModFloat(texture(ve->tx_num), level, level, level);
-		}
+		const float level = 1.0F - (float)ve->ticks_left / (ve->start_ticks * 0.75F);
+		SDL_SetTextureColorModFloat(texture(ve->tx_num), level, level, level);
 	}
+	SDL_SetTextureAlphaModFloat(texture(ve->tx_num), (float)ve->ticks_left / (float)ve->start_ticks * 0.75F);
 	const float size = (float)ve->size * (1.5F - (float)ve->ticks_left / (float)ve->start_ticks);
 	SDL_RenderTexture(rend_data->renderer, texture(ve->tx_num), NULL, &(SDL_FRect){
 		rend_point->x - half(size),
@@ -535,6 +531,7 @@ void RenderTextInfo(Render_data* const rend_data, const Uint64 tps, Game_data* c
 	SDL_RenderDebugTextFormat(rend, x, 150, "selected scroll: %u", human(gd)->selected_scroll);
 	SDL_RenderDebugTextFormat(rend, x, 160, "selected scroll num: %u", *(human(gd)->scrolls + human(gd)->selected_scroll));
 	SDL_RenderDebugTextFormat(rend, x, 170, "selected scroll cost: %d", ScrollCost(human(gd)->selected_scroll));
+	SDL_RenderDebugTextFormat(rend, x, 190, "Segment beings: %u", human(gd)->segment->beings.num);
 }
 
 static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, const Game_data* const gd){

@@ -215,19 +215,23 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 		AddBoomVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
 			pr->position.x + (SDL_randf() - 0.5F) * half(BOOM_SIZE),
 			pr->position.y + (SDL_randf() - 0.5F) * half(BOOM_SIZE)
-		}, SDL_rand(V_EFFECT_MAX_DELAY));
+		}, SDL_rand(V_EFFECT_MAX_DELAY) + 1U);
 		for(unsigned int i = 0U; i < BOOM_EFFECTS_NUM; ++i){
 			float angle = FULL_ANGLE * SDL_randf();
+			float rand_float = SDL_randf();
+			float distance = half(BOOM_SIZE) * rand_float;
 			AddBigBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-				pr->position.x + SineUnsafe(angle) * half(BOOM_SIZE) * SDL_randf(),
-				pr->position.y - CosiUnsafe(angle) * half(BOOM_SIZE) * SDL_randf()
-			}, SDL_rand(V_EFFECT_MAX_DELAY));
+				pr->position.x + SineUnsafe(angle) * distance,
+				pr->position.y - CosiUnsafe(angle) * distance
+			}, V_EFFECT_MAX_DELAY * rand_float + 1U);
 			for(unsigned int j = 0U; j < BOOM_EFFECTS_NUM; ++j){
 				angle = FULL_ANGLE * SDL_randf();
+				rand_float = SDL_randf();
+				distance = half(BOOM_SIZE) * rand_float;
 				AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-					pr->position.x + SineUnsafe(angle) * half(BOOM_SIZE) * SDL_randf(),
-					pr->position.y - CosiUnsafe(angle) * half(BOOM_SIZE) * SDL_randf()
-				}, SDL_rand(V_EFFECT_MAX_DELAY));
+					pr->position.x + SineUnsafe(angle) * distance,
+					pr->position.y - CosiUnsafe(angle) * distance
+				}, V_EFFECT_MAX_DELAY * rand_float + 1U);
 			}
 		}
 		const int range = 2;
@@ -245,12 +249,14 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 					AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
 					const Impact impact = PC_FIRE_PROJECTILE_IMPACT;
 					const float impact_level = (1.0F - distance_squared / range_squared);
-					if(!DamageBeing(bg, &(Impact){
-						impact.damage * impact_level,
-						impact.armour_reduction,
-						impact.magic * impact_level,
-						impact.stun
-					}, gd->beings.array)){
+					if(DamageBeing(bg, &(Impact){
+							impact.damage * impact_level,
+							impact.armour_reduction,
+							impact.magic * impact_level,
+							impact.stun
+						}, gd->beings.array)){
+						--i;
+					}else{
 						AddOrUpdateBeingEffect(bg, (Lasting_effect){being_effect_burn, BURN_TICKS});
 						const float power = SCROLL_PUSH_POWER * bg->armour.unstability * impact_level;
 						const float angle = GetDirectionToPush(&pr->position, &bg->position);
@@ -266,10 +272,7 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 	MoveProjectile(pr);
 	if(!(pr->data.special.ticks % 2U)){
 		if(!(pr->data.special.ticks % 16U)){
-			AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
-				pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE
-			});
+			AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
 		}else{
 			AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
 				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,

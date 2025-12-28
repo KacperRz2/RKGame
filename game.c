@@ -53,7 +53,6 @@ void GameLoop(Game_data* const gd){
 	Uint64 now = 0ULL;
 	Uint64 timer;
     int quit = 0;
-	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 	Uint64 time = SDL_GetTicksNS();
 	Uint64 prev_frame_time = time;
 	Uint64 TPS_time = SDL_GetTicks();
@@ -164,6 +163,7 @@ void SetGameData(Game_data* const gd){
 	gd->effects_num = 0U;
 	gd->horde_data.ticks_from_attack = 0U;
 	SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
+	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 }
 
 void ClearGameData(Game_data* const gd){
@@ -885,4 +885,5 @@ void LoadGame(Game_data* const gd){
         exit(-1);
     }
     SDL_CloseStorage(user);
+	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 }

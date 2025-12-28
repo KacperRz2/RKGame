@@ -20,6 +20,7 @@
 #define BULLET_SIZE			        16
 #define BOOM_SIZE			        320
 #define BOOM_EFFECTS_NUM		    8U
+#define V_EFFECT_MAX_DELAY          16
 #define BLADE_SIZE                  64.0F
 #define DECELERATION		        0.93F
 #define TICK_TIME			        0x200000ULL
@@ -173,7 +174,6 @@
 #define MAX_NOT_NULL_SEGS           (11U * 37U * pow2(BIG_SEGMENT_SEGMENTS_X))
 #define PC_PUSH_POWER               8.0F
 #define SCROLL_PUSH_POWER           12.0F
-#define V_EFFECT_MAX_DELAY          16
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
