@@ -603,12 +603,12 @@ static inline bool IsDeadBeing(Being* const bg, Game_data* const gd, const unsig
     return false;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-static void test(Being* bg, Game_data* gd){ 
-    if((!IsAlly(bg) && bg->status != being_in_void && bg->status != being_dead && (gd->beings.array + *(bg->segment->beings.beings_ind + bg->indx) != bg || bg->indx >= bg->segment->beings.num || GetSegmentSafe(&gd->world, bg->position.x, bg->position.y) != bg->segment)) || (bg->status == being_dead && bg->hit_points > 0)){
-        SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "ERROR!!!");
-        exit(-2);
-    }
-}
+// static void test(Being* bg, Game_data* gd){ 
+//     if((!IsAlly(bg) && bg->status != being_in_void && bg->status != being_dead && (gd->beings.array + *(bg->segment->beings.beings_ind + bg->indx) != bg || bg->indx >= bg->segment->beings.num || GetSegmentSafe(&gd->world, bg->position.x, bg->position.y) != bg->segment)) || (bg->status == being_dead && bg->hit_points > 0)){
+//         SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "ERROR!!!");
+//         exit(-2);
+//     }
+// }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void UpdateBeings(Game_data* const gd){
     if((gd->flags & gamef_horde_attack)){
@@ -635,7 +635,7 @@ void UpdateBeings(Game_data* const gd){
                     continue;
                 }
                 (being_types + bg->type_id)->update(bg, gd);
-                test(bg, gd);/////////////////////////
+                // test(bg, gd);/////////////////////////
             }
         }
         return;
@@ -650,7 +650,7 @@ void UpdateBeings(Game_data* const gd){
                 }
                 if(IsAlly(bg) || bg->status == being_walk || bg->status == being_fly || bg->status == being_stunned || (bg->status_ticks_left < 0 && bg->status == being_idle) || bg->target_last_seen_at.x == 0.0F){
                     (being_types + bg->type_id)->update(bg, gd);
-                    test(bg, gd);/////////////////////////////////
+                    // test(bg, gd);/////////////////////////////////
                 }else if(bg->status != being_in_void){
                     BeingFlee(bg, gd);
                 }
@@ -674,7 +674,7 @@ void UpdateBeings(Game_data* const gd){
                 continue;
             }
             (being_types + bg->type_id)->update(bg, gd);
-            test(bg, gd);/////////////////////////////////
+            // test(bg, gd);/////////////////////////////////
         }
     }
     if(gd->enemy_morale < MAX_MORALE){
@@ -690,7 +690,7 @@ void UpdateBeingsEffects(Game_data* const gd){
             continue;
         }
         UpdateBeingEffects(gd, bg);
-        test(bg, gd);/////////////////////////////////
+        // test(bg, gd);/////////////////////////////////
     }
 }
 
@@ -1099,7 +1099,7 @@ static inline void UpdateBeingEffects(Game_data* const gd, Being* const bg){
 static inline void UpdateBeingEffect(Game_data* const gd, Being* const bg, const int effect_indx){
     const void (*effect[])(Game_data* const, Being* const, const int) = BEING_LASTING_EFFECTS;
     (*(effect + (bg->effects + effect_indx)->id))(gd, bg, (bg->effects + effect_indx)->ticks_left--);
-	if((bg->effects + effect_indx)->ticks_left < 1){
+	if((bg->effects + effect_indx)->ticks_left < 1 && bg->effects_num > 0U){
 		RemoveBeingEffect(bg, effect_indx);
 	}
 }
@@ -1164,8 +1164,10 @@ void CommanderIsNear(Game_data* const gd, Being* const bg, const int ticks_left)
 }
 
 void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
-    if(ticks_left % 4 == 0 && bg->status != being_in_void){
-        DamageBeing(bg, &(Impact){1.0F, 1.0F, 2.0F, 1.0F}, gd->beings.array);
+    if(ticks_left % 4 == 0){
+        if(DamageBeing(bg, &(Impact){1.0F, 1.0F, 2.0F, 1.0F}, gd->beings.array)){
+            bg->effects_num = 0U;
+        }
         AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
             bg->position.x + (SDL_randf() - 0.5F) * half(BeingSize(bg)),
             bg->position.y + (SDL_randf() - 0.5F) * half(BeingSize(bg))
@@ -1174,10 +1176,66 @@ void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
 }
 
 void OpeningPortal(Game_data* const gd, Being* const bg, const int ticks_left){
-    if(ticks_left < 2 && bg->status != being_dead){
+    if(ticks_left < 2){
         bg->status = being_in_void;
+        bg->effects_num = 0U;
         RemoveBeingFromSegment(bg, &bg->segment->beings, gd->beings.array);
         bg->position = ZERO_POINT_F;
+    }
+}
+
+void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left){
+    if(ticks_left < 2){
+        Being* bg1 = NULL;
+        const unsigned int range = 4U;
+        const unsigned int max_i = SPIRAL_STEPS(range);
+        const unsigned int rand_seg = SDL_rand(max_i - 1) + 1U;
+        unsigned int seg_i = rand_seg;
+        do{
+            Segment* const seg = GetDistantSegmentBySpiral(&gd->world, bg->segment, seg_i);
+            if(seg && seg->beings.num > 0U){
+                const int rand = SDL_rand(seg->beings.num);
+                int indx = rand;
+                do{
+                    if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+                        bg1 = gd->beings.array + *(seg->beings.beings_ind + indx);
+                        goto search_end;
+                    }
+                    indx = (indx + 1) % seg->beings.num;
+                }while(indx != rand);
+            }
+            if(!seg_i){
+                seg_i = (seg_i + 1U) % max_i;
+                continue;
+            }
+            seg_i = (seg_i + 1U) % max_i;
+        }while(seg_i != rand_seg);
+        Segment* const seg = bg->segment;
+        if(seg->beings.num > 1U){
+            const int rand = SDL_rand(seg->beings.num);
+            int indx = rand;
+            do{
+                if(bg->indx != indx && BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+                    bg1 = gd->beings.array + *(seg->beings.beings_ind + indx);
+                    goto search_end;
+                }
+                indx = (indx + 1) % seg->beings.num;
+            }while(indx != rand);
+        }
+        search_end:
+        if(bg1){
+            AddBoltVisualEffect(&gd->rend_data_ptr->visual_effects, &bg1->position, (position16){(_Float16)bg->position.x, (_Float16)bg->position.y});
+            AddBeingEffect(bg1, (Lasting_effect){being_effect_thunderbolt, BOLT_CHAIN_TICKS});
+        }
+        if(DamageBeing(bg, &(Impact){4.0F, 1.0F, 8.0F, 1.0F}, gd->beings.array)){
+            bg->effects_num = 0U;
+        }else{
+            StunBeing(bg, NAP_TICKS);
+        }
+        AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+            bg->position.x + (SDL_randf() - 0.5F) * half(BeingSize(bg)),
+            bg->position.y + (SDL_randf() - 0.5F) * half(BeingSize(bg))
+        });
     }
 }
 //---------------------------------------------------------------------------------------------------------------

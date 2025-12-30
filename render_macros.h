@@ -6,6 +6,7 @@
 #define WINDOW_CENTER_Y		        (rend_data->window_h / 2)
 #define VIEWFINDER_BEFORE_PC_PART   0.9375F
 #define PLAYER_REND_Y               (rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART)
+#define PLAYER_REND_X               (half(rend_data->viewfinder))
 #define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(rend_data->viewfinder))
 #define SIGHT_SQUARED   	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT))
 #define SIGHT_BACK_SQUARED	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER - PLAYER_REND_Y_SHIFT))
@@ -52,6 +53,7 @@
 #define SCROLL_ICON_SIZE            (SCROLL_SIZE * (37.0F / 64.0F))
 #define BIG_BURN_SIZE               320U
 #define SMALL_BURN_SIZE             64U
+#define BOLT_TICKS                  (0x8000000ULL / FRAME_TIME)
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
@@ -82,7 +84,8 @@
                                         RenderVisualEffectsType0,\
                                         RenderVisualEffectsType1,\
                                         RenderVisualEffectsType2,\
-                                        RenderVisualEffectsTimer\
+                                        RenderVisualEffectsTimer,\
+                                        RenderVisualEffectsBolt\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\
@@ -218,70 +221,71 @@
 #define MP_TEXT_RGB                 0U, 208U, 255U
 #define MP_COST_TEXT_RGB            255U, 0U, 127U
 #define WHITE_RGB                   255U, 255U, 255U
+#define BOLT_RGB_F                  0xa.0p-4F, 0x9.0p-4F, 1.0F
 #define DAMAGE_VIS_EFFECT(position) ((Visual_effect){\
-                                        position,\
-                                        (0x10000000ULL / FRAME_TIME),\
-                                        (0x10000000ULL / FRAME_TIME),\
-                                        32U,\
-                                        visual_effect_t0,\
-                                        tx_damage_test\
+                                        (SDL_FPoint)position,\
+                                        (Uint16)    (0x10000000ULL / FRAME_TIME),\
+                                        (Uint16)    (0x10000000ULL / FRAME_TIME),\
+                                        (Uint16)    32U,\
+                                        (Uint8)     tx_damage_test,\
+                                        (Uint8)     visual_effect_t0\
                                     })
 #define BONUS_VIS_EFFECT(position) ((Visual_effect){\
-                                        position,\
-                                        (0x10000000ULL / FRAME_TIME),\
-                                        (0x10000000ULL / FRAME_TIME),\
-                                        16U,\
-                                        visual_effect_t0,\
-                                        tx_bonus_effect\
+                                        (SDL_FPoint)position,\
+                                        (Uint16)    (0x10000000ULL / FRAME_TIME),\
+                                        (Uint16)    (0x10000000ULL / FRAME_TIME),\
+                                        (Uint16)    16U,\
+                                        (Uint8)     tx_bonus_effect,\
+                                        (Uint8)     visual_effect_t0\
                                     })
 #define CURSE_VIS_EFFECT(position) ((Visual_effect){\
-                                        position,\
-                                        (0x10000000ULL / FRAME_TIME),\
-                                        (0x10000000ULL / FRAME_TIME),\
-                                        32U,\
-                                        visual_effect_t0,\
-                                        tx_curse_effect\
+                                        (SDL_FPoint)position,\
+                                        (Uint16)    (0x10000000ULL / FRAME_TIME),\
+                                        (Uint16)    (0x10000000ULL / FRAME_TIME),\
+                                        (Uint16)    32U,\
+                                        (Uint8)     tx_curse_effect,\
+                                        (Uint8)     visual_effect_t0\
                                     })
 #define DEAD_VIS_EFFECT(position)   ((Visual_effect){\
-                                        position,\
-                                        (0x20000000ULL / FRAME_TIME),\
-                                        (0x20000000ULL / FRAME_TIME),\
-                                        64U,\
-                                        visual_effect_t0,\
-                                        tx_damage_test\
+                                        (SDL_FPoint)position,\
+                                        (Uint16)    (0x20000000ULL / FRAME_TIME),\
+                                        (Uint16)    (0x20000000ULL / FRAME_TIME),\
+                                        (Uint16)    64U,\
+                                        (Uint8)     tx_damage_test,\
+                                        (Uint8)     visual_effect_t0\
                                     })
 	                                //position; ticks_left; start_ticks; size; type; tx_num;
 #define PORTAL_VIS_EFFECT(position) ((Visual_effect){\
-                                        position,\
-                                        ((0x40000000ULL / FRAME_TIME) / ((unsigned int)OPENING_PORTAL_TICKS / 128U)),\
-                                        ((0x40000000ULL / FRAME_TIME) / ((unsigned int)OPENING_PORTAL_TICKS / 128U)),\
-                                        128U,\
-                                        visual_effect_t1,\
-                                        tx_creation_point\
+                                        (SDL_FPoint)position,\
+                                        (Uint16)    ((0x40000000ULL / FRAME_TIME) / ((unsigned int)OPENING_PORTAL_TICKS / 128U)),\
+                                        (Uint16)    ((0x40000000ULL / FRAME_TIME) / ((unsigned int)OPENING_PORTAL_TICKS / 128U)),\
+                                        (Uint16)    128U,\
+                                        (Uint8)     tx_creation_point,\
+                                        (Uint8)     visual_effect_t1\
                                     })
 #define PROJE_VIS_EFFECT(position)  ((Visual_effect){\
-                                        position,\
-                                        (0x8000000ULL / FRAME_TIME),\
-                                        (0x8000000ULL / FRAME_TIME),\
-                                        16U,\
-                                        visual_effect_t0,\
-                                        tx_creation_point\
+                                        (SDL_FPoint)position,\
+                                        (Uint16)    (0x8000000ULL / FRAME_TIME),\
+                                        (Uint16)    (0x8000000ULL / FRAME_TIME),\
+                                        (Uint16)    16U,\
+                                        (Uint8)     tx_creation_point,\
+                                        (Uint8)     visual_effect_t0\
                                     })
 #define BURN_VIS_EF(position, size) ((Visual_effect){\
-                                        position,\
-                                        (0x40000000ULL / FRAME_TIME),\
-                                        (0x40000000ULL / FRAME_TIME),\
-                                        size,\
-                                        visual_effect_t2,\
-                                        tx_pixel\
+                                        (SDL_FPoint)position,\
+                                        (Uint16)    (0x40000000ULL / FRAME_TIME),\
+                                        (Uint16)    (0x40000000ULL / FRAME_TIME),\
+                                        (Uint16)    size,\
+                                        (Uint8)     tx_pixel,\
+                                        (Uint8)     visual_effect_t2\
                                     })
 #define BURN_EF_TIM(posit, si, del) ((Visual_effect){\
-                                        posit,\
-                                        del,\
-                                        (0x40000000ULL / FRAME_TIME),\
-                                        si,\
-                                        visual_effect_t2_timer,\
-                                        tx_pixel\
+                                        (SDL_FPoint)posit,\
+                                        (Uint16)    del,\
+                                        (Uint16)    (0x40000000ULL / FRAME_TIME),\
+                                        (Uint16)    si,\
+                                        (Uint8)     tx_pixel,\
+                                        (Uint8)     visual_effect_t2_timer\
                                     })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
 #define HORDE_ALERT                 {H,o,r,d,a,exclam_m,char_end}

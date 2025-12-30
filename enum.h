@@ -68,8 +68,8 @@ enum scroll_type{
     scroll_2,
     scroll_3,
     scroll_slow,
-    scroll_5,
-    scroll_6,
+    scroll_fire,
+    scroll_thunderbolt,
     scroll_7,
     scroll_empty// = 34
 };
@@ -91,6 +91,7 @@ enum being_effect{
     being_effect_bonus,
     being_effect_open_portal,
     being_effect_burn,
+    being_effect_thunderbolt,
     being_no_effect
 };
 
@@ -112,7 +113,8 @@ enum visual_effect_type{
     visual_effect_t0,
     visual_effect_t1,
     visual_effect_t2,
-    visual_effect_t2_timer
+    visual_effect_t2_timer,
+    visual_effect_bolt
 };
 
 enum projectile_type{

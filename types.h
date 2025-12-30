@@ -62,13 +62,25 @@ struct Blade{
 	Uint16 idle_ticks;
 	float charge;	
 };
+struct position16{
+	_Float16 x;
+	_Float16 y;
+};
 struct Visual_effect{
 	SDL_FPoint position;
 	Uint16 ticks_left;
-	Uint16 start_ticks;
-	Uint16 size;
+	union{
+		struct{
+			Uint16 start_ticks;
+			Uint16 size;
+			Uint8 tx_num;
+		}d0;
+		struct{
+			position16 start_position;
+			Uint8 angle;
+		}d1;
+	}data;
 	Uint8 type;
-	Uint8 tx_num;
 };
 struct Visual_effects{
 	Visual_effect* array;
@@ -98,10 +110,6 @@ struct Armour{
 	float multipl;
 	float magic_multipl;
 	float unstability;
-};
-struct position16{
-	_Float16 x;
-	_Float16 y;
 };
 
 struct Being_type{

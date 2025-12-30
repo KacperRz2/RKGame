@@ -43,6 +43,10 @@ extern inline float arctan2(const float y, const float x){
     return approx;
 }
 
+extern inline float GetAngle(const SDL_FPoint* const a, const SDL_FPoint* const b){
+    return arctan2(b->y - a->y, b->x - a->x) + SDL_PI_F * 0.5F;
+}
+
 extern inline void GetShift(const SDL_FPoint* const a, const SDL_FPoint* const b, const float velocity, float* x, float* y){
     const float distance_x = b->x - a->x;
     const float distance_y = b->y - a->y;

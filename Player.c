@@ -575,92 +575,92 @@ void UpdatePlayersEffects(Game_data* const gd){
 }
 
 static void UpdateCPUPlayerFlags(Game_data* const gd, const unsigned int indx){
-	Player* const p = gd->champions.array + indx;
+	Player* const pc = gd->champions.array + indx;
 	unsigned int next_i = (indx + 1U) % gd->champions.num;
 	if(next_i == gd->human_indx && gd->champions.num > 2U){
 		next_i = (next_i + 1U) % gd->champions.num;
 	}
-	if(pow2((gd->champions.array + next_i)->position.x - p->position.x) + pow2((gd->champions.array + next_i)->position.y - p->position.y) < pow2(PLAYER_SIZE * 2.0F)){
+	if(pow2((gd->champions.array + next_i)->position.x - pc->position.x) + pow2((gd->champions.array + next_i)->position.y - pc->position.y) < pow2(PLAYER_SIZE * 2.0F)){
 		if(indx % 2U == 0U){
-			p->flags |= left;
-			p->flags &= ~(right);
+			pc->flags |= left;
+			pc->flags &= ~(right);
 		}else{
-			p->flags |= right;
-			p->flags &= ~(left);
+			pc->flags |= right;
+			pc->flags &= ~(left);
 		}
 	}else{
-		p->flags &= ~(right | left);
+		pc->flags &= ~(right | left);
 	}
 	Being* target;
 	float d_x;
 	float d_y;
 	float d_squared;
-	if(target = BeingNear(p->segment, gd)){
-		d_x = target->position.x - p->position.x;
-		d_y = target->position.y - p->position.y;
+	if(target = BeingNear(pc->segment, gd)){
+		d_x = target->position.x - pc->position.x;
+		d_y = target->position.y - pc->position.y;
 		d_squared = pow2(d_x) + pow2(d_y);
-		if(IsClearSightWithKnownDistance(&p->position, target->segment, &gd->world, d_x, d_y, d_squared)){
-			p->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
+		if(IsClearSightWithKnownDistance(&pc->position, target->segment, &gd->world, d_x, d_y, d_squared)){
+			pc->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
 			if(d_squared <= pow2(BEING_ATTACK_DISTANCE)){
-				p->flags &= ~(back);
+				pc->flags &= ~(back);
 				if(d_squared <= pow2(BEING_HALT_DISTANCE)){
-					p->flags &= ~(forward | run);
+					pc->flags &= ~(forward | run);
 				}else{
-					p->flags |= forward;
+					pc->flags |= forward;
 				}
-				if((p->flags & (attack | range_mode)) != attack){
-					p->flags &= ~(range_mode);
-					p->flags |= attack;
-				}else if((p->flags & (attack | range_mode)) == attack && SDL_randf() < 0x1.0p-5F){
-					p->flags &= ~(attack);
+				if((pc->flags & (attack | range_mode)) != attack){
+					pc->flags &= ~(range_mode);
+					pc->flags |= attack;
+				}else if((pc->flags & (attack | range_mode)) == attack && SDL_randf() < 0x1.0p-5F){
+					pc->flags &= ~(attack);
 				}
 				return;
 			}
-			d_x = p->position.x - human(gd)->position.x;
-			d_y = p->position.y - human(gd)->position.y;
+			d_x = pc->position.x - human(gd)->position.x;
+			d_y = pc->position.y - human(gd)->position.y;
 			d_squared = pow2(d_x) + pow2(d_y);
 			if(d_squared > pow2(SEGMENT_SIZE)){
 				const float direction_to_main_player = arctan2(d_y, d_x) - SDL_PI_F * 0.5F;
-				float direc_diff = p->direction - direction_to_main_player;
+				float direc_diff = pc->direction - direction_to_main_player;
 				if(direc_diff < 0.0F){
 					direc_diff += FULL_ANGLE;
 				}
 				if(direc_diff < SDL_PI_F * 1.5F && direc_diff > SDL_PI_F * 0.5F){
-					p->flags |= back;
+					pc->flags |= back;
 					if(direc_diff < SDL_PI_F * 0.75F){
-						p->flags |= left;
+						pc->flags |= left;
 					}else if(direc_diff > SDL_PI_F * 1.25F){
-						p->flags |= right;
+						pc->flags |= right;
 					}
 				}else{
-					p->flags &= ~(back);
+					pc->flags &= ~(back);
 				}
 			}else{
-				p->flags &= ~(back);
+				pc->flags &= ~(back);
 			}
-			p->flags &= ~(forward | run);
-			p->flags |= range_mode | attack;
+			pc->flags &= ~(forward | run);
+			pc->flags |= range_mode | attack;
 			return;
 		}
 	}
-	p->flags &= ~(attack | back);
-	d_x = human(gd)->position.x - p->position.x;
-	d_y = human(gd)->position.y - p->position.y;
+	pc->flags &= ~(attack | back);
+	d_x = human(gd)->position.x - pc->position.x;
+	d_y = human(gd)->position.y - pc->position.y;
 	d_squared = pow2(d_x) + pow2(d_y);
-	if(!IsClearSightWithKnownDistance(&p->position, human(gd)->segment, &gd->world, d_x, d_y, d_squared)){
-		d_x = SegmentCenterX(human(gd)->last_seen_in) - p->position.x;
-		d_y = SegmentCenterY(human(gd)->last_seen_in) - p->position.y;
+	if(!IsClearSightWithKnownDistance(&pc->position, human(gd)->segment, &gd->world, d_x, d_y, d_squared)){
+		d_x = SegmentCenterX(human(gd)->last_seen_in) - pc->position.x;
+		d_y = SegmentCenterY(human(gd)->last_seen_in) - pc->position.y;
 	}
-	p->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
+	pc->direction = arctan2(-d_y, -d_x) - SDL_PI_F * 0.5F;
 	if(d_squared < pow2(SEGMENT_SIZE)){
-		p->flags &= ~(forward | run);
+		pc->flags &= ~(forward | run);
 		return;
 	}
-	p->flags |= forward;
+	pc->flags |= forward;
 	if(d_squared > pow2(SEGMENT_SIZE * 2.0F)){
-		p->flags |= run;
+		pc->flags |= run;
 	}else{
-		p->flags &= ~(run);
+		pc->flags &= ~(run);
 	}
 }
 

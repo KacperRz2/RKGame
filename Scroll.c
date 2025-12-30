@@ -111,7 +111,50 @@ bool fire(Game_data* const gd){
     return true;
 }
 
-bool effect6(Game_data* const gd){
+bool thunderbolt(Game_data* const gd){
+    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
+    Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+    Segment* seg = target_seg;
+    if(!seg){
+        return false;
+    }
+    Being* bg = NULL;
+    if(seg->beings.num > 0U){
+        const int rand = SDL_rand(seg->beings.num);
+        int indx = rand;
+        do{
+            if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+                bg = gd->beings.array + *(seg->beings.beings_ind + indx);
+                goto search_end;
+            }
+            indx = (indx + 1) % seg->beings.num;
+        }while(indx != rand);
+    }
+    const unsigned int range = 2U;
+    const unsigned int max_i = SPIRAL_STEPS(range);
+    for(unsigned int i = 1U; i < max_i; ++i){
+        seg = GetDistantSegmentBySpiral(&gd->world, target_seg, i);
+        if(seg == NULL || seg->beings.num == 0U) continue;
+        const int rand = SDL_rand(seg->beings.num);
+        int indx = rand;
+        do{
+            if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+                bg = gd->beings.array + *(seg->beings.beings_ind + indx);
+                goto search_end;
+            }
+            indx = (indx + 1) % seg->beings.num;
+        }while(indx != rand);
+    }
+    search_end:
+    if(!bg){
+        return false;
+    }
+    AddBoltVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, (position16){(_Float16)human(gd)->position.x, (_Float16)human(gd)->position.y});
+    AddBeingEffect(bg, (Lasting_effect){being_effect_thunderbolt, BOLT_CHAIN_TICKS});
+    return true;
+}
+
+bool effect7(Game_data* const gd){
     SetPlayerPosition(human(gd), gd->world.shops->location.x, gd->world.shops->location.y);
     return true;
 }

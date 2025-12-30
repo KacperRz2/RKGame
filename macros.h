@@ -104,7 +104,7 @@
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
 #define BLADE_HANDLER_POSITION      0.85F
 #define PC_SHOOT_RELOAD             192
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x4U)
+#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x2U)
 #define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
 #define TEST_BEING_DMG_CLOSE        2
 #define TEST_BEING_DMG_FAR          1
@@ -149,6 +149,7 @@
 #define WEAK_EFFECT_TICKS           0x1000
 #define SLOW_EFFECT_TICKS           1024
 #define BURN_TICKS                  0x1000
+#define BOLT_CHAIN_TICKS            0x8U
 #define OPENING_PORTAL_TICKS        128
 #define ATTENTION_RECT_SIZE         (BIG_SEGMENT_SIZE * 3.0F)
 #define SPIRAL_STEPS(range)         (pow2(range * 2U + 1U))
@@ -174,6 +175,7 @@
 #define MAX_NOT_NULL_SEGS           (11U * 37U * pow2(BIG_SEGMENT_SEGMENTS_X))
 #define PC_PUSH_POWER               8.0F
 #define SCROLL_PUSH_POWER           12.0F
+#define HORDE_BEING_CHANCE_FACTOR   64//16
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -228,8 +230,8 @@
                                         effect3,\
                                         slow,\
                                         fire,\
-                                        effect6,\
-                                        EffectEmpty,\
+                                        thunderbolt,\
+                                        effect7,\
                                         EffectEmpty\
                                     }
 #define GAME_LASTING_EFFECTS        {\
@@ -240,7 +242,8 @@
                                         CommanderAura,\
                                         CommanderIsNear,\
                                         OpeningPortal,\
-                                        Burn\
+                                        Burn,\
+                                        ThunderboltChain\
                                     }
 #define PLAYER_LASTING_EFFECTS      {\
                                         SlowPlayer,\
@@ -362,13 +365,13 @@
                                         {{0.0F, 32.0F}, 0.0F}\
                                     }
 #define BEINGS_INCIDENCES           {\
-                                        200,\
-                                        200+80,\
-                                        200+80+50,\
-                                        200+80+50+40,\
-                                        200+80+50+40+20,\
-                                        200+80+50+40+20+3,\
-                                        200+80+50+40+20+3+4\
+                                        400,\
+                                        400+80,\
+                                        400+80+50,\
+                                        400+80+50+40,\
+                                        400+80+50+40+20,\
+                                        400+80+50+40+20+3,\
+                                        400+80+50+40+20+3+4\
                                     }
 #define WORLD_BASE              {\
                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\

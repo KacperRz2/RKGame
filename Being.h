@@ -91,6 +91,7 @@ void CommanderAura(Game_data* const, Being* const, const int);
 void CommanderIsNear(Game_data* const, Being* const, const int);
 void OpeningPortal(Game_data* const, Being* const, const int);
 void Burn(Game_data* const, Being* const, const int);
+void ThunderboltChain(Game_data* const, Being* const, const int);
 
 static void UpdateBeingOrdinary(Being* const, Game_data* const);
 static void UpdateBeingRanger(Being* const, Game_data* const);

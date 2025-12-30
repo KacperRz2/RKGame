@@ -686,7 +686,7 @@ void HordeAttack(Game_data* const gd, const int ticks_left){
 		gd->flags &= ~(gamef_horde_attack);
 		gd->horde_data.ticks_from_attack = 0U;
 		gd->enemy_morale = MAX_MORALE;
-	}else if((ticks_left < (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / 16)) || (ticks_left >= (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand(ticks_left / 16))){
+	}else if((ticks_left < (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / HORDE_BEING_CHANCE_FACTOR)) || (ticks_left >= (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand(ticks_left / HORDE_BEING_CHANCE_FACTOR))){
 		const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
 		unsigned int point_indx1 = point_indx;
 		do{
