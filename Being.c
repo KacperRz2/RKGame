@@ -1185,12 +1185,23 @@ void OpeningPortal(Game_data* const gd, Being* const bg, const int ticks_left){
 }
 
 void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left){
-    if(ticks_left < 2){
+    if(ticks_left == BOLT_CHAIN_TICKS - 2){
         Being* bg1 = NULL;
-        const unsigned int range = 4U;
-        const unsigned int max_i = SPIRAL_STEPS(range);
-        const unsigned int rand_seg = SDL_rand(max_i - 1) + 1U;
-        unsigned int seg_i = rand_seg;
+        Segment* const seg = bg->segment;
+        if(seg->beings.num > 1U){
+            const int rand = SDL_rand(seg->beings.num);
+            int indx = rand;
+            do{
+                if(bg->indx != indx && BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+                    bg1 = gd->beings.array + *(seg->beings.beings_ind + indx);
+                    goto search_end;
+                }
+                indx = (indx + 1) % seg->beings.num;
+            }while(indx != rand);
+        }
+        const int range = 4;
+        const int max_i = SPIRAL_STEPS(range);
+        int seg_i = 1;
         do{
             Segment* const seg = GetDistantSegmentBySpiral(&gd->world, bg->segment, seg_i);
             if(seg && seg->beings.num > 0U){
@@ -1204,30 +1215,14 @@ void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left
                     indx = (indx + 1) % seg->beings.num;
                 }while(indx != rand);
             }
-            if(!seg_i){
-                seg_i = (seg_i + 1U) % max_i;
-                continue;
-            }
-            seg_i = (seg_i + 1U) % max_i;
-        }while(seg_i != rand_seg);
-        Segment* const seg = bg->segment;
-        if(seg->beings.num > 1U){
-            const int rand = SDL_rand(seg->beings.num);
-            int indx = rand;
-            do{
-                if(bg->indx != indx && BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
-                    bg1 = gd->beings.array + *(seg->beings.beings_ind + indx);
-                    goto search_end;
-                }
-                indx = (indx + 1) % seg->beings.num;
-            }while(indx != rand);
-        }
+            ++seg_i;
+        }while(seg_i != max_i);
         search_end:
         if(bg1){
             AddBoltVisualEffect(&gd->rend_data_ptr->visual_effects, &bg1->position, (position16){(_Float16)bg->position.x, (_Float16)bg->position.y});
             AddBeingEffect(bg1, (Lasting_effect){being_effect_thunderbolt, BOLT_CHAIN_TICKS});
         }
-        if(DamageBeing(bg, &(Impact){4.0F, 1.0F, 8.0F, 1.0F}, gd->beings.array)){
+        if(DamageBeing(bg, &(Impact){32.0F, 1.0F, 64.0F, 1.0F}, gd->beings.array)){
             bg->effects_num = 0U;
         }else if(bg->status == being_stunned){
             const float thunderbolt_push_power = 6.0F;
@@ -1236,7 +1231,7 @@ void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left
             const float vel = BASE_FLY_VELOCITY * power;
             CatapultBeing(bg, SineUnsafe(angle) * vel, -CosiUnsafe(angle) * vel, BASE_FLY_TICKS * power);
         }else if(bg->status != being_fly){
-            StunBeing(bg, NAP_TICKS);
+            StunBeing(bg, SHOCK_TICKS);
         }
         AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
             bg->position.x + (SDL_randf() - 0.5F) * half(BeingSize(bg)),

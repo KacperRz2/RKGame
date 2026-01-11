@@ -53,6 +53,7 @@
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
 #define NAP_TICKS                   128
+#define SHOCK_TICKS                 0x180
 #define BLADE_BASE_X                16.0F
 #define BLADE_BASE_Y                (-8.0F)
 #define BLADE_BASE_DIRECTION_BEING  0.0F
@@ -149,10 +150,10 @@
 #define WEAK_EFFECT_TICKS           0x1000
 #define SLOW_EFFECT_TICKS           1024
 #define BURN_TICKS                  0x1000
-#define BOLT_CHAIN_TICKS            0x8U
+#define BOLT_CHAIN_TICKS            0x100U
 #define OPENING_PORTAL_TICKS        128
 #define ATTENTION_RECT_SIZE         (BIG_SEGMENT_SIZE * 3.0F)
-#define SPIRAL_STEPS(range)         (pow2(range * 2U + 1U))
+#define SPIRAL_STEPS(range)         (pow2(range * 2 + 1))
 #define ALLY_ATTENTION_RANGE        3U
 #define BEING_ALLY_DETEC_RANGE      1U
 #define UNLIMITET_SPEC_PROJE        0U
