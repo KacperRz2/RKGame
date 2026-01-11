@@ -10,6 +10,17 @@
 #include <Being.h>
 #include <game.h>
 
+static void SetViewTexture(Render_data* const rend_data){
+	texture(tx_view) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, rend_data->viewfinder / VIEW_TX_FACTOR, rend_data->viewfinder / VIEW_TX_FACTOR);
+	if(!texture(tx_view)){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_view));
+	SDL_SetRenderScale(rend_data->renderer, 1.0F / (float)VIEW_TX_FACTOR, 1.0F / (float)VIEW_TX_FACTOR);
+	SDL_SetTextureScaleMode(texture(tx_view), SDL_SCALEMODE_NEAREST);
+}
+
 int GraphicsInitiation(Render_data* const rend_data){
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
@@ -45,7 +56,6 @@ int GraphicsInitiation(Render_data* const rend_data){
 	SDL_SetTextureBlendMode(texture(tx_lighting), SDL_BLENDMODE_ADD);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
 	SDL_SetRenderScale(rend_data->renderer, LIGHTING_TX_SIZE / rend_data->viewfinder, LIGHTING_TX_SIZE / rend_data->viewfinder);
-	SDL_SetRenderTarget(rend_data->renderer, NULL);
 
 	SDL_DestroySurface(surface);
 	DrawBeings(rend_data, surface, bmp_path);
@@ -64,6 +74,7 @@ int GraphicsInitiation(Render_data* const rend_data){
 	SDL_SetTextureBlendMode(texture(tx_projectile), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_pixel), SDL_BLENDMODE_ADD);
 	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_BLEND);
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
 	return 0;
 }
 
@@ -145,11 +156,15 @@ static void RenderVisualEffectsType2(Visual_effect* const ve, Game_data* const g
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), red, pow2(red) * 0.625F, 0.0F);
 		size = (float)ve->data.d0.size * (1.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	}else{
+		if(ve->ticks_left == ve->data.d0.start_ticks * 3U / 4U - 1U && SDL_rand(2)){
+			ve->ticks_left = 1U;
+			return;
+		}
 		const float level = 1.0F - (float)ve->ticks_left / (ve->data.d0.start_ticks * 0.75F);
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), level, level, level);
 		size = (float)ve->data.d0.size * (1.0F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 		SDL_SetTextureBlendMode(texture(ve->data.d0.tx_num), SDL_BLENDMODE_BLEND);
-	}
+	} 
 	SDL_SetTextureAlphaModFloat(texture(ve->data.d0.tx_num), (float)ve->ticks_left / (float)ve->data.d0.start_ticks * 0.75F);
 	SDL_RenderTexture(rend_data->renderer, texture(ve->data.d0.tx_num), NULL, &(SDL_FRect){
 		rend_point.x - half(size),
@@ -276,7 +291,15 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 			size,
 			size
 		});
-		SDL_SetRenderTarget(rend_data->renderer, NULL);
+		SDL_SetTextureAlphaModFloat(texture(tx_pixel), SDL_ALPHA_OPAQUE);
+		const float size1 =  size * 0x1.0p-4F;
+		SDL_RenderTexture(rend_data->renderer, texture(tx_pixel), NULL, &(SDL_FRect){
+			rend_point.x - half(size1),
+			rend_point.y - half(size1),
+			size1,
+			size1
+		});
+		SDL_SetRenderTarget(rend_data->renderer, texture(tx_view));
 		const float alpha = ve->ticks_left / (float)BOLT_TICKS * (SDL_randf() + 1.0F);
 		const int num_verts = count * 2;
 		const int num_indices = (count - 1) * 6;
@@ -359,7 +382,7 @@ static void RenderVisualEffects(Render_data* const rend_data, Game_data* const g
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
 	SDL_SetRenderDrawColor(rend_data->renderer, BLACK_RGB, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(rend_data->renderer);
-	SDL_SetRenderTarget(rend_data->renderer, NULL);
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_view));
 	const void (*render[])(Visual_effect* const, Game_data* const) = VISUAL_EFFECT_FUNCS;
 	for(unsigned int i = 0U; i < rend_data->visual_effects.num; ++i){
 		Visual_effect* ve = rend_data->visual_effects.array + i;
@@ -549,7 +572,6 @@ static void DrawBeing(Render_data* const rend_data, SDL_Texture* const being_tx,
 	SDL_SetTextureColorMod(tx_1, *RGB_1, *(RGB_1 + 1), *(RGB_1 + 2));
 	SDL_RenderTexture(rend_data->renderer, tx_1, NULL, NULL);
 	SDL_RenderTexture(rend_data->renderer, tx_0, NULL, NULL);
-	SDL_SetRenderTarget(rend_data->renderer, NULL);
 }
 
 static void DrawColouredThing(Render_data* const rend_data, SDL_Texture* const target, SDL_Texture* const tx, const Uint8* const RGBA){
@@ -557,7 +579,6 @@ static void DrawColouredThing(Render_data* const rend_data, SDL_Texture* const t
 	SDL_SetTextureColorMod(tx, *RGBA, *(RGBA + 1), *(RGBA + 2));
 	SDL_SetTextureAlphaMod(tx, *(RGBA + 3));
 	SDL_RenderTexture(rend_data->renderer, tx, NULL, NULL);
-	SDL_SetRenderTarget(rend_data->renderer, NULL);
 }
 
 void SetRenderData(Render_data* const rend_data){
@@ -589,6 +610,7 @@ void ResetRenderData(Render_data* const rend_data){
 	SDL_DestroySurface(surface);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
 	SDL_SetRenderScale(rend_data->renderer, LIGHTING_TX_SIZE / rend_data->viewfinder, LIGHTING_TX_SIZE / rend_data->viewfinder);
+	SetViewTexture(rend_data);
 	SDL_SetRenderTarget(rend_data->renderer, NULL);
 }
 
@@ -871,7 +893,13 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 	++rend_data->counter;
 	SetSineCosine(rend_data, pc);
 	RenderBackground(rend_data);
-	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_view));
+	SDL_RenderTexture(rend_data->renderer, texture(tx_background), &(SDL_FRect){
+		(float)rend_data->viewfinder_rect.x,
+		(float)rend_data->viewfinder_rect.y,
+		(float)rend_data->viewfinder_rect.w,
+		(float)rend_data->viewfinder_rect.h
+	}, NULL);
 	Segment* beings_segs[MAX_UNSEEN_SEG];
 	unsigned int beings_segs_num = 0U;
 	RenderTerrain(rend_data, gd, beings_segs, &beings_segs_num);
@@ -914,6 +942,10 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 	SDL_RenderTexture(rend_data->renderer, texture(tx_lighting), NULL, NULL);
 	SDL_RenderTexture(rend_data->renderer, texture(tx_viewfinder), NULL, NULL);
 	
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
+	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
+	SDL_RenderTexture(rend_data->renderer, texture(tx_view), NULL, NULL);
+
 	if(event_code == event_menu){
 		RenderMenu(rend_data, pc);
 	}else if(event_code == event_manage_scrolls){
@@ -928,6 +960,7 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 		RenderText(rend_data, 1.0F, 1.0F, 16.0F, (Uint8[])HORDE_ALERT);
 	}
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
+	
 	RenderDirectionArrow(rend_data, RadToDeg(pc->direction));
 	RenderPlayerStatus(rend_data, pc, gd);
 	RenderQuickScrolls(rend_data, pc);
@@ -1300,7 +1333,18 @@ static inline Placement GetWeaponPlacement(Placement* const start, Placement* co
 }
 
 static inline void RenderBackground(Render_data* const rend_data){
-	SDL_RenderTexture(rend_data->renderer, texture(tx_background), NULL, NULL);
+	SDL_FRect rect = {
+		0.0F, 0.0F, rend_data->viewfinder_rect.x, rend_data->window_h
+	};
+	SDL_FRect rect1 = {
+		rend_data->viewfinder_rect.x, 0.0F, rend_data->viewfinder, rend_data->viewfinder_rect.y
+	};
+	SDL_RenderTexture(rend_data->renderer, texture(tx_background), &rect, &rect);
+	SDL_RenderTexture(rend_data->renderer, texture(tx_background), &rect1, &rect1);
+	rect.x = rect.w + rend_data->viewfinder;
+	rect1.y = rend_data->window_h - rend_data->viewfinder_rect.y;
+	SDL_RenderTexture(rend_data->renderer, texture(tx_background), &rect, &rect);
+	SDL_RenderTexture(rend_data->renderer, texture(tx_background), &rect1, &rect1);
 }
 
 static void RenderFrame(Render_data* const rend_data, SDL_Texture* const tx_backgr1, const SDL_FRect* const frame, const float width){
@@ -1832,7 +1876,6 @@ static void DrawBackground(Render_data* const rend_data, SDL_Surface* surface, c
 	SDL_RenderFillRect(rend_data->renderer, &nesw_rect);
 	icon_scr_rect.x = ICON_TX_SIZE * ic_directions;
 	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &icon_scr_rect, &nesw_rect);
-	SDL_SetRenderTarget(rend_data->renderer, NULL);
 	SDL_DestroyTexture(tx_backgr0);
 	SDL_DestroyTexture(tx_backgr1);
 }

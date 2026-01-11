@@ -19,7 +19,7 @@
 #define GUN_SIGHT_SIZE		        16
 #define BULLET_SIZE			        16
 #define BOOM_SIZE			        320
-#define BOOM_EFFECTS_NUM		    8U
+#define BOOM_EFFECTS_NUM		    64U
 #define V_EFFECT_MAX_DELAY          16
 #define BLADE_SIZE                  64.0F
 #define DECELERATION		        0.93F

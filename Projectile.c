@@ -235,7 +235,7 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 			AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
 				pr->position.x + SineUnsafe(angle) * distance,
 				pr->position.y - CosiUnsafe(angle) * distance
-			}, V_EFFECT_MAX_DELAY * rand_float + 1U);
+			}, V_EFFECT_MAX_DELAY * SDL_randf() + 1U);
 		}
 		const int range = 2;
 		const unsigned int array_size = pow2(1 + range * 2);
@@ -275,7 +275,10 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 	MoveProjectile(pr);
 	if(!(pr->data.special.ticks % 4U)){
 		if(!(pr->data.special.ticks % 16U)){
-			AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+			AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
+				pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE
+			});
 		}else{
 			AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
 				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,

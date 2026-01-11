@@ -220,6 +220,7 @@ enum texture_num{
     tx_map,
     tx_background,
     tx_lighting,
+    tx_view,
     txs_num
 };
 

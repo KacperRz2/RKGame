@@ -51,10 +51,11 @@
 #define VORTEX_ROTAT_SPEED          (1024.0F / (0x40000000ULL / FRAME_TIME))
 #define TEXTURE_ROTA_SPEED          (512.0F / (0x40000000ULL / FRAME_TIME))
 #define SCROLL_ICON_SIZE            (SCROLL_SIZE * (37.0F / 64.0F))
-#define BIG_BURN_SIZE               320U
+#define BIG_BURN_SIZE               512U//320U
 #define SMALL_BURN_SIZE             64U
 #define BOLT_TICKS                  (0x8000000ULL / FRAME_TIME)
-#define LIGHTING_TX_SIZE            128
+#define LIGHTING_TX_SIZE            64
+#define VIEW_TX_FACTOR              2
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
