@@ -64,7 +64,7 @@ static void RenderDirectionArrow(Render_data* const, const double);
 static void RenderQuickScrolls(Render_data* const, const Player* const);
 static void RenderScrollsManagement(Render_data* const, const Player* const);
 static void RenderMenu(Render_data* const, const Player* const);
-static void DrawBackgroud(Render_data* const, SDL_Surface*, char*);
+static void DrawBackground(Render_data* const, SDL_Surface*, char*);
 static void RenderPortrait(Render_data* const, SDL_Texture* const);
 static SDL_FPoint GetCharacterXPositionAndWidth(const int);
 static unsigned int GetCharacterRow(const int);

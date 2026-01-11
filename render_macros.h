@@ -54,6 +54,7 @@
 #define BIG_BURN_SIZE               320U
 #define SMALL_BURN_SIZE             64U
 #define BOLT_TICKS                  (0x8000000ULL / FRAME_TIME)
+#define LIGHTING_TX_SIZE            128
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
@@ -221,6 +222,7 @@
 #define MP_TEXT_RGB                 0U, 208U, 255U
 #define MP_COST_TEXT_RGB            255U, 0U, 127U
 #define WHITE_RGB                   255U, 255U, 255U
+#define BLACK_RGB                   0U, 0U, 0U
 #define BOLT_RGB_F                  0xa.0p-4F, 0x9.0p-4F, 1.0F
 #define DAMAGE_VIS_EFFECT(position) ((Visual_effect){\
                                         (SDL_FPoint)position,\
@@ -348,6 +350,7 @@
                                         "img1B",\
                                         "img1C",\
                                         "img1D",\
+                                        "img1E",\
                                         "void"\
                                     }
 

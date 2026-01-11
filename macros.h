@@ -71,7 +71,7 @@
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       0x800
+#define PC_HP                       0x8000
 #define PC_FATIGUE                  1000
 #define PC_MAGIC                    0x100
 #define PC_M_MAGIC                  0x10000000

@@ -203,6 +203,7 @@ enum texture_num{
     tx_bonus_effect,
     tx_curse_effect,
     tx_owned,
+    tx_bolt,
     tx_void,
     tx_pc,
     tx_being_weak,
@@ -218,6 +219,7 @@ enum texture_num{
     tx_pixel,
     tx_map,
     tx_background,
+    tx_lighting,
     txs_num
 };
 

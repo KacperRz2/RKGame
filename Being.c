@@ -1229,7 +1229,13 @@ void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left
         }
         if(DamageBeing(bg, &(Impact){4.0F, 1.0F, 8.0F, 1.0F}, gd->beings.array)){
             bg->effects_num = 0U;
-        }else{
+        }else if(bg->status == being_stunned){
+            const float thunderbolt_push_power = 6.0F;
+            const float power = thunderbolt_push_power * bg->armour.unstability;
+            const float angle = FULL_ANGLE * SDL_randf();
+            const float vel = BASE_FLY_VELOCITY * power;
+            CatapultBeing(bg, SineUnsafe(angle) * vel, -CosiUnsafe(angle) * vel, BASE_FLY_TICKS * power);
+        }else if(bg->status != being_fly){
             StunBeing(bg, NAP_TICKS);
         }
         AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){

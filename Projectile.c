@@ -181,6 +181,11 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 		}
 	}
 	MoveProjectile(pr);
+	if(!GetSegmentUnsafe(&gd->world, pr->position.x, pr->position.y)){
+		SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "SEG_NULL_WHERE_PROJECTILE_IS!");
+		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
+		return false;
+	}
 	for(unsigned int i = 0U; i < gd->champions.num; ++i){
 		Player* const pc = gd->champions.array + i;
 		if(!(pc->flags & dodge_time) && pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
@@ -224,15 +229,13 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 				pr->position.x + SineUnsafe(angle) * distance,
 				pr->position.y - CosiUnsafe(angle) * distance
 			}, V_EFFECT_MAX_DELAY * rand_float + 1U);
-			for(unsigned int j = 0U; j < BOOM_EFFECTS_NUM; ++j){
-				angle = FULL_ANGLE * SDL_randf();
-				rand_float = SDL_randf();
-				distance = half(BOOM_SIZE) * rand_float;
-				AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-					pr->position.x + SineUnsafe(angle) * distance,
-					pr->position.y - CosiUnsafe(angle) * distance
-				}, V_EFFECT_MAX_DELAY * rand_float + 1U);
-			}
+			angle = FULL_ANGLE * SDL_randf();
+			rand_float = SDL_randf();
+			distance = half(BOOM_SIZE) * rand_float;
+			AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+				pr->position.x + SineUnsafe(angle) * distance,
+				pr->position.y - CosiUnsafe(angle) * distance
+			}, V_EFFECT_MAX_DELAY * rand_float + 1U);
 		}
 		const int range = 2;
 		const unsigned int array_size = pow2(1 + range * 2);
@@ -270,7 +273,7 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 		return false;
 	}
 	MoveProjectile(pr);
-	if(!(pr->data.special.ticks % 2U)){
+	if(!(pr->data.special.ticks % 4U)){
 		if(!(pr->data.special.ticks % 16U)){
 			AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
 		}else{

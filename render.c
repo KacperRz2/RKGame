@@ -36,6 +36,17 @@ int GraphicsInitiation(Render_data* const rend_data){
 			return 3;
 		}
 	}
+
+	texture(tx_lighting) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, LIGHTING_TX_SIZE, LIGHTING_TX_SIZE);
+	if(!(texture(tx_lighting))){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_SetTextureBlendMode(texture(tx_lighting), SDL_BLENDMODE_ADD);
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
+	SDL_SetRenderScale(rend_data->renderer, LIGHTING_TX_SIZE / rend_data->viewfinder, LIGHTING_TX_SIZE / rend_data->viewfinder);
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
+
 	SDL_DestroySurface(surface);
 	DrawBeings(rend_data, surface, bmp_path);
 	SDL_DestroySurface(surface);
@@ -44,11 +55,14 @@ int GraphicsInitiation(Render_data* const rend_data){
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
 	rend_data->mouse_y = half(rend_data->window_h);
 	SetMouseBarrier(rend_data);
-	DrawBackgroud(rend_data, surface, bmp_path);
+	DrawBackground(rend_data, surface, bmp_path);
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
 	SDL_SetTextureBlendMode(texture(tx_barrier), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_bonus_effect), SDL_BLENDMODE_ADD);
+	SDL_SetTextureBlendMode(texture(tx_bolt), SDL_BLENDMODE_ADD);
+	SDL_SetTextureBlendMode(texture(tx_projectile), SDL_BLENDMODE_ADD);
+	SDL_SetTextureBlendMode(texture(tx_pixel), SDL_BLENDMODE_ADD);
 	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_BLEND);
 	return 0;
 }
@@ -122,23 +136,28 @@ static void RenderVisualEffectsType2(Visual_effect* const ve, Game_data* const g
 	if(!(seg && (seg->flags & segment_in_sight) && GetExtendedRenderPointFromTrue(rend_data, ve->position.x, ve->position.y, half(ve->data.d0.size), human(gd), &rend_point))){
 		return;
 	}
+	float size;
 	if(ve->ticks_left > ve->data.d0.start_ticks - 2U){
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), 0.625F, 0.5F, 1.0F);
+		size = (float)ve->data.d0.size * (1.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	}else if(ve->ticks_left >= ve->data.d0.start_ticks * 3U / 4U){
 		const float red = ((float)ve->ticks_left - ve->data.d0.start_ticks * 0.75F) / (ve->data.d0.start_ticks * 0.25F);
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), red, pow2(red) * 0.625F, 0.0F);
+		size = (float)ve->data.d0.size * (1.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	}else{
 		const float level = 1.0F - (float)ve->ticks_left / (ve->data.d0.start_ticks * 0.75F);
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), level, level, level);
+		size = (float)ve->data.d0.size * (1.0F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
+		SDL_SetTextureBlendMode(texture(ve->data.d0.tx_num), SDL_BLENDMODE_BLEND);
 	}
 	SDL_SetTextureAlphaModFloat(texture(ve->data.d0.tx_num), (float)ve->ticks_left / (float)ve->data.d0.start_ticks * 0.75F);
-	const float size = (float)ve->data.d0.size * (1.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	SDL_RenderTexture(rend_data->renderer, texture(ve->data.d0.tx_num), NULL, &(SDL_FRect){
 		rend_point.x - half(size),
 		rend_point.y - half(size),
 		size,
 		size
 	});
+	SDL_SetTextureBlendMode(texture(ve->data.d0.tx_num), SDL_BLENDMODE_ADD);
 }
 
 static void RenderVisualEffectsTimer(Visual_effect* const ve, Game_data* const gd){
@@ -157,8 +176,9 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 		&& GetExtendedRenderPointFromTrue(rend_data, ve->data.d1.start_position.x, ve->data.d1.start_position.y, SEGMENT_SIZE, human(gd), &rend_point1))){
 		return;
 	}
-	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_ADD);
-	int count = 6 + (int)ve->position.x % 2U;
+	const Uint64 seed = pow2((uint_fast16_t)ve->position.x * (uint_fast16_t)ve->position.y * (uint_fast16_t)ve->data.d1.start_position.x);
+	SDL_srand(seed + 1ULL);
+	int count = 6 + SDL_rand(7);
 	const float angle = ve->data.d1.angle / (float)UINT8_MAX * FULL_ANGLE - human(gd)->direction;
 	const float sine_angle = SineSafe(angle);
 	const float cosine_angle = CosiSafe(angle);
@@ -168,25 +188,33 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 	const float distance_squared = pow2(distance_x) + pow2(distance_y);
 	const float x_part = distance_x / parts;
 	const float y_part = distance_y / parts;
-	const float shift0 = distance_squared / pow2(VIEWFINDER_SIZE) * 64.0F;
+	const float shift0 = distance_squared / pow2(rend_data->viewfinder) * 64.0F;
 	float shift_x = shift0 * cosine_angle;
 	float shift_y = shift0 * sine_angle;
-	const float width = (float)count * 0.5F;
+	const float width = (float)count * 1.5F;
 	const float width_x = width * cosine_angle;
 	const float width_y = width * sine_angle;
-	const float width_step_x = width_x / (float)count;
-	const float width_step_y = width_y / (float)count;
-	if(count % 2){
+	const float width_step_x = width_x / (float)count * 0.75F;
+	const float width_step_y = width_y / (float)count * 0.75F;
+	if(SDL_rand(2)){
 		shift_x = -shift_x;
 		shift_y = -shift_y;
 	}
 	if(ve->ticks_left > BOLT_TICKS - (count - 2U)){
 		count = BOLT_TICKS - ve->ticks_left + 2;
-		const int side_p_num = count - 3 > 0 ? count - 3 : 0;
-		int num_verts = count * 2 + side_p_num;
-		int num_indices = ((count - 1) * 2 + side_p_num) * 3;
+		int num_verts = count * 2;
+		int num_indices = (count - 1) * 6;
 		SDL_Vertex verts[num_verts];
-		for(unsigned int i = 0U; i < num_verts; ++i){
+		verts->tex_coord = (SDL_FPoint){0.0F, 0.875F};
+		verts->color = (SDL_FColor)(SDL_FColor){BOLT_RGB_F, SDL_ALPHA_OPAQUE_FLOAT};
+		(verts + 1)->tex_coord = (SDL_FPoint){1.0F, 0.875F};
+		(verts + 1)->color = (SDL_FColor)(SDL_FColor){BOLT_RGB_F, SDL_ALPHA_OPAQUE_FLOAT};
+		(verts + 2)->tex_coord = (SDL_FPoint){0.0F, 0.0F};
+		(verts + 2)->color = (SDL_FColor){BOLT_RGB_F, SDL_ALPHA_OPAQUE_FLOAT};
+		(verts + 3)->tex_coord = (SDL_FPoint){1.0F, 0.0F};
+		(verts + 3)->color = (SDL_FColor){BOLT_RGB_F, SDL_ALPHA_OPAQUE_FLOAT};
+		for(unsigned int i = 4U; i < num_verts; ++i){
+			(verts + i)->tex_coord = (SDL_FPoint){1.0F * (i % 2U), 0.5F};
 			(verts + i)->color = (SDL_FColor){BOLT_RGB_F, SDL_ALPHA_OPAQUE_FLOAT};
 		}
 		int indices[num_indices];
@@ -194,11 +222,6 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 			for(int j = 0; j < 3; ++j){
 				*(indices + i * 3 + j) = i + j;
 			}
-		}
-		for(int i = 0; i < side_p_num; ++i){
-			*(indices + (count - 1) * 6 + i * 3) = (count - 1) * 2 + 2 + i;
-			*(indices + (count - 1) * 6 + i * 3 + 1) = (i + 1) * 2;
-			*(indices + (count - 1) * 6 + i * 3 + 2) = (i + 1) * 2 + 1;
 		}
 		verts->position = (SDL_FPoint){
 			rend_point1.x - width_x,
@@ -208,46 +231,78 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 			rend_point1.x + width_x,
 			rend_point1.y + width_y
 		};
+		float rand[count - 1];
+		float rand1[count - 1];
+		for(unsigned int i = 0U; i < count - 1; ++i){
+			*(rand + i) = SDL_randf() * 0.75F + 0.25F;
+			*(rand1 + i) = (SDL_randf() - 0.5F) * 0.875F;
+		}
 		for(unsigned int i = 1U; i < count; i += 2U){
 			(verts + i * 2)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i + shift_x - (width_x - i * width_step_x),
-				rend_point1.y + y_part * i + shift_y - (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) + shift_x * *(rand + i - 1U) - (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) + shift_y * *(rand + i - 1U) - (width_y - i * width_step_y)
 			};
 			(verts + i * 2 + 1)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i + shift_x + (width_x - i * width_step_x),
-				rend_point1.y + y_part * i + shift_y + (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) + shift_x * *(rand + i - 1U) + (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) + shift_y * *(rand + i - 1U) + (width_y - i * width_step_y)
 			};
 		}
 		for(unsigned int i = 2U; i < count; i += 2U){
 			(verts + i * 2)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i - shift_x - (width_x - i * width_step_x),
-				rend_point1.y + y_part * i - shift_y - (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) - shift_x * *(rand + i - 1U) - (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) - shift_y * *(rand + i - 1U) - (width_y - i * width_step_y)
 			};
 			(verts + i * 2 + 1)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i - shift_x + (width_x - i * width_step_x),
-				rend_point1.y + y_part * i - shift_y + (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) - shift_x * *(rand + i - 1U) + (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) - shift_y * *(rand + i - 1U) + (width_y - i * width_step_y)
 			};
 		}
-		for(unsigned int i = 2U; i < count - 1U; i += 2U){
-			(verts + count * 2 + (i - 2))->position = (SDL_FPoint){
-				rend_point1.x + x_part * (i - 0.5F) + shift_x * 2.0F,
-				rend_point1.y + y_part * (i - 0.5F) + shift_y * 2.0F
-			};
-		}
-		for(unsigned int i = 3U; i < count - 1U; i += 2U){
-			(verts + count * 2 + (i - 2))->position = (SDL_FPoint){
-				rend_point1.x + x_part * (i - 0.5F) - shift_x * 2.0F,
-				rend_point1.y + y_part * (i - 0.5F) - shift_y * 2.0F
-			};
-		}
-		SDL_RenderGeometry(rend_data->renderer, NULL, verts, num_verts, indices, num_indices);
+		SDL_RenderGeometry(rend_data->renderer, texture(tx_bolt), verts, num_verts, indices, num_indices);
 	}else{
-		const float alpha = ve->ticks_left / (float)BOLT_TICKS;
-		const int side_p_num = count - 3;
-		const int num_verts = count * 2 + side_p_num;
-		const int num_indices = ((count - 1) * 2 + side_p_num) * 3;
+		float rand[count - 2];
+		float rand1[count - 1];
+		for(unsigned int i = 0U; i < count - 2; ++i){
+			*(rand + i) = SDL_randf() * 0.75F + 0.25F;
+			*(rand1 + i) = (SDL_randf() - 0.5F) * 0.875F;
+		}
+		SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
+		const float level = (float)ve->ticks_left / (float)BOLT_TICKS * 0.5F;
+		SDL_SetTextureAlphaModFloat(texture(tx_pixel), level);
+		SDL_SetTextureColorModFloat(texture(tx_pixel), BOLT_RGB_F);
+		const float size =  2048.0F + 1024.0F * SDL_randf();
+		SDL_RenderTexture(rend_data->renderer, texture(tx_pixel), NULL, &(SDL_FRect){
+			rend_point.x - half(size),
+			rend_point.y - half(size),
+			size,
+			size
+		});
+		SDL_SetRenderTarget(rend_data->renderer, NULL);
+		const float alpha = ve->ticks_left / (float)BOLT_TICKS * (SDL_randf() + 1.0F);
+		const int num_verts = count * 2;
+		const int num_indices = (count - 1) * 6;
 		SDL_Vertex verts[num_verts];
-		for(unsigned int i = 0U; i < num_verts; ++i){
+		verts->tex_coord = (SDL_FPoint){0.0F, 1.0F};
+		verts->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		(verts + 1)->tex_coord = (SDL_FPoint){1.0F, 1.0F};
+		(verts + 1)->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		(verts + 2)->tex_coord = (SDL_FPoint){0.0F, 0.0F};
+		(verts + 2)->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		(verts + 3)->tex_coord = (SDL_FPoint){1.0F, 0.0F};
+		(verts + 3)->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		for(unsigned int i = 4U; i < count * 2U - 2U; i += 2U){
+			(verts + i)->tex_coord = (SDL_FPoint){0.0F, 0.5F};
+			(verts + i)->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		}
+		for(unsigned int i = 3U; i < count * 2U - 2U; i += 2U){
+			(verts + i)->tex_coord = (SDL_FPoint){1.0F, 0.5F};
+			(verts + i)->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		}
+		(verts + count * 2 - 2)->tex_coord = (SDL_FPoint){0.0F, 0.0F};
+		(verts + count * 2 - 2)->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		(verts + count * 2 - 1)->tex_coord = (SDL_FPoint){1.0F, 0.0F};
+		(verts + count * 2 - 1)->color = (SDL_FColor){BOLT_RGB_F, alpha};
+		for(unsigned int i = count * 2U; i < num_verts; ++i){
+			(verts + i)->tex_coord = (SDL_FPoint){0.5F, 0.0F};
 			(verts + i)->color = (SDL_FColor){BOLT_RGB_F, alpha};
 		}
 		int indices[num_indices];
@@ -255,11 +310,6 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 			for(int j = 0; j < 3; ++j){
 				*(indices + i * 3 + j) = i + j;
 			}
-		}
-		for(int i = 0; i < side_p_num; ++i){
-			*(indices + (count - 1) * 6 + i * 3) = (count - 1) * 2 + 2 + i;
-			*(indices + (count - 1) * 6 + i * 3 + 1) = (i + 1) * 2;
-			*(indices + (count - 1) * 6 + i * 3 + 2) = (i + 1) * 2 + 1;
 		}
 		verts->position = (SDL_FPoint){
 			rend_point1.x - width_x,
@@ -271,50 +321,45 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 		};
 		for(unsigned int i = 1U; i < count - 1U; i += 2U){
 			(verts + i * 2)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i + shift_x - (width_x - i * width_step_x),
-				rend_point1.y + y_part * i + shift_y - (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) + shift_x * *(rand + i - 1U) - (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) + shift_y * *(rand + i - 1U) - (width_y - i * width_step_y)
 			};
 			(verts + i * 2 + 1)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i + shift_x + (width_x - i * width_step_x),
-				rend_point1.y + y_part * i + shift_y + (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) + shift_x * *(rand + i - 1U) + (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) + shift_y * *(rand + i - 1U) + (width_y - i * width_step_y)
 			};
 		}
 		for(unsigned int i = 2U; i < count - 1U; i += 2U){
 			(verts + i * 2)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i - shift_x - (width_x - i * width_step_x),
-				rend_point1.y + y_part * i - shift_y - (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) - shift_x * *(rand + i - 1U) - (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) - shift_y * *(rand + i - 1U) - (width_y - i * width_step_y)
 			};
 			(verts + i * 2 + 1)->position = (SDL_FPoint){
-				rend_point1.x + x_part * i - shift_x + (width_x - i * width_step_x),
-				rend_point1.y + y_part * i - shift_y + (width_y - i * width_step_y)
+				rend_point1.x + x_part * (i + *(rand1 + i - 1U)) - shift_x * *(rand + i - 1U) + (width_x - i * width_step_x),
+				rend_point1.y + y_part * (i + *(rand1 + i - 1U)) - shift_y * *(rand + i - 1U) + (width_y - i * width_step_y)
 			};
 		}
-		for(unsigned int i = 2U; i < count - 1U; i += 2U){
-			(verts + count * 2 + (i - 2))->position = (SDL_FPoint){
-				rend_point1.x + x_part * (i - 0.5F) + shift_x * 2.0F,
-				rend_point1.y + y_part * (i - 0.5F) + shift_y * 2.0F
-			};
-		}
-		for(unsigned int i = 3U; i < count - 1U; i += 2U){
-			(verts + count * 2 + (i - 2))->position = (SDL_FPoint){
-				rend_point1.x + x_part * (i - 0.5F) - shift_x * 2.0F,
-				rend_point1.y + y_part * (i - 0.5F) - shift_y * 2.0F
-			};
-		}
+		const float sh_last = 3.0F;
+		const float sh_x_last = sh_last * cosine_angle;
+		const float sh_y_last = sh_last * sine_angle;
 		(verts + (count - 1) * 2)->position = (SDL_FPoint){
-			rend_point.x - 1.0F,
-			rend_point.y
+			rend_point.x - sh_x_last,
+			rend_point.y - sh_y_last
 		};
 		(verts + (count - 1) * 2 + 1)->position = (SDL_FPoint){
-			rend_point.x + 1.0F,
-			rend_point.y
+			rend_point.x + sh_x_last,
+			rend_point.y + sh_y_last
 		};
-		SDL_RenderGeometry(rend_data->renderer, NULL, verts, num_verts, indices, num_indices);
+		SDL_RenderGeometry(rend_data->renderer, texture(tx_bolt), verts, num_verts, indices, num_indices);
 	}
-	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_BLEND);
+	SDL_srand(0ULL);
 }
 
 static void RenderVisualEffects(Render_data* const rend_data, Game_data* const gd){
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
+	SDL_SetRenderDrawColor(rend_data->renderer, BLACK_RGB, SDL_ALPHA_OPAQUE);
+	SDL_RenderClear(rend_data->renderer);
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
 	const void (*render[])(Visual_effect* const, Game_data* const) = VISUAL_EFFECT_FUNCS;
 	for(unsigned int i = 0U; i < rend_data->visual_effects.num; ++i){
 		Visual_effect* ve = rend_data->visual_effects.array + i;
@@ -358,7 +403,7 @@ extern inline void AddSmallBurnVisualEffect(Visual_effects* const ves, const SDL
 }
 
 extern inline void AddBoomVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
-	AddVisalEffect(ves, &BURN_VIS_EF(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 7U / 2U + 1U));
+	AddVisalEffect(ves, &BURN_VIS_EF(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 15U / 2U + 1U));
 }
 
 extern inline void AddBigBurnVisualEffectTimer(Visual_effects* const ves, const SDL_FPoint* const position, const unsigned int delay){
@@ -370,7 +415,7 @@ extern inline void AddSmallBurnVisualEffectTimer(Visual_effects* const ves, cons
 }
 
 extern inline void AddBoomVisualEffectTimer(Visual_effects* const ves, const SDL_FPoint* const position, const unsigned int delay){
-	AddVisalEffect(ves, &BURN_EF_TIM(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 7U / 2U + 1U, delay));
+	AddVisalEffect(ves, &BURN_EF_TIM(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 15U / 2U + 1U, delay));
 }
 
 extern inline void AddBoltVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position, const position16 start_position){
@@ -539,9 +584,12 @@ void ResetRenderData(Render_data* const rend_data){
 	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
-	DrawBackgroud(rend_data, surface, bmp_path);
+	DrawBackground(rend_data, surface, bmp_path);
 	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
+	SDL_SetRenderScale(rend_data->renderer, LIGHTING_TX_SIZE / rend_data->viewfinder, LIGHTING_TX_SIZE / rend_data->viewfinder);
+	SDL_SetRenderTarget(rend_data->renderer, NULL);
 }
 
 static void RenderHumanPlayerBlade(Render_data* const rend_data, Blade* const blade){
@@ -626,8 +674,8 @@ static void RenderBeings(Render_data* const rend_data, Game_data* const gd, Segm
 
 static void RenderMap(Render_data* const rend_data, const Game_data* const gd, Player* const pc){
 	const SDL_FRect pc_rect = {
-		pc->position.x * (VIEWFINDER_SIZE / WORLD_W) - half(MINIMAP_PC_SIZE),
-		pc->position.y * (VIEWFINDER_SIZE / WORLD_H) - half(MINIMAP_PC_SIZE),
+		pc->position.x * (rend_data->viewfinder / WORLD_W) - half(MINIMAP_PC_SIZE),
+		pc->position.y * (rend_data->viewfinder / WORLD_H) - half(MINIMAP_PC_SIZE),
 		MINIMAP_PC_SIZE,
 		MINIMAP_PC_SIZE
 	};
@@ -636,8 +684,8 @@ static void RenderMap(Render_data* const rend_data, const Game_data* const gd, P
 	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
 		if(*(gd->keys_status + i) != key_location_unknown){
 			const SDL_FRect rect = {
-				(gd->world.key_locations + i)->x * (VIEWFINDER_SIZE / 255.0F) - half(MAP_KEY_SIZE),
-				(gd->world.key_locations + i)->y * (VIEWFINDER_SIZE / 255.0F) - half(MAP_KEY_SIZE),
+				(gd->world.key_locations + i)->x * (rend_data->viewfinder / 255.0F) - half(MAP_KEY_SIZE),
+				(gd->world.key_locations + i)->y * (rend_data->viewfinder / 255.0F) - half(MAP_KEY_SIZE),
 				MAP_KEY_SIZE,
 				MAP_KEY_SIZE
 			};
@@ -862,7 +910,10 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 	RenderBarriers(rend_data, pc->direction, players_to_rend, players_rend_points, indx);
 	RenderDoors(rend_data, gd);
 	RenderVisualEffects(rend_data, gd);
+
+	SDL_RenderTexture(rend_data->renderer, texture(tx_lighting), NULL, NULL);
 	SDL_RenderTexture(rend_data->renderer, texture(tx_viewfinder), NULL, NULL);
+	
 	if(event_code == event_menu){
 		RenderMenu(rend_data, pc);
 	}else if(event_code == event_manage_scrolls){
@@ -1457,7 +1508,7 @@ static void RenderMenu(Render_data* const rend_data, const Player* const pc){
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
 }
 
-static void DrawBackgroud(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
+static void DrawBackground(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
 	if(texture(tx_background) != NULL){
 		SDL_DestroyTexture(texture(tx_background));
 	}
