@@ -741,7 +741,7 @@ static inline void UpdateBeingStunned(Being* const bg){
 
 static inline void UpdateBeingFly(Being* const bg, Game_data* const gd){
     if(bg->status_ticks_left == 0){
-        StunBeing(bg, BEING_STUN_DURATION / bg->armour.unstability);
+        StunBeing(bg, BEING_STUN_AFTER_FLY_DURAT / bg->armour.unstability);
         return;
     }
     float new_x = bg->position.x + bg->special_move_shift.x;
@@ -749,7 +749,7 @@ static inline void UpdateBeingFly(Being* const bg, Game_data* const gd){
     Segment* new_segment = GetSegmentUnsafe(&gd->world, new_x, new_y);
     if(new_segment != bg->segment){
         if(new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS){
-            StunBeing(bg, BEING_STUN_DURATION * bg->armour.unstability);
+            StunBeing(bg, BEING_STUN_AFTER_FLY_DURAT * bg->armour.unstability);
         }else{
             SetBeingPositionInNewSegment(bg, new_x, new_y, new_segment, gd->beings.array);
         }
@@ -1068,7 +1068,7 @@ static inline void BeingFlee(Being* const bg, Game_data* const gd){
     }
     const float distance = SDL_sqrtf(distance_squared);
     const float velocity_xy = distance / bg->velocity;
-    StartBeingWalk(bg, BEING_WALK_TICKS, distance_x / velocity_xy, distance_y / velocity_xy);
+    StartBeingWalk(bg, (int)(BEING_FLEE_WALK_TICKS * (SDL_randf() + 0.5F)), distance_x / velocity_xy, distance_y / velocity_xy);
 }
 //---------------------------------------------------------------------------------------------------------------
 extern inline void AddBeingEffect(Being* const bg, const Lasting_effect effect){

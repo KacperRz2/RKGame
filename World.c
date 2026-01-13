@@ -33,6 +33,187 @@ extern inline bool IsVoidBigSeg(const Uint64* const wrld_plan, const unsigned in
 	return (bool)(x >= BIG_SEGMENTS_X || y >= BIG_SEGMENTS_X || ((*(wrld_plan + y) & ((1ULL << (x * 2U)) | (1ULL << (x * 2U + 1U)))) == (1ULL << (x * 2U))));
 }
 
+static void SetBigSegmentSegments(World* const world, const unsigned int bigc, const unsigned int bigr){
+	Sint8 big_seg_plan[BIG_SEGMENT_SEGMENTS_X][BIG_SEGMENT_SEGMENTS_X];
+	SDL_zeroa(big_seg_plan);
+	//1
+	int block_size_c = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1);
+	int block_size_r = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2);
+	int shift = BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_c <= BIG_SEGMENT_SEGMENTS_X / 2 - block_size_r ? SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_c) : SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 - block_size_r);
+	for(unsigned int c = shift; c < block_size_c + shift; ++c){
+		for(unsigned int r = shift; r < block_size_r + shift; ++r){
+			*(*(big_seg_plan + c) + r) = -1;
+		}
+	}
+	if(block_size_c > 2 && block_size_r > 2 && SDL_rand(2)){
+		for(unsigned int c = shift + 1U; c < block_size_c + shift - 1U; ++c){
+			for(unsigned int r = shift + 1U; r < block_size_r + shift - 1U; ++r){
+				*(*(big_seg_plan + c) + r) = 0;
+			}
+		}
+		*(*(big_seg_plan + (block_size_c + shift - 1U)) + (shift + 1U)) = 0;
+		*(*(big_seg_plan + (shift + 1U)) + (block_size_r + shift - 1U)) = 0;
+		if((block_size_c > 3 && block_size_r > 3) && (block_size_c > 4 || block_size_r > 4)){
+			if(block_size_r > block_size_c){
+				*(*(big_seg_plan + (block_size_c + shift - 1U)) + (block_size_r + shift - 2U)) = 0;
+			}else{
+				*(*(big_seg_plan + (block_size_c + shift - 2U)) + (block_size_r + shift - 1U)) = 0;
+			}
+		}
+	}
+	//2
+	block_size_c = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2);
+	block_size_r = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1);
+	shift = BIG_SEGMENT_SEGMENTS_X / 2 - block_size_c <= BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_r ? SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 - block_size_c) : SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_r);
+	for(unsigned int c = BIG_SEGMENT_SEGMENTS_X - block_size_c - shift; c < BIG_SEGMENT_SEGMENTS_X - shift; ++c){
+		for(unsigned int r = shift; r < block_size_r + shift; ++r){
+			*(*(big_seg_plan + c) + r) = -1;
+		}
+	}
+	if(block_size_c > 2 && block_size_r > 2 && SDL_rand(2)){
+		for(unsigned int c = BIG_SEGMENT_SEGMENTS_X - block_size_c - shift + 1U; c < BIG_SEGMENT_SEGMENTS_X - shift - 1U; ++c){
+			for(unsigned int r = shift + 1U; r < block_size_r + shift - 1U; ++r){
+				*(*(big_seg_plan + c) + r) = 0;
+			}
+		}
+		*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - block_size_c - shift)) + (shift + 1U)) = 0;
+		*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - shift - 2U)) + (block_size_r + shift - 1U)) = 0;
+		if((block_size_c > 3 && block_size_r > 3) && (block_size_c > 4 || block_size_r > 4)){
+			if(block_size_r > block_size_c){
+				*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - block_size_c - shift)) + (block_size_r + shift - 2U)) = 0;
+			}else{
+				*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - block_size_c - shift + 1U)) + (block_size_r + shift - 1U)) = 0;
+			}
+		}
+	}
+	//3
+	block_size_c = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1);
+	block_size_r = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2);
+	shift = BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_c <= BIG_SEGMENT_SEGMENTS_X / 2 - block_size_r ? SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_c) : SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 - block_size_r);
+	for(unsigned int c = BIG_SEGMENT_SEGMENTS_X - block_size_c - shift; c < BIG_SEGMENT_SEGMENTS_X - shift; ++c){
+		for(unsigned int r = BIG_SEGMENT_SEGMENTS_X - block_size_r - shift; r < BIG_SEGMENT_SEGMENTS_X - shift; ++r){
+			*(*(big_seg_plan + c) + r) = -1;
+		}
+	}
+	if(block_size_c > 2 && block_size_r > 2 && SDL_rand(2)){
+		for(unsigned int c = BIG_SEGMENT_SEGMENTS_X - block_size_c - shift + 1U; c < BIG_SEGMENT_SEGMENTS_X - shift - 1U; ++c){
+			for(unsigned int r = BIG_SEGMENT_SEGMENTS_X - block_size_r - shift + 1U; r < BIG_SEGMENT_SEGMENTS_X - shift - 1U; ++r){
+				*(*(big_seg_plan + c) + r) = 0;
+			}
+		}
+		*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - shift - 2U)) + (BIG_SEGMENT_SEGMENTS_X - block_size_r - shift)) = 0;
+		*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - block_size_c - shift)) + (BIG_SEGMENT_SEGMENTS_X - shift - 2U)) = 0;
+		if((block_size_c > 3 && block_size_r > 3) && (block_size_c > 4 || block_size_r > 4)){
+			if(block_size_r > block_size_c){
+				*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - block_size_c - shift)) + (BIG_SEGMENT_SEGMENTS_X - block_size_r - shift + 1U)) = 0;
+			}else{
+				*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - block_size_c - shift + 1U)) + (BIG_SEGMENT_SEGMENTS_X - block_size_r - shift)) = 0;
+			}
+		}
+	}
+	//4
+	block_size_c = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2);
+	block_size_r = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1);
+	shift = BIG_SEGMENT_SEGMENTS_X / 2 - block_size_c <= BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_r ? SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 - block_size_c) : SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1 - block_size_r);
+	for(unsigned int c = shift; c < block_size_c + shift; ++c){
+		for(unsigned int r = BIG_SEGMENT_SEGMENTS_X - block_size_r - shift; r < BIG_SEGMENT_SEGMENTS_X - shift; ++r){
+			*(*(big_seg_plan + c) + r) = -1;
+		}
+	}
+	if(block_size_c > 2 && block_size_r > 2 && SDL_rand(2)){
+		for(unsigned int c = shift + 1U; c < block_size_c + shift - 1U; ++c){
+			for(unsigned int r = BIG_SEGMENT_SEGMENTS_X - block_size_r - shift + 1U; r < BIG_SEGMENT_SEGMENTS_X - shift - 1U; ++r){
+				*(*(big_seg_plan + c) + r) = 0;
+			}
+		}
+		*(*(big_seg_plan + (shift + 1U)) + (BIG_SEGMENT_SEGMENTS_X - block_size_r - shift)) = 0;
+		*(*(big_seg_plan + (block_size_c + shift - 1U)) + (BIG_SEGMENT_SEGMENTS_X - shift - 2U)) = 0;
+		if((block_size_c > 3 && block_size_r > 3) && (block_size_c > 4 || block_size_r > 4)){
+			if(block_size_r > block_size_c){
+				*(*(big_seg_plan + (block_size_c + shift - 1U)) + (BIG_SEGMENT_SEGMENTS_X - block_size_r - shift + 1U)) = 0;
+			}else{
+				*(*(big_seg_plan + (block_size_c + shift - 2U)) + (BIG_SEGMENT_SEGMENTS_X - block_size_r - shift)) = 0;
+			}
+		}
+	}
+	if(SDL_rand(2)){
+		for(unsigned int i = 0U; i < BIG_SEGMENT_SEGMENTS_X / 2U - 1U; ++i){
+			*(*(big_seg_plan + i)) = -1;
+		}
+		for(unsigned int i = 1U; i < BIG_SEGMENT_SEGMENTS_X / 2U - 1U; ++i){
+			*(*(big_seg_plan) + i) = -1;
+		}
+	}
+	if(SDL_rand(2)){
+		for(unsigned int i = BIG_SEGMENT_SEGMENTS_X / 2U + 1U; i < BIG_SEGMENT_SEGMENTS_X; ++i){
+			*(*(big_seg_plan + i)) = -1;
+		}
+		for(unsigned int i = 1U; i < BIG_SEGMENT_SEGMENTS_X / 2U; ++i){
+			*(*(big_seg_plan + BIG_SEGMENT_SEGMENTS_X - 1U) + i) = -1;
+		}
+	}
+	if(SDL_rand(2)){
+		for(unsigned int i = BIG_SEGMENT_SEGMENTS_X / 2U; i < BIG_SEGMENT_SEGMENTS_X; ++i){
+			*(*(big_seg_plan + i) + BIG_SEGMENT_SEGMENTS_X - 1U) = -1;
+		}
+		for(unsigned int i = BIG_SEGMENT_SEGMENTS_X / 2U + 1U; i < BIG_SEGMENT_SEGMENTS_X - 1U; ++i){
+			*(*(big_seg_plan + BIG_SEGMENT_SEGMENTS_X - 1U) + i) = -1;
+		}
+	}
+	if(SDL_rand(2)){
+		for(unsigned int i = BIG_SEGMENT_SEGMENTS_X / 2U + 1U; i < BIG_SEGMENT_SEGMENTS_X; ++i){
+			*(*(big_seg_plan) + i) = -1;
+		}
+		for(unsigned int i = 1U; i < BIG_SEGMENT_SEGMENTS_X / 2U - 1U; ++i){
+			*(*(big_seg_plan + i) + BIG_SEGMENT_SEGMENTS_X - 1U) = -1;
+		}
+	}
+	*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X / 2 - 1))) = 0;
+	*(*(big_seg_plan) + (BIG_SEGMENT_SEGMENTS_X / 2)) = 0;
+	if(bigc == BIG_SEGMENTS_X - 1U){
+		for(unsigned int r = 0U; r < BIG_SEGMENT_SEGMENTS_X; ++r){
+			*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - 1)) + r) = -1;
+			*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - 2)) + r) = 0;
+			*(*(big_seg_plan + (BIG_SEGMENT_SEGMENTS_X - 3)) + r) = 0;
+		}
+	}else if(bigc == 0U){
+		for(unsigned int r = 0U; r < BIG_SEGMENT_SEGMENTS_X; ++r){
+			*(*(big_seg_plan) + r) = -1;
+			*(*(big_seg_plan + 1) + r) = 0;
+			*(*(big_seg_plan + 2) + r) = 0;
+		}
+	}
+	if(bigr == 0U){
+		for(unsigned int c = 0U; c < BIG_SEGMENT_SEGMENTS_X; ++c){
+			*(*(big_seg_plan + c)) = -1;
+			*(*(big_seg_plan + c) + 1) = 0;
+			*(*(big_seg_plan + c) + 2) = 0;
+		}
+	}else if(bigr == BIG_SEGMENTS_X - 1U){
+		for(unsigned int c = 0U; c < BIG_SEGMENT_SEGMENTS_X; ++c){
+			*(*(big_seg_plan + c) + (BIG_SEGMENT_SEGMENTS_X - 1)) = -1;
+			*(*(big_seg_plan + c) + (BIG_SEGMENT_SEGMENTS_X - 2)) = 0;
+			*(*(big_seg_plan + c) + (BIG_SEGMENT_SEGMENTS_X - 3)) = 0;
+		}
+	}
+	for(unsigned int i = 0U; i < BIG_SEGMENT_SEGMENTS_X; ++i){
+		const unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X + i;
+		for(unsigned int j = 0U; j < BIG_SEGMENT_SEGMENTS_X; ++j){
+			const unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X + j;
+			if(*(*(big_seg_plan + i) + j) != -1){
+				*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
+				(*(*(world->segments + c) + r))->indx.x = c;
+				(*(*(world->segments + c) + r))->indx.y = r;
+				(*(*(world->segments + c) + r))->beings.num = 0U;
+				(*(*(world->segments + c) + r))->ally_beings.num = 0U;
+				(*(*(world->segments + c) + r))->flags = 0x0U;
+			}else{
+				*(*(world->segments + c) + r) = NULL;
+			}
+		}
+	}
+}
+
 void CreateWorld(Game_data* const gd){
 	SDL_srand(gd->seed);
 	bool world_plan_base[BIG_SEGMENTS_X][BIG_SEGMENTS_X] = WORLD_BASE;
@@ -276,33 +457,7 @@ void CreateWorld(Game_data* const gd){
 	for(unsigned int bigc = 0U; bigc < BIG_SEGMENTS_X; ++bigc){
 		for(unsigned int bigr = 0U; bigr < BIG_SEGMENTS_X; ++bigr){
 			if(*(*(world_plan_base + bigc) + bigr) == true){
-				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++c){
-					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++r){
-						if(
-							(
-								!(
-									c == bigc * BIG_SEGMENT_SEGMENTS_X
-									|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X - 1U
-									|| r == bigr * BIG_SEGMENT_SEGMENTS_X
-									|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X - 1U
-								)
-								|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 - 1U
-								|| c == bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
-								|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2 - 1U
-								|| r == bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X / 2
-							)
-							&& !(c == 0U || r == 0U || c == SEGMENTS_X - 1U || r == SEGMENTS_Y - 1U)){
-							*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
-							(*(*(world->segments + c) + r))->indx.x = c;
-							(*(*(world->segments + c) + r))->indx.y = r;
-							(*(*(world->segments + c) + r))->beings.num = 0U;
-							(*(*(world->segments + c) + r))->ally_beings.num = 0U;
-							(*(*(world->segments + c) + r))->flags = 0x0U;
-						}else{
-							*(*(world->segments + c) + r) = NULL;
-						}
-					}
-				}
+				SetBigSegmentSegments(world, bigc, bigr);
 			}else{
 				for(unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X; c < bigc * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++c){
 					for(unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X; r < bigr * BIG_SEGMENT_SEGMENTS_X + BIG_SEGMENT_SEGMENTS_X; ++r){
@@ -313,6 +468,27 @@ void CreateWorld(Game_data* const gd){
 			}
 		}
 	}
+
+	// for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
+	// 	for(unsigned int r = 0U; r < SEGMENTS_X; ++r){
+	// 		Segment* const seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
+	// 		if(!seg){
+	// 			continue;
+	// 		}
+	// 		if(GetSegmentByIndxSafe(&gd->world, c, r - 1U) && GetSegmentByIndxSafe(&gd->world, c, r + 1U) && GetSegmentByIndxSafe(&gd->world, c - 1U, r) && GetSegmentByIndxSafe(&gd->world, c + 1U, r)
+	// 		&& GetSegmentByIndxSafe(&gd->world, c - 1U, r - 1U) && GetSegmentByIndxSafe(&gd->world, c + 1U, r + 1U) && GetSegmentByIndxSafe(&gd->world, c - 1U, r + 1U) && GetSegmentByIndxSafe(&gd->world, c + 1U, r - 1U)){
+	// 			SDL_free(*(*(world->segments + c) + r));
+	// 			*(*(world->segments + c) + r) = NULL;
+	// 		}
+	// 		// if(!GetSegmentByIndxSafe(&gd->world, c, r + 1U)){
+	// 		// }
+	// 		// if(!GetSegmentByIndxSafe(&gd->world, c - 1U, r)){
+	// 		// }
+	// 		// if(!GetSegmentByIndxSafe(&gd->world, c + 1U, r)){
+	// 		// }
+	// 	}
+	// }
+
 	PlaceShops(&gd->world);
 	SDL_srand(0ULL);
 }
@@ -381,7 +557,10 @@ static void PlaceShops(World* const wld){
 		}
 		const float shift = SDL_randf() * (half(BIG_SEGMENT_SIZE) - SHOP_SIZE - SEGMENT_SIZE * 2.0F) + half(SHOP_SIZE) + SEGMENT_SIZE;
 		(wld->shops + i)->location.x = SDL_rand(2) ? BigSegPosition(x) + shift : BigSegPosition(x) + BIG_SEGMENT_SIZE - shift;
-		(wld->shops + i)->location.y = BigSegPosition(y) - (SEGMENT_SIZE + 1.0F);
+		(wld->shops + i)->location.y = BigSegPosition(y) - 1.0F;
+		while(!GetSegmentUnsafe(wld, (wld->shops + i)->location.x, (wld->shops + i)->location.y)){
+			(wld->shops + i)->location.y -= SEGMENT_SIZE;
+		}
 	}
 	SDL_qsort(wld->shops, SHOPS_NUM, sizeof(Shop), compareShops);
 }

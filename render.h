@@ -43,7 +43,7 @@ static void RenderTerrain(Render_data* const, Game_data* const, Segment** const,
 static bool GetExtendedRenderPointFromTrue(Render_data* const, const float, const float, const float, const Player* const, SDL_FPoint* const);
 static void RenderGunSight(Render_data* const);
 static void RenderDoors(Render_data* const, Game_data* const);
-static bool GetRenderPointFromTrueWithYShift(Render_data* const, const float, const float, const float, const Player* const, SDL_FPoint* const, World* const);
+static bool GetRenderPointFromTrueShopEdition(Render_data* const, const float, const float, const float, const Player* const, SDL_FPoint* const, World* const);
 static void RenderStaticThings(Render_data* const, Game_data* const);
 static void RenderStaticThing(Render_data* const, const float, const float, Player* const, const float, const int, World* const);
 static void RenderStaticThingRotating(Render_data* const, const float, const float, Player* const, const float, const int, World* const, const float);

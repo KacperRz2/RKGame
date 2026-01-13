@@ -735,12 +735,12 @@ static inline bool GetRenderPointFromTrue(Render_data* const rend_data, const fl
 	return false;
 }
 
-static inline bool GetRenderPointFromTrueWithYShift(Render_data* const rend_data, const float true_point_x, const float true_point_y, const float y_shift, const Player* const human_player, SDL_FPoint* const rend_point, World* const w){
+static inline bool GetRenderPointFromTrueShopEdition(Render_data* const rend_data, const float true_point_x, const float true_point_y, const float y_shift, const Player* const human_player, SDL_FPoint* const rend_point, World* const w){
 	const float dx = true_point_x - human_player->position.x;
 	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
 	float dy = true_point_y - human_player->position.y;
 	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
-	if(!(GetSegmentUnsafe(w, true_point_x, true_point_y)->flags & segment_in_sight)) return false;
+	if(!(GetSegmentUnsafe(w, true_point_x, true_point_y)->flags & segment_known)) return false;
 	const SDL_FPoint point = {
 		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
 		PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction)
@@ -1074,7 +1074,7 @@ static void RenderDoors(Render_data* const rend_data, Game_data* const gd){
 	RenderStaticThing(rend_data, gd->world.door.x, gd->world.door.y, human(gd), DOOR_SIZE, tx_door, &gd->world);
 	for(unsigned int i = 0U; i < SHOPS_NUM; ++i){
 		SDL_FPoint point;
-		if(GetRenderPointFromTrueWithYShift(rend_data, (gd->world.shops + i)->location.x, (gd->world.shops + i)->location.y, half(SHOP_SIZE) + 1.0F, human(gd), &point, &gd->world)){
+		if(GetRenderPointFromTrueShopEdition(rend_data, (gd->world.shops + i)->location.x, (gd->world.shops + i)->location.y, half(SHOP_SIZE) + 1.0F, human(gd), &point, &gd->world)){
 			const SDL_FRect rect = {
 				point.x - half(SHOP_SIZE),
 				point.y - half(SHOP_SIZE),
@@ -1101,27 +1101,28 @@ static void RenderDoors(Render_data* const rend_data, Game_data* const gd){
 static void RenderStaticThings(Render_data* const rend_data, Game_data* const gd){
 	RenderStaticThing(rend_data, gd->world.portalA.x, gd->world.portalA.y, human(gd), DOOR_SIZE, tx_portal, &gd->world);
 	RenderStaticThing(rend_data, gd->world.portalB.x, gd->world.portalB.y, human(gd), DOOR_SIZE, tx_portal, &gd->world);
-	RenderStaticThing(rend_data, gd->world.door.x, gd->world.door.y, human(gd), DOOR_SIZE, tx_door, &gd->world);
 	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
 		RenderStaticThing(rend_data, (gd->boxes.array + i)->location.x, (gd->boxes.array + i)->location.y, human(gd), BOX_SIZE, tx_box, &gd->world);
 	}
-	if(gd->flags & gamef_horde_attack){
-		for(unsigned int i = 0U; i < HORDE_ATTACK_POINTS; ++i){
-			const int ticks_left = (gd->effects + HasEffect(gd->effects, gd->effects_num, game_effect_horde_attack))->ticks_left;
-			if(ticks_left > HORDE_ATTACK_START_TICKS / 8 * 7){
-				RenderStaticThingRotating(rend_data, (gd->horde_data.creation_points + i)->x, (gd->horde_data.creation_points + i)->y, human(gd), CREATION_POINT_SIZE * ((float)(HORDE_ATTACK_START_TICKS - ticks_left) / (HORDE_ATTACK_START_TICKS / 8)), tx_creation_point, &gd->world, VORTEX_ROTAT_SPEED);
-			}else if(ticks_left < HORDE_ATTACK_START_TICKS / 8){
-				RenderStaticThingRotating(rend_data, (gd->horde_data.creation_points + i)->x, (gd->horde_data.creation_points + i)->y, human(gd), CREATION_POINT_SIZE * ((float)ticks_left / (HORDE_ATTACK_START_TICKS / 8)), tx_creation_point, &gd->world, VORTEX_ROTAT_SPEED);
-			}else{
-				RenderStaticThingRotating(rend_data, (gd->horde_data.creation_points + i)->x, (gd->horde_data.creation_points + i)->y, human(gd), CREATION_POINT_SIZE, tx_creation_point, &gd->world, VORTEX_ROTAT_SPEED);
-			}
-		}
-	}
+}
+
+static inline bool GetRenderPointFromTrueWithUnsighted(Render_data* const rend_data, const float true_point_x, const float true_point_y, const Player* const human_player, SDL_FPoint* const rend_point, World* const w){
+	const float dx = true_point_x - human_player->position.x;
+	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
+	const float dy = true_point_y - human_player->position.y;
+	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
+	if(!(GetSegmentUnsafe(w, true_point_x, true_point_y)->flags & segment_known)) return false;
+	*rend_point = (SDL_FPoint){
+		VIEWFINDER_CENTER + (dx * rend_data->cos_player_direction + dy * rend_data->sin_player_direction),
+		PLAYER_REND_Y - (dx * rend_data->sin_player_direction - dy * rend_data->cos_player_direction)
+	};
+	if(SDL_PointInRectFloat(rend_point, &rend_data->visible_rect)) return true;
+	return false;
 }
 
 static void RenderStaticThing(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num, World* const w){
 	SDL_FPoint point;
-	if(GetRenderPointFromTrue(rend_data, pos_x, pos_y, p, &point, w)){
+	if(GetRenderPointFromTrueWithUnsighted(rend_data, pos_x, pos_y, p, &point, w)){
 		const SDL_FRect rect = {
 			point.x - half(size),
 			point.y - half(size),
@@ -1134,7 +1135,7 @@ static void RenderStaticThing(Render_data* const rend_data, const float pos_x, c
 
 static void RenderStaticThingRotating(Render_data* const rend_data, const float pos_x, const float pos_y, Player* const p, const float size, const int tx_num, World* const w, const float speed){
 	SDL_FPoint point;
-	if(GetRenderPointFromTrue(rend_data, pos_x, pos_y, p, &point, w)){
+	if(GetRenderPointFromTrueWithUnsighted(rend_data, pos_x, pos_y, p, &point, w)){
 		const SDL_FRect rect = {
 			point.x - half(size),
 			point.y - half(size),
