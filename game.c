@@ -296,7 +296,7 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 	while(1){
 		element_type = elem->type;
 		if(element_type == box_scroll){
-			if(*(human(gd)->scrolls + elem->value) < 255U){
+			if(*(human(gd)->scrolls + elem->value) < MAX_ONE_TYPE_ITEMS){
 				++(*(human(gd)->scrolls + elem->value));
 				elem->type = box_clear;
 			}else{
@@ -428,9 +428,10 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 				items_to_sell_num = 0U;
 				for(unsigned int i = 0U; i < items_to_get_num; ++i){
 					const unsigned int item_num = *(items_to_get + i);
-					if(item_num < shop_item_invalid){
-						++(*(pc->scrolls + item_num));
-					}else if(item_num == shop_item_mp10){
+					// if(item_num < shop_item_invalid){
+						// ++(*(pc->scrolls + item_num));
+					// }else 
+					if(item_num == shop_item_mp10){
 						pc->magic_points += 10;
 					}else if(item_num == shop_item_mp100){
 						pc->magic_points += 100;
@@ -461,7 +462,7 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 				profit = 0;
 			}else if(col == SHOP_SIDE_COLS + 1U){
 				const unsigned int item_num = *(items_to_sell + row);
-				if(items_to_sell_num > row){
+				if(items_to_sell_num > row && *(pc->scrolls + item_num) < MAX_ONE_TYPE_ITEMS){
 					++(*(pc->scrolls + item_num));
 					*(items_to_sell + row) = *(items_to_sell + --items_to_sell_num);
 					profit -= ItemPrice(item_num) / SELL_DIVIDER;
@@ -470,10 +471,11 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 				if(items_to_get_num < MAX_ITEMS_TO_SELL){
 					const unsigned int indx = col - (SHOP_COLS - SHOP_SCROLLS_COLS - 1U) + (row - FIRST_SHOP_ROW - 1U) * SHOP_SCROLLS_COLS;
 					const unsigned int item_num = *((gd->world.shops + shop_indx)->scrolls + indx);
-					if(item_num < scroll_empty){
+					if(item_num < scroll_empty && *(pc->scrolls + item_num) < MAX_ONE_TYPE_ITEMS){
 						*(items_to_get + items_to_get_num++) = item_num;
 						profit -= ItemPrice(item_num);
 						*((gd->world.shops + shop_indx)->scrolls + indx) = scroll_empty;
+						++(*(pc->scrolls + item_num));
 					}
 				}
 			}else if(col == SHOP_SIDE_COLS + 3U){
@@ -482,6 +484,7 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 					*(items_to_get + row) = *(items_to_get + --items_to_get_num);
 					profit += ItemPrice(item_num);
 					if(item_num < shop_item_invalid){
+						--(*(pc->scrolls + item_num));
 						AddScrollToShop(gd->world.shops + shop_indx, item_num);
 					}
 				}
@@ -520,6 +523,7 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 	for(unsigned int i = 0U; i < items_to_get_num; ++i){
 		const unsigned int item_num = *(items_to_get + i);
 		if(item_num < shop_item_invalid){
+			--(*(pc->scrolls + item_num));
 			AddScrollToShop(gd->world.shops + shop_indx, item_num);
 		}
 	}
@@ -886,4 +890,5 @@ void LoadGame(Game_data* const gd){
     }
     SDL_CloseStorage(user);
 	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
+	DrawMap(gd->rend_data_ptr, &gd->world);
 }

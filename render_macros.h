@@ -51,8 +51,9 @@
 #define VORTEX_ROTAT_SPEED          (1024.0F / (0x40000000ULL / FRAME_TIME))
 #define TEXTURE_ROTA_SPEED          (512.0F / (0x40000000ULL / FRAME_TIME))
 #define SCROLL_ICON_SIZE            (SCROLL_SIZE * (37.0F / 64.0F))
-#define BIG_BURN_SIZE               512U//320U
+#define BIG_BURN_SIZE               320U
 #define SMALL_BURN_SIZE             64U
+#define BURN_EFFECT_TIME            (0x30000000ULL / FRAME_TIME)
 #define BOLT_TICKS                  (0x8000000ULL / FRAME_TIME)
 #define LIGHTING_TX_SIZE            64
 #define VIEW_TX_FACTOR              2
@@ -276,8 +277,8 @@
                                     })
 #define BURN_VIS_EF(position, size) ((Visual_effect){\
                                         (SDL_FPoint)position,\
-                                        (Uint16)    (0x40000000ULL / FRAME_TIME),\
-                                        (Uint16)    (0x40000000ULL / FRAME_TIME),\
+                                        (Uint16)    BURN_EFFECT_TIME,\
+                                        (Uint16)    BURN_EFFECT_TIME,\
                                         (Uint16)    size,\
                                         (Uint8)     tx_pixel,\
                                         (Uint8)     visual_effect_t2\
@@ -285,7 +286,7 @@
 #define BURN_EF_TIM(posit, si, del) ((Visual_effect){\
                                         (SDL_FPoint)posit,\
                                         (Uint16)    del,\
-                                        (Uint16)    (0x40000000ULL / FRAME_TIME),\
+                                        (Uint16)    BURN_EFFECT_TIME,\
                                         (Uint16)    si,\
                                         (Uint8)     tx_pixel,\
                                         (Uint8)     visual_effect_t2_timer\

@@ -150,11 +150,11 @@ static void RenderVisualEffectsType2(Visual_effect* const ve, Game_data* const g
 	float size;
 	if(ve->ticks_left > ve->data.d0.start_ticks - 2U){
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), 0.625F, 0.5F, 1.0F);
-		size = (float)ve->data.d0.size * (1.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
+		size = (float)ve->data.d0.size * ((float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	}else if(ve->ticks_left >= ve->data.d0.start_ticks * 3U / 4U){
 		const float red = ((float)ve->ticks_left - ve->data.d0.start_ticks * 0.75F) / (ve->data.d0.start_ticks * 0.25F);
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), red, pow2(red) * 0.625F, 0.0F);
-		size = (float)ve->data.d0.size * (1.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
+		size = (float)ve->data.d0.size * ((float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	}else{
 		if(ve->ticks_left == ve->data.d0.start_ticks * 3U / 4U - 1U && SDL_rand(2)){
 			ve->ticks_left = 1U;
@@ -162,7 +162,7 @@ static void RenderVisualEffectsType2(Visual_effect* const ve, Game_data* const g
 		}
 		const float level = 1.0F - (float)ve->ticks_left / (ve->data.d0.start_ticks * 0.75F);
 		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), level, level, level);
-		size = (float)ve->data.d0.size * (1.0F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks);
+		size = (float)ve->data.d0.size * (0.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks * 0.5F);
 		SDL_SetTextureBlendMode(texture(ve->data.d0.tx_num), SDL_BLENDMODE_BLEND);
 	} 
 	SDL_SetTextureAlphaModFloat(texture(ve->data.d0.tx_num), (float)ve->ticks_left / (float)ve->data.d0.start_ticks * 0.75F);
@@ -590,6 +590,7 @@ void SetRenderData(Render_data* const rend_data){
 	rend_data->viewfinder = VIEWFINDER_SIZE;
 	rend_data->viewfinder_rect = (SDL_Rect)VIEWFINDER_RECT;
 	rend_data->visible_rect = (SDL_FRect)VISIBLE_RECT;
+	SDL_zeroa(rend_data->textures);
 }
 
 void ResetRenderData(Render_data* const rend_data){
@@ -980,6 +981,26 @@ void ClearRenderData(Render_data* const rend_data){
 	SDL_Quit();
 }
 
+static inline bool NeighbourSegKnown(World* const wld, Segment* const seg){
+	Segment* seg1 = GetSegmentByIndxUnsafe(wld, seg->indx.x, seg->indx.y - 1U);
+	if(seg1 && (seg1->flags & segment_known)){
+		return true;
+	}
+	seg1 = GetSegmentByIndxUnsafe(wld, seg->indx.x + 1U, seg->indx.y);
+	if(seg1 && (seg1->flags & segment_known)){
+		return true;
+	}
+	seg1 = GetSegmentByIndxUnsafe(wld, seg->indx.x, seg->indx.y + 1U);
+	if(seg1 && (seg1->flags & segment_known)){
+		return true;
+	}
+	seg1 = GetSegmentByIndxUnsafe(wld, seg->indx.x - 1U, seg->indx.y);
+	if(seg1 && (seg1->flags & segment_known)){
+		return true;
+	}
+	return false;
+}
+
 static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Segment** const beings_segs, unsigned int* const beings_segs_num){
 	const SDL_FPoint corner_first = {human(gd)->position.x - (rend_data->viewfinder + SEGMENT_SIZE), human(gd)->position.y - (rend_data->viewfinder + SEGMENT_SIZE)};
 	const SDL_FPoint corner_last = {human(gd)->position.x + (rend_data->viewfinder + SEGMENT_SIZE), human(gd)->position.y + (rend_data->viewfinder + SEGMENT_SIZE)};
@@ -989,6 +1010,7 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 	point.y -= shift_y;
 	SDL_FPoint unseen_seg_points[MAX_UNSEEN_SEG];
 	unsigned int unseen_seg_num = 0U;
+	unsigned int never_seen_seg_num = 0U;
 	while(point.x < corner_last.x){
 		while(point.y < corner_last.y){
 			SDL_FPoint rend_point;
@@ -1010,6 +1032,8 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 						}else{
 							if(seg->flags & segment_known){
 								*(unseen_seg_points + unseen_seg_num++) = (SDL_FPoint){rend_point.x - half(SEGMENT_TX_SIZE), rend_point.y - half(SEGMENT_TX_SIZE)};
+							}else if(NeighbourSegKnown(&gd->world, seg)){
+								*(unseen_seg_points + MAX_UNSEEN_SEG - 1U - never_seen_seg_num++) = (SDL_FPoint){rend_point.x - half(SEGMENT_TX_SIZE), rend_point.y - half(SEGMENT_TX_SIZE)};
 							}
 							seg->flags &= ~(segment_in_sight);
 						}
@@ -1022,10 +1046,19 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 		point.y = corner_first.y - shift_y;
 	}
 	SDL_SetTextureColorMod(texture(tx_terrain), 127, 111, 111);
-	for(unsigned int i = 0; i < unseen_seg_num; ++i){
+	for(unsigned int i = 0U; i < unseen_seg_num; ++i){
 		SDL_RenderTextureRotated(rend_data->renderer, texture(tx_terrain), NULL, &(SDL_FRect){
 			(unseen_seg_points + i)->x,
 			(unseen_seg_points + i)->y,
+			SEGMENT_TX_SIZE,
+			SEGMENT_TX_SIZE
+		}, -RadToDeg(human(gd)->direction), NULL, SDL_FLIP_NONE);
+	}
+	SDL_SetTextureColorMod(texture(tx_terrain), 63, 55, 55);
+	for(unsigned int i = 0U; i < never_seen_seg_num; ++i){
+		SDL_RenderTextureRotated(rend_data->renderer, texture(tx_terrain), NULL, &(SDL_FRect){
+			(unseen_seg_points + MAX_UNSEEN_SEG - 1U - i)->x,
+			(unseen_seg_points + MAX_UNSEEN_SEG - 1U - i)->y,
 			SEGMENT_TX_SIZE,
 			SEGMENT_TX_SIZE
 		}, -RadToDeg(human(gd)->direction), NULL, SDL_FLIP_NONE);
@@ -1147,13 +1180,12 @@ static void RenderStaticThingRotating(Render_data* const rend_data, const float 
 }
 
 void DrawMap(Render_data* const rend_data, const World* const wld){
-	if(texture(tx_map) != NULL){
-		SDL_DestroyTexture(texture(tx_map));
+	if(texture(tx_map) == NULL){
+		texture(tx_map) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BIG_SEGMENTS_X, BIG_SEGMENTS_X);
 	}
-	texture(tx_map) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BIG_SEGMENTS_X, BIG_SEGMENTS_X);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_map));
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 127);
-	SDL_RenderFillRect(rend_data->renderer, NULL);
+	SDL_RenderClear(rend_data->renderer);
 	for(unsigned int c = 0U; c < BIG_SEGMENTS_X; ++c){
 		for(unsigned int r = 0U; r < BIG_SEGMENTS_X; ++r){
 			if(IsInUncoveredBigSeg(wld->plan, c, r)){

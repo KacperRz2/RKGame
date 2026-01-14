@@ -115,7 +115,7 @@ bool thunderbolt(Game_data* const gd){
     const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
     Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
     Segment* seg = target_seg;
-    if(!seg){
+    if(!seg || !(seg->flags & segment_in_sight)){
         return false;
     }
     Being* bg = NULL;

@@ -8,7 +8,7 @@
 #define half(x)                     ((x) * (0.5F))
 #define human(game_data_ptr)        (game_data_ptr->champions.array + game_data_ptr->human_indx)
 #define BIG_SEGMENTS_X              29U
-#define BIG_SEGMENT_SEGMENTS_X      16U
+#define BIG_SEGMENT_SEGMENTS_X      8U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X)
 #define SEGMENTS_Y			        SEGMENTS_X
 #define SEGMENT_SIZE		        128.0F
@@ -149,7 +149,7 @@
 #define COMMANDER_EFFECT_TICKS      1024
 #define HP_REGEN_TICKS              1024
 #define WEAK_EFFECT_TICKS           0x1000
-#define SLOW_EFFECT_TICKS           1024
+#define SLOW_EFFECT_TICKS           2048
 #define BURN_TICKS                  0x1000
 #define BOLT_CHAIN_TICKS            0x100U
 #define OPENING_PORTAL_TICKS        128
@@ -178,6 +178,7 @@
 #define PC_PUSH_POWER               8.0F
 #define SCROLL_PUSH_POWER           12.0F
 #define HORDE_BEING_CHANCE_FACTOR   64//16
+#define MAX_ONE_TYPE_ITEMS          255U
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -425,7 +426,7 @@
                                     4, 5\
                                 }
 #define HOSTILES_MORALE_COSTS   {\
-                                    0x80,\
+                                    0x40,\
                                     0x400,\
                                     0x400,\
                                     0x800,\

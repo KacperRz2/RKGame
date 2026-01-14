@@ -26,7 +26,6 @@ int main(int argc, char* argv[]){
 			game_data.rend_data_ptr = &rend_data;
 			game_data.ev_ptr = &event;
 			LoadGame(&game_data);
-			DrawMap(&rend_data, &game_data.world);
 			GameLoop(&game_data);
 			ClearGameData(&game_data);
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
