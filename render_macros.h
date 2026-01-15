@@ -363,6 +363,7 @@
 #define PROJECTILE_TX_FILE_NAME     "img2"
 #define PC_TX0_FILE_NAME            "img0"
 #define PC_TX1_FILE_NAME            "img14"
+#define DODGE_TX_FILE_NAME          "img1F"
 
 enum inoc_position{
     ic_key,

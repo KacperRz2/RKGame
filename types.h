@@ -198,8 +198,6 @@ struct Shop{
 struct World{
 	Segment*** segments;
 	Uint64 plan[BIG_SEGMENTS_X];
-	float width;
-	float height;
 	SDL_FPoint portalA;
 	SDL_FPoint portalB;
 	SDL_FPoint door;

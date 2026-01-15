@@ -216,6 +216,7 @@ enum texture_num{
     tx_being_ally_ordinary,
     tx_projectile,
     tx_h_projectile,
+    tx_shop_icons,
     tx_pixel,
     tx_map,
     tx_background,

@@ -448,8 +448,6 @@ void CreateWorld(Game_data* const gd){
 			}
 		}
 	}
-	world->width = WORLD_W;
-	world->height = WORLD_H;
 	world->segments = (Segment***)SDL_malloc(sizeof(Segment**) * SEGMENTS_X);
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 		*(world->segments + c) = (Segment**)SDL_malloc(sizeof(Segment*) * SEGMENTS_Y);
@@ -468,33 +466,36 @@ void CreateWorld(Game_data* const gd){
 			}
 		}
 	}
-
-	// for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
-	// 	for(unsigned int r = 0U; r < SEGMENTS_X; ++r){
-	// 		Segment* const seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
-	// 		if(!seg){
-	// 			continue;
-	// 		}
-	// 		if(GetSegmentByIndxSafe(&gd->world, c, r - 1U) && GetSegmentByIndxSafe(&gd->world, c, r + 1U) && GetSegmentByIndxSafe(&gd->world, c - 1U, r) && GetSegmentByIndxSafe(&gd->world, c + 1U, r)
-	// 		&& GetSegmentByIndxSafe(&gd->world, c - 1U, r - 1U) && GetSegmentByIndxSafe(&gd->world, c + 1U, r + 1U) && GetSegmentByIndxSafe(&gd->world, c - 1U, r + 1U) && GetSegmentByIndxSafe(&gd->world, c + 1U, r - 1U)){
-	// 			SDL_free(*(*(world->segments + c) + r));
-	// 			*(*(world->segments + c) + r) = NULL;
-	// 		}
-	// 		// if(!GetSegmentByIndxSafe(&gd->world, c, r + 1U)){
-	// 		// }
-	// 		// if(!GetSegmentByIndxSafe(&gd->world, c - 1U, r)){
-	// 		// }
-	// 		// if(!GetSegmentByIndxSafe(&gd->world, c + 1U, r)){
-	// 		// }
-	// 	}
-	// }
-
+	for(unsigned int c = 1U; c < SEGMENTS_X - 1U; ++c){
+		for(unsigned int r = 1U; r < SEGMENTS_X - 1U; ++r){
+			Segment* const seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
+			if(!seg){
+				continue;
+			}
+			if(GetSegmentByIndxUnsafe(&gd->world, c - 1U, r - 1U) && !(GetSegmentByIndxUnsafe(&gd->world, c, r - 1U) || GetSegmentByIndxUnsafe(&gd->world, c - 1U, r))){
+				if(SDL_rand(2)){
+					SDL_free(*(*(world->segments + c) + r));
+					*(*(world->segments + c) + r) = NULL;
+				}else{
+					SDL_free(*(*(world->segments + c - 1U) + r - 1U));
+					*(*(world->segments + c - 1U) + r - 1U) = NULL;
+				}
+			}else if(GetSegmentByIndxUnsafe(&gd->world, c + 1U, r - 1U) && !(GetSegmentByIndxUnsafe(&gd->world, c, r - 1U) || GetSegmentByIndxUnsafe(&gd->world, c + 1U, r))){
+				if(SDL_rand(2)){
+					SDL_free(*(*(world->segments + c) + r));
+					*(*(world->segments + c) + r) = NULL;
+				}else{
+					SDL_free(*(*(world->segments + c + 1U) + r - 1U));
+					*(*(world->segments + c + 1U) + r - 1U) = NULL;
+				}
+			}
+		}
+	}
 	PlaceShops(&gd->world);
 	SDL_srand(0ULL);
 }
 
-int SDLCALL compareBoxes(const void* a, const void* b)
-{
+int SDLCALL compareBoxes(const void* a, const void* b){
     const Box* A = (const Box*)a;
     const Box* B = (const Box*)b;
     if(A->location.x < B->location.x){
@@ -519,8 +520,7 @@ static void PlaceBoxes(Game_data* const gd){
 	SDL_qsort(gd->boxes.array, gd->boxes.num, sizeof(Box), compareBoxes);
 }
 
-int SDLCALL compareShops(const void* a, const void* b)
-{
+int SDLCALL compareShops(const void* a, const void* b){
     const Shop* A = (const Shop*)a;
     const Shop* B = (const Shop*)b;
     if(A->location.x < B->location.x){

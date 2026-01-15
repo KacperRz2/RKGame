@@ -20,11 +20,11 @@ void AddSmallBurnVisualEffectTimer(Visual_effects* const, const SDL_FPoint* cons
 void AddBoomVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
 void AddBoltVisualEffect(Visual_effects* const, const SDL_FPoint* const, const position16);
 
-static void DrawBeings(Render_data* const, SDL_Surface*, char*);
-static void DrawColouredThings(Render_data* const, SDL_Surface*, char*);
-static void DrawBeing(Render_data* const, SDL_Texture* const, SDL_Texture* const, SDL_Texture* const, const Uint8* const, const Uint8* const);
-static void DrawColouredThing(Render_data* const, SDL_Texture* const, SDL_Texture* const, const Uint8* const);
-void SetRenderData(Render_data* const);
+static void DrawBeings(Render_data* const);
+static void DrawColouredThings(Render_data* const);
+static void DrawBeing(Render_data* const, SDL_Texture**, SDL_Surface* const, SDL_Surface* const, const Uint8* const, const Uint8* const);
+static void DrawColouredThing(Render_data* const, SDL_Texture**, SDL_Surface* const, const Uint8* const);
+static void SetRenderData(Render_data* const);
 void ResetRenderData(Render_data* const);
 static void RenderHumanPlayerBlade(Render_data* const, Blade* const);
 static void RenderProjectiles(Render_data* const, Game_data* const);
@@ -64,7 +64,7 @@ static void RenderDirectionArrow(Render_data* const, const double);
 static void RenderQuickScrolls(Render_data* const, const Player* const);
 static void RenderScrollsManagement(Render_data* const, const Player* const);
 static void RenderMenu(Render_data* const, const Player* const);
-static void DrawBackground(Render_data* const, SDL_Surface*, char*);
+static void DrawBackground(Render_data* const);
 static void RenderPortrait(Render_data* const, SDL_Texture* const);
 static SDL_FPoint GetCharacterXPositionAndWidth(const int);
 static unsigned int GetCharacterRow(const int);

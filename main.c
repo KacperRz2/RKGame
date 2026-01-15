@@ -4,7 +4,6 @@ int main(int argc, char* argv[]){
 	SDL_Event event;
 	Render_data rend_data;
 	SetSineCosineArrays();
-	SetRenderData(&rend_data);
 	if(GraphicsInitiation(&rend_data)) return 1;
 	while(1){
 		const int option = MainMenuLoop(&event, &rend_data);

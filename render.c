@@ -21,7 +21,12 @@ static void SetViewTexture(Render_data* const rend_data){
 	SDL_SetTextureScaleMode(texture(tx_view), SDL_SCALEMODE_NEAREST);
 }
 
+static void DrawShopIcons(Render_data* const rend_data){
+	
+}
+
 int GraphicsInitiation(Render_data* const rend_data){
+	SetRenderData(rend_data);
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
 	const char* const texture_files[] = TEXTURE_FILES_NAMES;
@@ -30,7 +35,7 @@ int GraphicsInitiation(Render_data* const rend_data){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
 		return 3;
 	}
-	if(!SDL_CreateWindowAndRenderer("KacWindow", rend_data->window_w, rend_data->window_h, SDL_WINDOW_BORDERLESS, &rend_data->window, &rend_data->renderer)){
+	if(!SDL_CreateWindowAndRenderer("KacWindow", WINDOW_START_W, WINDOW_START_H, SDL_WINDOW_BORDERLESS, &rend_data->window, &rend_data->renderer)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
 		return 3;
 	}
@@ -46,28 +51,20 @@ int GraphicsInitiation(Render_data* const rend_data){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 			return 3;
 		}
+		SDL_DestroySurface(surface);
+		SDL_free(bmp_path);
 	}
-
+	texture(tx_map) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BIG_SEGMENTS_X, BIG_SEGMENTS_X);
 	texture(tx_lighting) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, LIGHTING_TX_SIZE, LIGHTING_TX_SIZE);
-	if(!(texture(tx_lighting))){
+	if(!(texture(tx_lighting) && texture(tx_map))){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_SetTextureBlendMode(texture(tx_lighting), SDL_BLENDMODE_ADD);
-	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
-	SDL_SetRenderScale(rend_data->renderer, LIGHTING_TX_SIZE / rend_data->viewfinder, LIGHTING_TX_SIZE / rend_data->viewfinder);
-
-	SDL_DestroySurface(surface);
-	DrawBeings(rend_data, surface, bmp_path);
-	SDL_DestroySurface(surface);
-	DrawColouredThings(rend_data, surface, bmp_path);
-	SDL_DestroySurface(surface);
-	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
-	rend_data->mouse_y = half(rend_data->window_h);
+	DrawBeings(rend_data);
+	DrawColouredThings(rend_data);
+	DrawShopIcons(rend_data);
 	SetMouseBarrier(rend_data);
-	DrawBackground(rend_data, surface, bmp_path);
-	SDL_free(bmp_path);
-	SDL_DestroySurface(surface);
+	SDL_SetTextureBlendMode(texture(tx_lighting), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_barrier), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_bonus_effect), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_bolt), SDL_BLENDMODE_ADD);
@@ -75,6 +72,7 @@ int GraphicsInitiation(Render_data* const rend_data){
 	SDL_SetTextureBlendMode(texture(tx_pixel), SDL_BLENDMODE_ADD);
 	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderTarget(rend_data->renderer, NULL);
+	ResetRenderData(rend_data);
 	return 0;
 }
 
@@ -456,106 +454,66 @@ extern inline void AddBoltVisualEffect(Visual_effects* const ves, const SDL_FPoi
 	AddVisalEffect(ves, &ve);
 }
 
-static void DrawBeings(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
-	texture(tx_pc) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BEING_TEXURE_SIZE, BEING_TEXURE_SIZE);
-	if(!texture(tx_pc)){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
-		exit(-1);
-	}
+static void DrawBeings(Render_data* const rend_data){
+	SDL_Surface* surface = NULL;
+	SDL_Surface* surface1 = NULL;
+	char* bmp_path = NULL;
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PC_TX0_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_Texture* tx_pc_0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	if(!tx_pc_0){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-		exit(-1);
-	}
+	SDL_free(bmp_path);
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PC_TX1_FILE_NAME);
-	SDL_DestroySurface(surface);
-	surface = SDL_LoadBMP(bmp_path);
-	if(!surface){
+	surface1 = SDL_LoadBMP(bmp_path);
+	if(!surface1){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_Texture* tx_pc_1 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	if(!tx_pc_1){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-		exit(-1);
-	}
-	const unsigned int beings_textures[] = BEINGS_TEXTURES;
-	for(unsigned int i = 0U; i < SDL_arraysize(beings_textures); ++i){
-		texture(*(beings_textures + i)) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BEING_TEXURE_SIZE, BEING_TEXURE_SIZE);
-		if(!texture(*(beings_textures + i))){
-			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
-			exit(-1);
-		}
-	}
+	DrawBeing(rend_data, &texture(tx_pc), surface, surface1, PC_RGB_0, PC_RGB_1);
+	SDL_DestroySurface(surface);
+	SDL_DestroySurface(surface1);
+	SDL_free(bmp_path);
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE0_FILE_NAME);
-	SDL_DestroySurface(surface);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_Texture* tx_being_0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	if(!tx_being_0){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-		exit(-1);
-	}
+	SDL_free(bmp_path);
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE1_FILE_NAME);
-	SDL_DestroySurface(surface);
-	surface = SDL_LoadBMP(bmp_path);
-	if(!surface){
+	surface1 = SDL_LoadBMP(bmp_path);
+	if(!surface1){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_Texture* tx_being_1 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	if(!tx_being_1){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-		exit(-1);
-	}
-	DrawBeing(rend_data, texture(tx_pc), tx_pc_0, tx_pc_1, PC_RGB_0, PC_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_weak), tx_being_0, tx_being_1, BEING0_RGB_0, BEING0_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_ordinary), tx_being_0, tx_being_1, BEING1_RGB_0, BEING1_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_ranger), tx_being_0, tx_being_1, BEING2_RGB_0, BEING2_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_elite), tx_being_0, tx_being_1, BEING3_RGB_0, BEING3_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_elite_ranger), tx_being_0, tx_being_1, BEING4_RGB_0, BEING4_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_commander), tx_being_0, tx_being_1, BEING5_RGB_0, BEING5_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_warlock), tx_being_0, tx_being_1, BEING6_RGB_0, BEING6_RGB_1);
-	DrawBeing(rend_data, texture(tx_being_ally_ordinary), tx_being_0, tx_being_1, ALLY0_RGB_0, ALLY0_RGB_1);
-	SDL_DestroyTexture(tx_pc_0);
-	SDL_DestroyTexture(tx_pc_1);
-	SDL_DestroyTexture(tx_being_0);
-	SDL_DestroyTexture(tx_being_1);
+	DrawBeing(rend_data, &texture(tx_being_weak), surface, surface1, BEING0_RGB_0, BEING0_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_ordinary), surface, surface1, BEING1_RGB_0, BEING1_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_ranger), surface, surface1, BEING2_RGB_0, BEING2_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_elite), surface, surface1, BEING3_RGB_0, BEING3_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_elite_ranger), surface, surface1, BEING4_RGB_0, BEING4_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_commander), surface, surface1, BEING5_RGB_0, BEING5_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_warlock), surface, surface1, BEING6_RGB_0, BEING6_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_ally_ordinary), surface, surface1, ALLY0_RGB_0, ALLY0_RGB_1);
+	SDL_DestroySurface(surface);
+	SDL_DestroySurface(surface1);
+	SDL_free(bmp_path);
 }
 
-static void DrawColouredThings(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
-	const unsigned int projectile_textures[] = PROJECTILE_TEXTURES;
-	for(unsigned int i = 0U; i < SDL_arraysize(projectile_textures); ++i){
-		texture(*(projectile_textures + i)) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, PROJECTILE_TEXURE_SIZE, PROJECTILE_TEXURE_SIZE);
-		if(!texture(*(projectile_textures + i))){
-			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
-			exit(-1);
-		}
-	}
+static void DrawColouredThings(Render_data* const rend_data){
+	SDL_Surface* surface = NULL;
+	char* bmp_path = NULL;
 	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PROJECTILE_TX_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_Texture* tx_projectile_0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	if(!tx_projectile_0){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-		exit(-1);
-	}
-	DrawColouredThing(rend_data, texture(tx_projectile), tx_projectile_0, PROJECTILE0_RGBA);
-	DrawColouredThing(rend_data, texture(tx_h_projectile), tx_projectile_0, PROJECTILE1_RGBA);
-	SDL_DestroyTexture(tx_projectile_0);
+	DrawColouredThing(rend_data, &texture(tx_projectile), surface, PROJECTILE0_RGBA);
+	DrawColouredThing(rend_data, &texture(tx_h_projectile), surface, PROJECTILE1_RGBA);
 	SDL_DestroySurface(surface);
+	SDL_free(bmp_path);
 	surface = SDL_CreateSurface(3, 3, SDL_PIXELFORMAT_RGBA8888);
 	SDL_WriteSurfacePixel(surface, 1, 1, 255U, 255U, 255U, 255U);
 	texture(tx_pixel) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
@@ -563,33 +521,32 @@ static void DrawColouredThings(Render_data* const rend_data, SDL_Surface* surfac
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 		exit(-1);
 	}
+	SDL_DestroySurface(surface);
 }
 
-static void DrawBeing(Render_data* const rend_data, SDL_Texture* const being_tx, SDL_Texture* const tx_0, SDL_Texture* const tx_1, const Uint8* const RGB_0, const Uint8* const RGB_1){
-	SDL_SetRenderTarget(rend_data->renderer, being_tx);
-	SDL_SetTextureColorMod(tx_0, *RGB_0, *(RGB_0 + 1), *(RGB_0 + 2));
-	SDL_SetTextureColorMod(tx_0, *RGB_0, *(RGB_0 + 1), *(RGB_0 + 2));
-	SDL_SetTextureColorMod(tx_1, *RGB_1, *(RGB_1 + 1), *(RGB_1 + 2));
-	SDL_RenderTexture(rend_data->renderer, tx_1, NULL, NULL);
-	SDL_RenderTexture(rend_data->renderer, tx_0, NULL, NULL);
+static void DrawBeing(Render_data* const rend_data, SDL_Texture** being_tx, SDL_Surface* const sf_0, SDL_Surface* const sf_1, const Uint8* const RGB_0, const Uint8* const RGB_1){
+	SDL_SetSurfaceColorMod(sf_0, *RGB_0, *(RGB_0 + 1), *(RGB_0 + 2));
+	SDL_SetSurfaceColorMod(sf_1, *RGB_1, *(RGB_1 + 1), *(RGB_1 + 2));
+	SDL_Surface* base_surface = SDL_CreateSurface(sf_0->w, sf_0->h, sf_0->format);
+	SDL_BlitSurface(sf_0, NULL, base_surface, NULL);
+	SDL_BlitSurface(sf_1, NULL, base_surface, NULL);
+	*being_tx = SDL_CreateTextureFromSurface(rend_data->renderer, base_surface);
+	SDL_DestroySurface(base_surface);
 }
 
-static void DrawColouredThing(Render_data* const rend_data, SDL_Texture* const target, SDL_Texture* const tx, const Uint8* const RGBA){
-	SDL_SetRenderTarget(rend_data->renderer, target);
-	SDL_SetTextureColorMod(tx, *RGBA, *(RGBA + 1), *(RGBA + 2));
-	SDL_SetTextureAlphaMod(tx, *(RGBA + 3));
-	SDL_RenderTexture(rend_data->renderer, tx, NULL, NULL);
+static void DrawColouredThing(Render_data* const rend_data, SDL_Texture** target, SDL_Surface* const sf, const Uint8* const RGBA){
+	SDL_SetSurfaceColorMod(sf, *RGBA, *(RGBA + 1), *(RGBA + 2));
+	SDL_SetSurfaceAlphaMod(sf, *(RGBA + 3));
+	SDL_Surface* base_surface = SDL_CreateSurface(sf->w, sf->h, sf->format);
+	SDL_BlitSurface(sf, NULL, base_surface, NULL);
+	*target = SDL_CreateTextureFromSurface(rend_data->renderer, base_surface);
+	SDL_DestroySurface(base_surface);
 }
 
-void SetRenderData(Render_data* const rend_data){
+static void SetRenderData(Render_data* const rend_data){
 	rend_data->counter = 0U;
 	rend_data->window = NULL;
 	rend_data->renderer = NULL;
-	rend_data->window_w = WINDOW_START_W;
-	rend_data->window_h = WINDOW_START_H;
-	rend_data->viewfinder = VIEWFINDER_SIZE;
-	rend_data->viewfinder_rect = (SDL_Rect)VIEWFINDER_RECT;
-	rend_data->visible_rect = (SDL_FRect)VISIBLE_RECT;
 	SDL_zeroa(rend_data->textures);
 }
 
@@ -604,11 +561,7 @@ void ResetRenderData(Render_data* const rend_data){
 	SDL_WarpMouseInWindow(rend_data->window, half(rend_data->window_w), half(rend_data->window_h));
 	rend_data->mouse_y = half(rend_data->window_h);
 	SDL_SetWindowMouseRect(rend_data->window, &(SDL_Rect)MOUSE_RECT);
-	SDL_Surface* surface = NULL;
-	char* bmp_path = NULL;
-	DrawBackground(rend_data, surface, bmp_path);
-	SDL_free(bmp_path);
-	SDL_DestroySurface(surface);
+	DrawBackground(rend_data);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
 	SDL_SetRenderScale(rend_data->renderer, LIGHTING_TX_SIZE / rend_data->viewfinder, LIGHTING_TX_SIZE / rend_data->viewfinder);
 	SetViewTexture(rend_data);
@@ -1180,9 +1133,6 @@ static void RenderStaticThingRotating(Render_data* const rend_data, const float 
 }
 
 void DrawMap(Render_data* const rend_data, const World* const wld){
-	if(texture(tx_map) == NULL){
-		texture(tx_map) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BIG_SEGMENTS_X, BIG_SEGMENTS_X);
-	}
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_map));
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 127);
 	SDL_RenderClear(rend_data->renderer);
@@ -1585,7 +1535,9 @@ static void RenderMenu(Render_data* const rend_data, const Player* const pc){
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
 }
 
-static void DrawBackground(Render_data* const rend_data, SDL_Surface* surface, char* bmp_path){
+static void DrawBackground(Render_data* const rend_data){
+	SDL_Surface* surface = NULL;
+	char* bmp_path = NULL;
 	if(texture(tx_background) != NULL){
 		SDL_DestroyTexture(texture(tx_background));
 	}
@@ -1605,8 +1557,9 @@ static void DrawBackground(Render_data* const rend_data, SDL_Surface* surface, c
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BACKGROUND_TX1_FILE_NAME);
 	SDL_DestroySurface(surface);
+	SDL_free(bmp_path);
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BACKGROUND_TX1_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -1617,8 +1570,8 @@ static void DrawBackground(Render_data* const rend_data, SDL_Surface* surface, c
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_free(bmp_path);
 	SDL_DestroySurface(surface);
+	SDL_free(bmp_path);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_background));
 	const SDL_FRect nesw_rect = {
 		RIGHT_AREA_X + FRAME_W,
@@ -1911,6 +1864,14 @@ static void DrawBackground(Render_data* const rend_data, SDL_Surface* surface, c
 	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &icon_scr_rect, &nesw_rect);
 	SDL_DestroyTexture(tx_backgr0);
 	SDL_DestroyTexture(tx_backgr1);
+	surface = SDL_RenderReadPixels(rend_data->renderer, NULL);
+	SDL_DestroyTexture(texture(tx_background));
+	texture(tx_background) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!texture(tx_background)){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_DestroySurface(surface);
 }
 
 static void RenderPortrait(Render_data* const rend_data, SDL_Texture* const tx_backgr1){
