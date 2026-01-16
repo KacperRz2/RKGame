@@ -41,7 +41,7 @@
 #define START_PLAYERS_NUM		    0x1U
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
-#define BEING_HIT_CIRCLE_DIAMET     16.0F
+#define BEING_HIT_CIRCLE_DIAMET     24.0F
 #define RANGE_SEGMENTS              ((unsigned int)(7000.0F / SEGMENT_SIZE))
 #define PROJECTILE_RAN_SEG          ((unsigned int)(2000.0F / SEGMENT_SIZE))
 #define MAX_HITS                    12U

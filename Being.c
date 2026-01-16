@@ -612,23 +612,32 @@ static inline bool IsDeadBeing(Being* const bg, Game_data* const gd, const unsig
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void UpdateBeings(Game_data* const gd){
     if((gd->flags & gamef_horde_attack)){
+        bool being_from_void = false;
         for(unsigned int i = 0U; i < gd->beings.num; ++i){
             Being* bg = (gd->beings.array + *(gd->beings.indices + i));
             if(bg->status == being_in_void){
-                const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
-                unsigned int point_indx1 = point_indx;
-                do{
-                    const float x = (gd->horde_data.creation_points + point_indx1)->x;
-                    const float y = (gd->horde_data.creation_points + point_indx1)->y;
-                    Segment* const seg = GetSegmentUnsafe(&gd->world, x, y);
-                    if(seg->beings.num < MAX_SEGM_BEINGS){
-                        SetBeingPosition(bg, x, y);
-                        AddBeingToSegment(seg, bg, &seg->beings);
-                        HaltBeing(bg, 1);
-                        break;
+                if(!being_from_void){
+                    being_from_void = true;
+                    if(!SDL_rand(0x10)){
+                        const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
+                        unsigned int point_indx1 = point_indx;
+                        do{
+                            const float x = (gd->horde_data.creation_points + point_indx1)->x;
+                            const float y = (gd->horde_data.creation_points + point_indx1)->y;
+                            Segment* const seg = GetSegmentUnsafe(&gd->world, x, y);
+                            if(seg->beings.num < MAX_SEGM_BEINGS){
+                                SetBeingPosition(bg, x, y);
+                                AddBeingToSegment(seg, bg, &seg->beings);
+                                HaltBeing(bg, 1);
+                                if(bg->type_id == being_commander){
+                                    AddBeingEffect(bg, (Lasting_effect){being_effect_commander, COMMANDER_EFFECT_TICKS});
+                                }
+                                break;
+                            }
+                            point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
+                        }while(point_indx1 != point_indx);
                     }
-                    point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
-                }while(point_indx1 != point_indx);
+                }
             }else if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
                 if(IsDeadBeing(bg, gd, i)){
                     --i;
