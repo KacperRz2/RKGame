@@ -1068,7 +1068,7 @@ static inline void BeingFlee(Being* const bg, Game_data* const gd){
     }
     const float distance = SDL_sqrtf(distance_squared);
     const float velocity_xy = distance / bg->velocity;
-    StartBeingWalk(bg, (int)(BEING_FLEE_WALK_TICKS * (SDL_randf() + 0.5F)), distance_x / velocity_xy, distance_y / velocity_xy);
+    StartBeingWalk(bg, (int)(BEING_FLEE_WALK_TICKS * (SDL_randf() * 1.5F + 0.5F)), distance_x / velocity_xy, distance_y / velocity_xy);
 }
 //---------------------------------------------------------------------------------------------------------------
 extern inline void AddBeingEffect(Being* const bg, const Lasting_effect effect){

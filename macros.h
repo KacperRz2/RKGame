@@ -73,8 +73,8 @@
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       0x8000
-#define PC_FATIGUE                  1000
+#define PC_HP                       0x800
+#define PC_FATIGUE                  0x200
 #define PC_MAGIC                    0x100
 #define PC_M_MAGIC                  0x10000000
 #define MOVING_BACK_VELO_MODI       0.93F
@@ -119,8 +119,9 @@
 #define KEYS_NUM                    7U
 #define BOXES_NUM                   0x200U
 #define BOX_SLOTS                   8
-#define BLOCK_COST                  16
-#define PC_BLOCK_FATIG_BLOCK_TIME   50
+#define BLOCK_COST                  32
+#define PC_BLOCK_FATIG_BLOCK_TIME   64
+#define PC_CAST_FATIG_BLOCK_TIME    64
 #define DEFAULT_FLY_VELOCITY        0.5F
 #define BASE_FLY_VELOCITY           0x3.0p-4F
 #define BASE_FLY_TICKS              10
@@ -258,7 +259,7 @@
                                         {\
                                             32,\
                                             PLAYER_VELOCITY * 2.5F,\
-                                            1000,\
+                                            500,\
                                             {0.0F, 1.0F, 1.0F, 1.125F},\
                                             {10.0F, 0.0F, 0.0F, 0.25F},\
                                             UpdateBeingOrdinary\
@@ -284,7 +285,7 @@
                                             PLAYER_VELOCITY * 1.875F,\
                                             2000,\
                                             {20.0F, 0.25F, 0.875F, 0.875F},\
-                                            {30.0F, 0.5F, 5.0F, 0.75F},\
+                                            {30.0F, 0.5F, 5.0F, 1.0F},\
                                             UpdateBeingOrdinary\
                                         },\
                                         {\
@@ -300,7 +301,7 @@
                                             PLAYER_VELOCITY * 2.0F,\
                                             4000,\
                                             {25.0F, 0.125F, 0.875F, 0.75F},\
-                                            {1.0F, 0.875F, 0.0F, 0.5F},\
+                                            {1.0F, 0.875F, 0.0F, 0.75F},\
                                             UpdateBeingCommander\
                                         },\
                                         {\
@@ -330,10 +331,10 @@
 #define PC_RANGE_IMPACT             {PC_RANGE_DMG, PC_RANGE_PENETR, PC_RANGE_MAGIC, 1.0F}
 #define PC_FIRE_PROJECTILE_IMPACT   {16.0F, PC_RANGE_PENETR, 700.0F, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
-#define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.25F}//absorption, multipl, magic_multipl, unstability
-#define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.25F}
+#define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.5F}//absorption, multipl, magic_multipl, unstability
+#define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.5F}
 #define PC_MAX_ARMOUR_II_ABS        750.0F
-#define PC_MAX_ARMOUR_II            {PC_MAX_ARMOUR_II_ABS, 0.25F, 0.25F, 0.125F}
+#define PC_MAX_ARMOUR_II            {PC_MAX_ARMOUR_II_ABS, 0.25F, 0.25F, 0.25F}
 #define PROJECTILES_UPDATE_FUNC     {\
                                         UpdatePCProjectile,\
                                         UpdateHostileProjectile,\

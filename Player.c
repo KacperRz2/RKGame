@@ -339,6 +339,7 @@ static void UpdatePlayerBlade(Game_data* const gd, const unsigned int indx){
 		bl->idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
 	}else if((gd->champions.array + indx)->flags & attack){
 		bl->charge *= PC_BLADE_CHARGE_MODIFIER;
+		BlockPlayerFatigue(gd->champions.array + indx, 1);
 	} 
 	if(!bl->abide){
 		if(bl->charge != PC_BLADE_CHARGE_BASE){
@@ -434,7 +435,7 @@ extern inline void DamagePlayer(Player* const pc, const Impact* impact){
 		}
 	}
 	BlockPlayerArmourRegen(pc, PC_ARMOUR_REGEN_BLOCK);
-	StunPlayer(pc);
+	StunPlayer(pc, CalculateStunPower(impact, &pc->armour));
 }
 
 static void UpdatePlayerFire(Game_data* const gd, const unsigned int indx){
@@ -445,6 +446,7 @@ static void UpdatePlayerFire(Game_data* const gd, const unsigned int indx){
 		GetShiftFromAngle((gd->champions.array + indx)->direction + 0.125F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &x, &y);
 		AddPCProjectileToArray(&gd->projectiles, &(gd->champions.array + indx)->position, x, y, &(gd->champions.array + indx)->range_attack, TEST_PENETRATION);
 		(gd->champions.array + indx)->block_times.shoot = PC_SHOOT_RELOAD;
+		BlockPlayerFatigue(gd->champions.array + indx, PC_CAST_FATIG_BLOCK_TIME);
 	}
 }
 
@@ -488,12 +490,12 @@ extern inline void HaltPlayer(Player* const p){
 	p->velocity = 0.0F;
 }
 
-extern inline void HitBarrier(Player* const p, const Impact* const impact){
-	p->fatigue_points -= (int)(impact->stun * BLOCK_COST);
-	BlockPlayerFatigue(p, PC_BLOCK_FATIG_BLOCK_TIME);
-	if(p->fatigue_points < 0){
-		p->flags &= ~(block);
-		p->fatigue_points = 0;
+extern inline void HitBarrier(Player* const pc, const Impact* const impact){
+	pc->fatigue_points -= (int)(impact->stun * BLOCK_COST);
+	BlockPlayerFatigue(pc, PC_BLOCK_FATIG_BLOCK_TIME);
+	if(pc->fatigue_points < 0){
+		pc->flags &= ~(block);
+		pc->fatigue_points = 0;
 	}
 }
 
@@ -511,6 +513,7 @@ static void UpdatePlayerCast(Game_data* const gd, const unsigned int indx){
 			(gd->champions.array + indx)->magic_points -= cost;
 			--(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll));
 			(gd->champions.array + indx)->block_times.cast = PC_CAST_RELOAD;
+			BlockPlayerFatigue(gd->champions.array + indx, PC_CAST_FATIG_BLOCK_TIME);
 		}
 	}
 }
@@ -526,9 +529,9 @@ static inline void UpdatePlayerHitPoints(Player* const pc){
 	}
 }
 
-static inline void BlockPlayerFatigue(Player* const p, const int time){
-	if(p->block_times.fatigue < time){
-		p->block_times.fatigue = time;
+static inline void BlockPlayerFatigue(Player* const pc, const int time){
+	if(pc->block_times.fatigue < time){
+		pc->block_times.fatigue = time;
 	}
 }
 
@@ -711,19 +714,24 @@ extern inline void SetQuickScroll(Player* const pc, int num){
 	*(pc->scrolls_quick_access + num) = pc->help_data.menu_position;
 }
 
-static inline void StunPlayer(Player* const pc){
-	const int effect_indx = PlayerHasEffect(pc, pc_effect_slow);
-	if(effect_indx == -1){
-		AddPlayerEffect(pc, (Lasting_effect){pc_effect_slow, PC_DODGE_RELOAD});
-		pc->flags |= stunned;
-		pc->max_velocity *= 0.25F;
-	}else{
-		(pc->effects + effect_indx)->ticks_left = PC_DODGE_RELOAD;
+static inline void StunPlayer(Player* const pc, float power){
+	power *= 16.0F - (pc->fatigue_points / (float)pc->max_fatigue * 15.0F);
+	if(power > 0.5F){
+		const int effect_indx = PlayerHasEffect(pc, pc_effect_slow);
+		if(effect_indx == -1){
+			AddPlayerEffect(pc, (Lasting_effect){pc_effect_slow, PC_DODGE_RELOAD});
+			pc->flags |= stunned;
+		}else{
+			(pc->effects + effect_indx)->ticks_left = PC_DODGE_RELOAD;
+		}
+		pc->max_velocity /= 0.5F + power;
+		pc->block_times.dodge = PC_DODGE_RELOAD;
+		if(power > 1.0F){
+			pc->flags &= ~(dodge | run | block | attack | cast | action);
+			pc->blade.charge = PC_BLADE_CHARGE_BASE;
+			pc->blade.idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
+		}
 	}
-	pc->flags &= ~(dodge | run | block | attack | cast | action);
-	pc->block_times.dodge = PC_DODGE_RELOAD;
-	pc->blade.charge = PC_BLADE_CHARGE_BASE;
-	pc->blade.idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
 }
 
 extern inline void AddPlayerEffect(Player* const pc, const Lasting_effect effect){
