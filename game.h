@@ -13,7 +13,7 @@ void AddBoxToArray(Boxes* const, const float, const float);
 void AddToBox(Box* const, const unsigned int, const int, const unsigned int);
 static void FreeBoxPlaceInArray(Boxes* const, const unsigned int);
 static void DestroyBoxes(Boxes* const);
-static int GetNearbyBoxIndx(Game_data* const);
+int GetNearbyBoxIndx(const Boxes* const, const SDL_FPoint* const, const float);
 static void LootBox(Game_data* const, const unsigned int);
 static void DestroyBoxInArray(Boxes* const, unsigned int);
 static int GetNearbyShopIndx(Game_data* const);

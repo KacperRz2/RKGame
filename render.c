@@ -22,10 +22,96 @@ static void SetViewTexture(Render_data* const rend_data){
 }
 
 static void DrawShopIcons(Render_data* const rend_data){
+	SDL_Surface* base_surface = SDL_CreateSurface(ICON_TX_SIZE_INT * SHOP_ICONS_NUM, ICON_TX_SIZE_INT, SDL_PIXELFORMAT_RGBA8888);
+	char* bmp_path = NULL;
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), ICONS_TX_FILE_NAME);
+	SDL_Surface* surface = SDL_LoadBMP(bmp_path);
+	SDL_free(bmp_path);
+	SDL_Rect src_rect = {ICON_TX_SIZE_INT * 6, 0, ICON_TX_SIZE_INT, ICON_TX_SIZE_INT};
+	SDL_Rect dst_rect = {0, 0, ICON_TX_SIZE_INT, ICON_TX_SIZE_INT};
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x = ICON_TX_SIZE_INT;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x = ICON_TX_SIZE_INT * 2;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	src_rect.x = 0;
+	dst_rect.x = ICON_TX_SIZE_INT * 3;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x = ICON_TX_SIZE_INT * 4;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	src_rect.x = ICON_TX_SIZE_INT * 2;
+	dst_rect.x = ICON_TX_SIZE_INT * 5;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	SDL_DestroySurface(surface);
 	
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), DODGE_TX_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	SDL_free(bmp_path);
+	dst_rect.x = ICON_TX_SIZE_INT * 6;
+	SDL_BlitSurface(surface, NULL, base_surface, &dst_rect);
+	SDL_DestroySurface(surface);
+	
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), "fnt");
+	surface = SDL_LoadBMP(bmp_path);
+	SDL_free(bmp_path);
+	SDL_FPoint char_x_and_w = GetCharacterXPositionAndWidth(n1);
+	src_rect = (SDL_Rect){char_x_and_w.x, GetCharacterRow(n1) * CHARS_ROW_HEIGHT, char_x_and_w.y, CHARS_ROW_HEIGHT};
+	dst_rect = (SDL_Rect){ICON_TX_SIZE_INT * 1, dst_rect.y, char_x_and_w.y / 2, CHARS_ROW_HEIGHT / 2};
+	SDL_BlitSurface(surface, NULL, surface, NULL);
+	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
+	dst_rect.x += ICON_TX_SIZE_INT;
+	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
+	dst_rect.x += char_x_and_w.y / 2 - ICON_TX_SIZE_INT;
+	char_x_and_w = GetCharacterXPositionAndWidth(n0);
+	src_rect = (SDL_Rect){char_x_and_w.x, GetCharacterRow(n0) * CHARS_ROW_HEIGHT, char_x_and_w.y, CHARS_ROW_HEIGHT};
+	dst_rect.w = char_x_and_w.y / 2;
+	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
+	dst_rect.x += ICON_TX_SIZE_INT;
+	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
+	dst_rect.x += char_x_and_w.y / 2 - ICON_TX_SIZE_INT;
+	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
+
+	char_x_and_w = GetCharacterXPositionAndWidth(s9);
+	src_rect = (SDL_Rect){char_x_and_w.x, GetCharacterRow(s9) * CHARS_ROW_HEIGHT, char_x_and_w.y, CHARS_ROW_HEIGHT};
+	dst_rect = (SDL_Rect){ICON_TX_SIZE_INT * 4 + 16, dst_rect.y - 8, char_x_and_w.y, CHARS_ROW_HEIGHT};
+	SDL_BlitSurface(surface, NULL, surface, NULL);
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	SDL_DestroySurface(surface);
+
+	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PLUS_UP_TX_FILE_NAME);
+	surface = SDL_LoadBMP(bmp_path);
+	SDL_free(bmp_path);
+	src_rect = (SDL_Rect){0, 0, 32, 32};
+	dst_rect.x = ICON_TX_SIZE_INT / 2;
+	dst_rect.y = ICON_TX_SIZE_INT / 2;
+	SDL_SetSurfaceColorMod(surface, 0U, 255U, 0U);
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x += ICON_TX_SIZE_INT;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x += ICON_TX_SIZE_INT;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x += ICON_TX_SIZE_INT;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x += ICON_TX_SIZE_INT;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+
+	src_rect.x = 32;
+	dst_rect.x = ICON_TX_SIZE_INT * 5 + ICON_TX_SIZE_INT / 2;
+	SDL_SetSurfaceColorMod(surface, 0U, 255U, 0U);
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	dst_rect.x += ICON_TX_SIZE_INT;
+	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
+	SDL_DestroySurface(surface);
+	
+	texture(tx_shop_icons) = SDL_CreateTextureFromSurface(rend_data->renderer, base_surface);
+	if(!texture(tx_shop_icons)){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_DestroySurface(base_surface);
 }
 
-int GraphicsInitiation(Render_data* const rend_data){
+void GraphicsInitiation(Render_data* const rend_data){
 	SetRenderData(rend_data);
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
@@ -33,23 +119,23 @@ int GraphicsInitiation(Render_data* const rend_data){
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 	if(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
-		return 3;
+		exit(-1);
 	}
 	if(!SDL_CreateWindowAndRenderer("KacWindow", WINDOW_START_W, WINDOW_START_H, SDL_WINDOW_BORDERLESS, &rend_data->window, &rend_data->renderer)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
-		return 3;
+		exit(-1);
 	}
 	for(int i = 0; i < SDL_arraysize(texture_files); ++i){
 		SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), *(texture_files + i));
 		surface = SDL_LoadBMP(bmp_path);
 		if(!surface){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-			return 3;
+			exit(-1);
 		}
 		texture(i) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
 		if(!texture(i)){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-			return 3;
+			exit(-1);
 		}
 		SDL_DestroySurface(surface);
 		SDL_free(bmp_path);
@@ -73,7 +159,6 @@ int GraphicsInitiation(Render_data* const rend_data){
 	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderTarget(rend_data->renderer, NULL);
 	ResetRenderData(rend_data);
-	return 0;
 }
 
 extern inline void AddVisalEffect(Visual_effects* const ves, const Visual_effect* const ve){
@@ -2178,6 +2263,15 @@ static inline SDL_FRect GetScrollTextureSrcRect(unsigned int scroll_num){
 	};
 }
 
+static inline SDL_FRect GetShopItemTextureSrcRect(unsigned int item_num){
+	return (SDL_FRect){
+		(item_num - shop_item_invalid) * ICON_TX_SIZE,
+		0.0F,
+		ICON_TX_SIZE,
+		ICON_TX_SIZE
+	};
+}
+
 static void RenderShopElement(Render_data* const rend_data, const float x, const float y, const float size, const int price, const unsigned int texture_num, const SDL_FRect* const src_rect){
 	const float texture_x = x + size * 0x1.0p-4F;
 	const float texture_size = size * 0x7.0p-3F;
@@ -2206,7 +2300,8 @@ void RenderShop(Render_data* const rend_data, const Player* const pc, const Shop
 			SDL_FRect src_rect = GetScrollTextureSrcRect(*(items_to_get + i));
 			RenderShopElement(rend_data, width * (0.5F + SHOP_SIDE_COLS + 3.0F), height * i, width, ItemPrice(*(items_to_get + i)), tx_icons, &src_rect);
 		}else{
-			RenderShopElement(rend_data, width * (0.5F + SHOP_SIDE_COLS + 3.0F), height * i, width, ItemPrice(*(items_to_get + i)), tx_icon, NULL);
+			SDL_FRect src_rect = GetShopItemTextureSrcRect(*(items_to_get + i));
+			RenderShopElement(rend_data, width * (0.5F + SHOP_SIDE_COLS + 3.0F), height * i, width, ItemPrice(*(items_to_get + i)), tx_shop_icons, &src_rect);
 		}
 	}
 	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){ICON_TX_SIZE * ic_mp, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
@@ -2221,36 +2316,36 @@ void RenderShop(Render_data* const rend_data, const Player* const pc, const Shop
 		width,
 		width
 	});
-	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){ICON_TX_SIZE * ic_mp, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
-		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
-		height * FIRST_SHOP_ROW,
-		width,
-		width
-	});
-	SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &(SDL_FRect){ICON_TX_SIZE * ic_key, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
-		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
-		height * FIRST_SHOP_ROW,
-		width,
-		width
-	});
-	SDL_RenderTexture(rend_data->renderer, texture(tx_icon), NULL, &(SDL_FRect){
-		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS + 1.0F)),
-		height * FIRST_SHOP_ROW,
-		width,
-		width
-	});
-	SDL_RenderTexture(rend_data->renderer, texture(tx_icon), NULL, &(SDL_FRect){
-		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
-		height * (FIRST_SHOP_ROW + 4.0F),
-		width,
-		width
-	});
-	SDL_RenderTexture(rend_data->renderer, texture(tx_icon), NULL, &(SDL_FRect){
-		width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
-		height * (FIRST_SHOP_ROW + 4.0F),
-		width,
-		width
-	});
+	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 0.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
+	// 	height * FIRST_SHOP_ROW,
+	// 	width,
+	// 	width
+	// });
+	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 3.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
+	// 	height * FIRST_SHOP_ROW,
+	// 	width,
+	// 	width
+	// });
+	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 4.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS + 1.0F)),
+	// 	height * FIRST_SHOP_ROW,
+	// 	width,
+	// 	width
+	// });
+	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 5.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
+	// 	height * (FIRST_SHOP_ROW + 4.0F),
+	// 	width,
+	// 	width
+	// });
+	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 6.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
+	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
+	// 	height * (FIRST_SHOP_ROW + 4.0F),
+	// 	width,
+	// 	width
+	// });
 	SDL_SetTextureColorMod(texture(tx_chars), MP_TEXT_RGB);
 	RenderIntCentered(rend_data, width * 1.5F, height * (FIRST_SHOP_ROW - 1.0F) + width * 0.25F, half(width), pc->magic_points, width * 2.0F);
 	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
@@ -2266,12 +2361,12 @@ void RenderShop(Render_data* const rend_data, const Player* const pc, const Shop
 			RenderShopElement(rend_data, width * (0.5F + SHOP_COLS - SHOP_SCROLLS_COLS - 1.0F + (i % SHOP_SCROLLS_COLS)), height * (FIRST_SHOP_ROW + 1.0F + (i / SHOP_SCROLLS_COLS)), width, ItemPrice(*(sh->scrolls + i)), tx_icons, &src_rect);
 		}
 	}
-	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_mp10), tx_icon, NULL);
-	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 2.0F), width, ItemPrice(shop_item_mp100), tx_icon, NULL);
-	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_key), tx_icon, NULL);
-	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS + 1.0F)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_key_location), tx_icon, NULL);
-	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 5.0F), width, ItemPrice(shop_item_armour), tx_icon, NULL);
-	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)), height * (FIRST_SHOP_ROW + 5.0F), width, ItemPrice(shop_item_dodge_speed), tx_icon, NULL);
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_mp10), tx_shop_icons, &(SDL_FRect){ICON_TX_SIZE * 1.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE});
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 2.0F), width, ItemPrice(shop_item_mp100), tx_shop_icons, &(SDL_FRect){ICON_TX_SIZE * 2.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE});
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_key), tx_shop_icons, &(SDL_FRect){ICON_TX_SIZE * 3.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE});
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS + 1.0F)), height * (FIRST_SHOP_ROW + 1.0F), width, ItemPrice(shop_item_key_location), tx_shop_icons, &(SDL_FRect){ICON_TX_SIZE * 4.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE});
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)), height * (FIRST_SHOP_ROW + 5.0F), width, ItemPrice(shop_item_armour), tx_shop_icons, &(SDL_FRect){ICON_TX_SIZE * 5.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE});
+	RenderShopElement(rend_data, width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)), height * (FIRST_SHOP_ROW + 5.0F), width, ItemPrice(shop_item_dodge_speed), tx_shop_icons, &(SDL_FRect){ICON_TX_SIZE * 6.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE});
 	if(pc->help_data.menu_position < SHOP_POSITIONS){
 		const unsigned int row = pc->help_data.menu_position / SHOP_COLS;
 		if(row == SHOP_ROWS - 1U){

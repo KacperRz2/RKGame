@@ -57,6 +57,7 @@
 #define BOLT_TICKS                  (0x8000000ULL / FRAME_TIME)
 #define LIGHTING_TX_SIZE            64
 #define VIEW_TX_FACTOR              2
+#define SHOP_ICONS_NUM              7
 
 #define BEINGS_TEXTURES             {\
                                         tx_being_weak,\
@@ -121,6 +122,7 @@
                                         SCROLL_TX_SIZE\
                                     }
 #define ICON_TX_SIZE                64.0F
+#define ICON_TX_SIZE_INT            64
 #define ICON_SCRL_0_Y               ICON_TX_SIZE
 #define SRC_SCROLL_0_ICON_RECT      {\
                                         0.0F,\
@@ -364,6 +366,8 @@
 #define PC_TX0_FILE_NAME            "img0"
 #define PC_TX1_FILE_NAME            "img14"
 #define DODGE_TX_FILE_NAME          "img1F"
+#define PLUS_UP_TX_FILE_NAME        "img20"
+#define ICONS_TX_FILE_NAME          "img5"
 
 enum inoc_position{
     ic_key,

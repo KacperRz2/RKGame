@@ -4,7 +4,7 @@ int main(int argc, char* argv[]){
 	SDL_Event event;
 	Render_data rend_data;
 	SetSineCosineArrays();
-	if(GraphicsInitiation(&rend_data)) return 1;
+	GraphicsInitiation(&rend_data);
 	while(1){
 		const int option = MainMenuLoop(&event, &rend_data);
 		if(option == menu_quit) break;

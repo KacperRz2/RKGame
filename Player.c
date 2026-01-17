@@ -11,19 +11,23 @@
 #include <game.h>
 #include <render.h>
 
-static void InitScrolls(Player* const p){
-	*(p->scrolls + scroll_0) = 99U;
-	*(p->scrolls + scroll_1) = 99U;
-	*(p->scrolls + scroll_2) = 99U;
-	*(p->scrolls + scroll_3) = 99U;
-	*(p->scrolls + scroll_slow) = 99U;
+extern inline void StopPlayerActions(Player* const pc){
+	pc->flags &= (range_mode | stunned | dodge_time);
+}
+
+static void InitScrolls(Player* const pc){
+	*(pc->scrolls + scroll_0) = 99U;
+	*(pc->scrolls + scroll_1) = 99U;
+	*(pc->scrolls + scroll_2) = 99U;
+	*(pc->scrolls + scroll_3) = 99U;
+	*(pc->scrolls + scroll_slow) = 99U;
 	for(unsigned int i = 5U; i < scroll_empty; ++i){
-		*(p->scrolls + i) = 200U;
+		*(pc->scrolls + i) = 200U;
 	}
-	*(p->scrolls + scroll_empty) = 1U;
-	*(p->scrolls_quick_access) = scroll_empty;
+	*(pc->scrolls + scroll_empty) = 1U;
+	*(pc->scrolls_quick_access) = scroll_empty;
 	for(unsigned int i = 1U; i < 9U; ++i){
-		*(p->scrolls_quick_access + i) = i - 1U;
+		*(pc->scrolls_quick_access + i) = i - 1U;
 	}
 }
 
@@ -285,7 +289,7 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 			if(!BladeHitsBeing(bl, bg, dangerous_points)) continue;
 			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, dangerous_points);
 			if(DamageBeing(bg, &bl->impact, gd->beings.array)){
-				if(bl->hits < --bl->penetration){
+				if(bl->hits < bl->penetration--){
 					--i;
 					continue;
 				}

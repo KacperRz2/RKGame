@@ -1,6 +1,7 @@
 #ifndef PLAYER_H_
 #define PLAYER_H_
 
+void StopPlayerActions(Player* const);
 void CreatePlayer(Player* const, const float, const float);
 void SetPlayerPosition(Player* const, const float, const float);
 void MovePlayer(Game_data* const, Player* const, const float, const float);

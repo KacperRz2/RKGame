@@ -188,8 +188,8 @@ static int RareEventsService(Game_data* const gd){
 		}else if(human(gd)->flags & action){
 			int shop_indx = GetNearbyShopIndx(gd);
 			if(shop_indx != -1){
+				StopPlayerActions(human(gd));
 				EnterShop(gd, human(gd), shop_indx);
-				human(gd)->flags &= ~(action);
 				return update_shop;
 			}
 		}
@@ -198,7 +198,7 @@ static int RareEventsService(Game_data* const gd){
 		UpdatePlayerNewSegment(&gd->world, human(gd));
 	 	human(gd)->flags &= ~(action);
 	}else if(check_queue == 2 && (human(gd)->flags & action) && gd->boxes.num > 0U){
-		int box_indx = GetNearbyBoxIndx(gd);
+		const int box_indx = GetNearbyBoxIndx(&gd->boxes, &human(gd)->position, PLAYER_SIZE);
 		if(box_indx != -1){
 			LootBox(gd, box_indx);
 	 		human(gd)->flags &= ~(action);
@@ -256,29 +256,30 @@ static void DestroyBoxes(Boxes* const bxs){
 	bxs->num = 0U;
 }
 
-static int GetNearbyBoxIndx(Game_data* const gd){
+int GetNearbyBoxIndx(const Boxes* const bxs, const SDL_FPoint* const position, const float range){
 	int left = 0;
-	int right = gd->boxes.num;
+	int right = bxs->num;
 	int center;
 	int new_center = (right - left) / 2 + left;
+	const float max_distance = half(BOX_SIZE + range);
 	do{
 		center = new_center;
-		if(SDL_fabsf(human(gd)->position.x - (gd->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
+		if(SDL_fabsf(position->x - (bxs->array + center)->location.x) < max_distance){
 			do{
-				if(SDL_fabsf(human(gd)->position.y - (gd->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+				if(SDL_fabsf(position->y - (bxs->array + center)->location.y) < max_distance){
 					return center;
 				}
 				++center;
-			}while(center < gd->boxes.num && SDL_fabsf(human(gd)->position.x - (gd->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE));
+			}while(center < bxs->num && SDL_fabsf(position->x - (bxs->array + center)->location.x) < max_distance);
 			center = new_center - 1;
-			while(center >= 0 && SDL_fabsf(human(gd)->position.x - (gd->boxes.array + center)->location.x) < half(BOX_SIZE + PLAYER_SIZE)){
-				if(SDL_fabsf(human(gd)->position.y - (gd->boxes.array + center)->location.y) < half(BOX_SIZE + PLAYER_SIZE)){
+			while(center >= 0 && SDL_fabsf(position->x - (bxs->array + center)->location.x) < max_distance){
+				if(SDL_fabsf(position->y - (bxs->array + center)->location.y) < max_distance){
 					return center;
 				}
 				--center;
 			};
 			return -1;
-		}else if(human(gd)->position.x > (gd->boxes.array + center)->location.x){
+		}else if(position->x > (bxs->array + center)->location.x){
 			left = center;
 		}else{
 			right = center;
@@ -428,9 +429,6 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 				items_to_sell_num = 0U;
 				for(unsigned int i = 0U; i < items_to_get_num; ++i){
 					const unsigned int item_num = *(items_to_get + i);
-					// if(item_num < shop_item_invalid){
-						// ++(*(pc->scrolls + item_num));
-					// }else 
 					if(item_num == shop_item_mp10){
 						pc->magic_points += 10;
 					}else if(item_num == shop_item_mp100){
@@ -767,6 +765,9 @@ void SaveGame(const Game_data* const gd){
 	ptr += sizeof(nums);
 	*(unsigned int*)ptr = gd->flags;
 	ptr += sizeof(unsigned int);
+	for(unsigned int i = 0U; i < nums.champions; ++i){
+		StopPlayerActions(gd->champions.array + i);
+	}
 	SDL_memcpy(ptr, gd->champions.array, sizeof(Player) * nums.champions);
 	ptr += sizeof(Player) * nums.champions;
 	*(Uint8*)ptr = gd->human_indx;

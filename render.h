@@ -1,7 +1,7 @@
 #ifndef RENDER_H_
 #define RENDER_H_
 
-int GraphicsInitiation(Render_data* const);
+void GraphicsInitiation(Render_data* const);
 
 void AddVisalEffect(Visual_effects* const, const Visual_effect* const);
 static void RemoveVisalEffect(Visual_effects* const, const unsigned int);

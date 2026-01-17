@@ -34,7 +34,7 @@ extern inline void AddPCProjectileToArray(Projectiles_array* const prs, const SD
 	pr->shift_per_tick = (SDL_FPoint){shift_x, shift_y};
 	pr->data.penetrating.impact = *impact;
 	pr->data.penetrating.penetration = penetration;
-	pr->data.penetrating.hits = 0;
+	pr->data.penetrating.hits = 0U;
 }
 
 extern inline void AddHProjectileToArray(Projectiles_array* const prs, const SDL_FPoint* const position, const float shift_x, const float shift_y, const Impact* const impact){
@@ -92,7 +92,7 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const gd){
 			if(!ProjectileHitsBeing(pr, bg)) continue;
 			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
 			if(DamageBeing(bg, &pr->data.penetrating.impact, gd->beings.array)){
-				if(pr->data.penetrating.hits < --pr->data.penetrating.penetration){
+				if(pr->data.penetrating.hits < pr->data.penetrating.penetration--){
 					--j;
 					continue;
 				}
@@ -168,9 +168,6 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 		return false;
 	}
-	if(!(pr->data.special.ticks % 3U)){
-		AddProjectileVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
-	}
 	Segment* seg = GetSegmentUnsafe(&gd->world, pr->position.x + pr->shift_per_tick.x, pr->position.y + pr->shift_per_tick.y);
 	if(!seg){
 		if(!GetSegmentUnsafe(&gd->world, pr->position.x + pr->shift_per_tick.x, pr->position.y)){
@@ -182,7 +179,6 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 	}
 	MoveProjectile(pr);
 	if(!GetSegmentUnsafe(&gd->world, pr->position.x, pr->position.y)){
-		SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "SEG_NULL_WHERE_PROJECTILE_IS!");
 		*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
 		return false;
 	}
@@ -190,7 +186,10 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 		Player* const pc = gd->champions.array + i;
 		if(!(pc->flags & dodge_time) && pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
 			if(pc->flags & block && (SineUnsafe(pc->direction) * pr->shift_per_tick.x) + (-CosiUnsafe(pc->direction) * pr->shift_per_tick.y) <= 0){
+				pr->position.x -= pr->shift_per_tick.x;
+				pr->position.y -= pr->shift_per_tick.y;
 				GetShiftFromAngle(pc->direction, PROJECTILE_VELOCITY, &pr->shift_per_tick.x, &pr->shift_per_tick.y);
+				break;
 			}else{
 				AddOrUpdatePlayerEffect(pc, (Lasting_effect){pc_effect_weak, WEAK_EFFECT_TICKS});
 				pc->blade_attack.damage *= 0.5F;
@@ -203,6 +202,9 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 				return false;
 			}
 		}
+	}
+	if(!(pr->data.special.ticks % 3U)){
+		AddProjectileVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
 	}
 	return true;
 }

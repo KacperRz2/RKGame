@@ -513,11 +513,25 @@ static void PlaceBoxes(Game_data* const gd){
 		Segment* seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
 		if(seg){
 			const unsigned int new_box_indx = gd->boxes.num++;
-			(gd->boxes.array + new_box_indx)->location.x = SegmentPositionX(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE;
-			(gd->boxes.array + new_box_indx)->location.y = SegmentPositionY(seg) + half(SEGMENT_SIZE) + (SDL_randf() - 0.5F) * SEGMENT_SIZE;
+			(gd->boxes.array + new_box_indx)->location.x = SegmentCenterX(seg) + (SDL_randf() - 0.5F) * (SEGMENT_SIZE - BOX_SIZE);
+			(gd->boxes.array + new_box_indx)->location.y = SegmentCenterY(seg) + (SDL_randf() - 0.5F) * (SEGMENT_SIZE - BOX_SIZE);
 		}
 	}
 	SDL_qsort(gd->boxes.array, gd->boxes.num, sizeof(Box), compareBoxes);
+	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
+		SDL_FPoint box_location = (gd->boxes.array + i)->location;
+		(gd->boxes.array + i)->location = ZERO_POINT_F;
+		const int box_indx = GetNearbyBoxIndx(&gd->boxes, &box_location, BOX_SIZE);
+		if(box_indx != -1){
+			do{
+				box_location.y += BOX_SIZE;
+				if(box_location.y >= WORLD_H - SEGMENT_SIZE * 2.0F){
+					box_location.y = SEGMENT_SIZE * 2.0F + half(BOX_SIZE);
+				}
+			}while(!GetSegmentUnsafe(&gd->world, box_location.x, box_location.y) || SDL_fabsf(box_location.y - (gd->boxes.array + box_indx)->location.y) < BOX_SIZE);
+		}
+		(gd->boxes.array + i)->location = box_location;
+	}
 }
 
 int SDLCALL compareShops(const void* a, const void* b){
