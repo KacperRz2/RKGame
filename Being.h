@@ -7,11 +7,12 @@ int BeingHP(const Being* const);
 
 unsigned int GetRandomBeingId();
 void AddBeingToSegment(Segment* const, Being* const, Segment_beings* const);
-static void RemoveBeingFromSegment(Being* const, Segment_beings* const, Being* const);
+void RemoveBeingFromSegment(Being* const, Segment_beings* const, Being* const);
 void DestroyBeings(Beings_array* const);
 void TryCreateIdleBeing(Game_data* const, const Uint8, const float, const float, Player* const);
 bool TryCreateHostileBeing(Game_data* const, const Uint8, const float, const float, Player* const);
 void AddIdleBeingToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
+Being* AddIdleAllyToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
 void AddHordeBeingToArray(Beings_array* const, const Uint8, const float, const float, Segment* const, Player* const);
 static Being* AddBeingToArray(Beings_array* const, const Uint8, const float, const float, Player* const);
 static void SetBeingTypeData(Being* const);
@@ -40,8 +41,8 @@ static bool ResolveBeingCollisionInNewSegment(Game_data* const, Being* const, Se
 static void TurnBeingWalk(Being* const);
 
 static void UpdateBeingWalk(Being* const, Game_data* const);
-static void UpdateBeingShoot(Being* const, Projectiles_array* const, const World* const, const SDL_FPoint* const, Segment* const);
-static void UpdateWarlockShoot(Being* const, Projectiles_array* const, const World* const, const SDL_FPoint* const, Segment* const);
+static void UpdateBeingShoot(Being* const, Game_data* const, const SDL_FPoint* const, Segment* const);
+static void UpdateWarlockShoot(Being* const, Game_data* const, const SDL_FPoint* const, Segment* const);
 static void UpdateBeingStrike(Being* const, Player* const, float const, float const, float const, Game_data* const);
 static void UpdateBeingStrikeAlly(Being* const, float const, float const, float const, Game_data* const);
 static void UpdateBeingSearch(Being* const, Game_data* const);
@@ -55,7 +56,7 @@ static void MoveBackStrikingBeing(Being* const, float const, float const, float 
 static void SetBeingPositionIfAllowed(Being* const, float const, float const, Game_data* const);
 
 static SDL_FPoint GetHBladeAttackHittingPoint(Being* const, const float, const float);
-static void HaltBeing(Being* const, const int);
+void HaltBeing(Being* const, const int);
 static bool TypeIsAlly(const Uint8);
 bool IsAlly(const Being* const);
 
@@ -82,16 +83,21 @@ static void UpdateAllySearch(Being* const, Game_data* const);
 
 void AddBeingEffect(Being* const, const Lasting_effect);
 void AddOrUpdateBeingEffect(Being* const, const Lasting_effect);
+void EndAllBeingEffects(Game_data* const, Being* const);
 static void RemoveBeingEffect(Being* const, const int);
 static void UpdateBeingEffects(Game_data* const, Being* const);
 static void UpdateBeingEffect(Game_data* const, Being* const, const int);
 int BeingHasEffect(Being* const, const unsigned int);
 void SlowBeing(Game_data* const, Being* const, const int);
+void SlowBeingEnd(Game_data* const, Being* const);
 void CommanderAura(Game_data* const, Being* const, const int);
 void CommanderIsNear(Game_data* const, Being* const, const int);
+void CommanderIsNearEnd(Game_data* const, Being* const);
 void OpeningPortal(Game_data* const, Being* const, const int);
 void Burn(Game_data* const, Being* const, const int);
 void ThunderboltChain(Game_data* const, Being* const, const int);
+void AllyLifetime(Game_data* const, Being* const, const int);
+void BeingLastingEffectVoidEnd(Game_data* const, Being* const);
 
 static void UpdateBeingOrdinary(Being* const, Game_data* const);
 static void UpdateBeingRanger(Being* const, Game_data* const);

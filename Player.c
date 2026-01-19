@@ -16,13 +16,8 @@ extern inline void StopPlayerActions(Player* const pc){
 }
 
 static void InitScrolls(Player* const pc){
-	*(pc->scrolls + scroll_0) = 99U;
-	*(pc->scrolls + scroll_1) = 99U;
-	*(pc->scrolls + scroll_2) = 99U;
-	*(pc->scrolls + scroll_3) = 99U;
-	*(pc->scrolls + scroll_slow) = 99U;
-	for(unsigned int i = 5U; i < scroll_empty; ++i){
-		*(pc->scrolls + i) = 200U;
+	for(unsigned int i = 0U; i < scroll_empty; ++i){
+		*(pc->scrolls + i) = 1U;
 	}
 	*(pc->scrolls + scroll_empty) = 1U;
 	*(pc->scrolls_quick_access) = scroll_empty;
@@ -279,6 +274,14 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 		{blade_true_location.position.x + shift_x, blade_true_location.position.y + shift_y}
 	};
 	Blade* const bl = &(gd->champions.array + indx)->blade;
+
+	if(SDL_randf() < bl->impact.damage / (gd->champions.array + indx)->blade_attack.damage){
+		for(unsigned int i = 0U; i < 2; ++i){
+			const float rand = SDL_randf() * 0.875 + 0.125F;
+			AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){blade_true_location.position.x + 2.0F * shift_x * rand, blade_true_location.position.y + 2.0F * shift_y * rand});
+		}
+	}
+
 	Segment* neighbour_segs[4];
 	Get4NearestSegments(neighbour_segs, &gd->world, seg, blade_true_location.position.x, blade_true_location.position.y);
 	for(unsigned int k = 0U; k < 4; ++k){
@@ -288,6 +291,12 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 			Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
 			if(!BladeHitsBeing(bl, bg, dangerous_points)) continue;
 			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, dangerous_points);
+			for(unsigned int i = 0U; i < 8U; ++i){
+				AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+					bg->position.x + (SDL_randf() - 0.5F) * half(BeingSize(bg)),
+					bg->position.y + (SDL_randf() - 0.5F) * half(BeingSize(bg))
+				});
+			}
 			if(DamageBeing(bg, &bl->impact, gd->beings.array)){
 				if(bl->hits < bl->penetration--){
 					--i;
@@ -305,7 +314,7 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 							StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * stun_power));
 						}
 					}
-				}
+				};
 				if(bl->hits < bl->penetration){
 					*(bl->hit_targets + bl->hits++) = bg->main_indx;
 					continue;
@@ -368,6 +377,15 @@ static void UpdatePlayerBlade(Game_data* const gd, const unsigned int indx){
 				bl->freehand = false;
 				return;
 			}
+
+			if(SDL_randf() > bl->charge){
+				const Placement blade_true_location = GetBladeLocation(gd->champions.array + indx);
+				const float shift_x = SineSafe(blade_true_location.direction) * BLADE_SIZE * 0.85F;
+				const float shift_y = -CosiSafe(blade_true_location.direction) * BLADE_SIZE * 0.85F;
+				const float rand = SDL_randf() * 0.875 + 0.125F;
+				AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){blade_true_location.position.x + shift_x * rand, blade_true_location.position.y + shift_y * rand});
+			}
+
 		}else if(++bl->idle_ticks > PC_BLADE_MAX_IDLE_TICKS){
 			bl->chain_next = 0U;
 			SetShiftToBase(bl, &bl->step_shift, bl->steps = PC_BLADE_RETURN_STEPS);
@@ -451,6 +469,7 @@ static void UpdatePlayerFire(Game_data* const gd, const unsigned int indx){
 		AddPCProjectileToArray(&gd->projectiles, &(gd->champions.array + indx)->position, x, y, &(gd->champions.array + indx)->range_attack, TEST_PENETRATION);
 		(gd->champions.array + indx)->block_times.shoot = PC_SHOOT_RELOAD;
 		BlockPlayerFatigue(gd->champions.array + indx, PC_CAST_FATIG_BLOCK_TIME);
+    	AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &(gd->champions.array + indx)->position, SPELL0_RGB);
 	}
 }
 
@@ -790,6 +809,24 @@ void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
 
 void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
     HealPlayer(pc, 1);
+	if(ticks_left % 64 == 0){
+        AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+            pc->position.x + (SDL_randf() - 0.5F) * half(PLAYER_SIZE),
+            pc->position.y + (SDL_randf() - 0.5F) * half(PLAYER_SIZE)
+        });
+    }
+}
+
+void PlayerFatigueRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
+	if(pc->fatigue_points < pc->max_fatigue){
+		++pc->fatigue_points;
+	}
+	if(ticks_left % 64 == 0){
+        AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+            pc->position.x + (SDL_randf() - 0.5F) * half(PLAYER_SIZE),
+            pc->position.y + (SDL_randf() - 0.5F) * half(PLAYER_SIZE)
+        });
+    }
 }
 
 void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left){

@@ -39,12 +39,16 @@ extern inline void AddBeingToSegment(Segment* const seg, Being* const bg, Segmen
     bg->indx = bs->num++;
 }
 
-static inline void RemoveBeingFromSegment(Being* const bg, Segment_beings* const bs, Being* const main_beings){
+extern inline void RemoveBeingFromSegment(Being* const bg, Segment_beings* const bs, Being* const main_beings){
     if(bg->indx != bs->num - 1U){
         *(bs->beings_ind + bg->indx) = *(bs->beings_ind + bs->num - 1U);
         (main_beings + *(bs->beings_ind + bs->num - 1U))->indx = bg->indx;
     }
     --bs->num;
+}
+
+static inline void RemoveAllyFromSegment(Being* const bg, Being* const main_beings){
+    RemoveBeingFromSegment(bg, &bg->segment->ally_beings, main_beings);
 }
 
 void DestroyBeings(Beings_array* const bs){
@@ -78,18 +82,27 @@ extern inline void AddHordeBeingToArray(Beings_array* const bs, const Uint8 type
     }
 }
 
+extern inline Being* AddIdleAllyToArray(Beings_array* const bs, const Uint8 type_id, const float x, const float y, Segment* const seg, Player* const target){
+    Being* const bg = AddBeingToArray(bs, type_id, x, y, target);
+    AddBeingToSegment(seg, bg, &seg->ally_beings);
+    bg->target_last_seen_at = (position16){bg->target.player->position.x, bg->target.player->position.y};
+    return bg;
+}
+
 extern inline void AddIdleBeingToArray(Beings_array* const bs, const Uint8 type_id, const float x, const float y, Segment* const seg, Player* const target){
     Being* const bg = AddBeingToArray(bs, type_id, x, y, target);
-    if(IsAlly(bg)){
-        AddBeingToSegment(seg, bg, &seg->ally_beings);
-        bg->target_last_seen_at = (position16){bg->target.player->position.x, bg->target.player->position.y};
-    }else{
-        AddBeingToSegment(seg, bg, &seg->beings);
-        bg->target_last_seen_at.x = 0.0F;
-    }
+    AddBeingToSegment(seg, bg, &seg->beings);
+    bg->target_last_seen_at.x = 0.0F;
     if(bg->type_id == being_commander){
         AddBeingEffect(bg, (Lasting_effect){being_effect_commander, COMMANDER_EFFECT_TICKS});
     }
+}
+
+static inline void SetBeingTypeData(Being* const bg){
+    bg->velocity = (being_types + bg->type_id)->velocity;
+    bg->armour = (being_types + bg->type_id)->armour;
+    bg->hit_points = (being_types + bg->type_id)->hit_points;
+    bg->impact = (being_types + bg->type_id)->impact;
 }
 
 static inline Being* AddBeingToArray(Beings_array* const bs, const Uint8 type_id, const float x, const float y, Player* const target){
@@ -101,13 +114,6 @@ static inline Being* AddBeingToArray(Beings_array* const bs, const Uint8 type_id
     HaltBeing(bg, 1);
     bg->effects_num = 0U;
     return bg;
-}
-
-static inline void SetBeingTypeData(Being* const bg){
-    bg->velocity = (being_types + bg->type_id)->velocity;
-    bg->armour = (being_types + bg->type_id)->armour;
-    bg->hit_points = (being_types + bg->type_id)->hit_points;
-    bg->impact = (being_types + bg->type_id)->impact;
 }
 
 static inline void GetBeingDistances(const Being* const b, const SDL_FPoint* const to, float* const d_x, float* const d_y, float* const d_sq){
@@ -243,16 +249,17 @@ static inline void UpdateBeingWalk(Being* const bg, Game_data* const gd){
     --bg->status_ticks_left;
 }
 
-static inline void UpdateBeingShoot(Being* const bg, Projectiles_array* const prs, const World* const w, const SDL_FPoint* const target_position, Segment* const target_segment){
+static inline void UpdateBeingShoot(Being* const bg, Game_data* const gd, const SDL_FPoint* const target_position, Segment* const target_segment){
     if(bg->status_ticks_left == 0){
         bg->status = being_idle;
         return;
     }
-    if(bg->status_ticks_left == 32 && prs->num < MAX_PROJECTILES_NUM){
-        if(IsClearSight(&bg->position, target_position, target_segment, w)){
+    if(bg->status_ticks_left == 32 && gd->projectiles.num < MAX_PROJECTILES_NUM){
+        if(IsClearSight(&bg->position, target_position, target_segment, &gd->world)){
             float x, y;
             GetShift(&bg->position, target_position, PROJECTILE_VELOCITY, &x, &y);
-            AddHProjectileToArray(prs, &bg->position, x, y, &bg->impact);
+            AddHProjectileToArray(&gd->projectiles, &bg->position, x, y, &bg->impact);
+            AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, SPELL1_RGB);
         }else{
             bg->status = being_idle;
         }
@@ -260,20 +267,21 @@ static inline void UpdateBeingShoot(Being* const bg, Projectiles_array* const pr
     --bg->status_ticks_left;
 }
 
-static inline void UpdateWarlockShoot(Being* const bg, Projectiles_array* const prs, const World* const wld, const SDL_FPoint* const target_position, Segment* const target_segment){
+static inline void UpdateWarlockShoot(Being* const bg, Game_data* const gd, const SDL_FPoint* const target_position, Segment* const target_segment){
     if(bg->status_ticks_left == 0){
         bg->status = being_idle;
         return;
     }
-    if(bg->status_ticks_left == 32 && prs->num < MAX_PROJECTILES_NUM){
-        if(IsClearSight(&bg->position, target_position, target_segment, wld)){
+    if(bg->status_ticks_left == 32 && gd->projectiles.num < MAX_PROJECTILES_NUM){
+        if(IsClearSight(&bg->position, target_position, target_segment, &gd->world)){
             float x, y;
             GetShift(&bg->position, target_position, PROJECTILE_VELOCITY, &x, &y);
             if(SDL_rand(4)){
-                AddHProjectileToArray(prs, &bg->position, x, y, &bg->impact);
+                AddHProjectileToArray(&gd->projectiles, &bg->position, x, y, &bg->impact);
             }else{
-                AddSpecialProjectileToArray(prs, &bg->position, x, y, projectile_warlock, WARLOCK_SPEC_PROJE_TICKS);
+                AddSpecialProjectileToArray(&gd->projectiles, &bg->position, x, y, projectile_warlock, WARLOCK_SPEC_PROJE_TICKS);
             }
+            AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, SPELL1_RGB);
         }else{
             bg->status = being_idle;
         }
@@ -566,7 +574,7 @@ static inline SDL_FPoint GetHBladeAttackHittingPoint(Being* const bg, const floa
     return (SDL_FPoint){bg->position.x + sine * distance_from_being, bg->position.y - cosine * distance_from_being};
 }
 
-static inline void HaltBeing(Being* const bg, const int time){
+extern inline void HaltBeing(Being* const bg, const int time){
     bg->status = being_idle;
     bg->status_ticks_left = -time;
 }
@@ -1079,6 +1087,11 @@ static inline void BeingFlee(Being* const bg, Game_data* const gd){
     const float velocity_xy = distance / bg->velocity;
     StartBeingWalk(bg, (int)(BEING_FLEE_WALK_TICKS * (SDL_randf() * 1.5F + 0.5F)), distance_x / velocity_xy, distance_y / velocity_xy);
 }
+static inline void MoveBeingToVoid(Being* const bg, Game_data* const gd){
+    EndAllBeingEffects(gd, bg);
+    bg->status = being_in_void;
+    bg->position = ZERO_POINT_F;
+}
 //---------------------------------------------------------------------------------------------------------------
 extern inline void AddBeingEffect(Being* const bg, const Lasting_effect effect){
 	if(bg->effects_num < MAX_BEING_EFFECTS){
@@ -1095,6 +1108,18 @@ extern inline void AddOrUpdateBeingEffect(Being* const bg, const Lasting_effect 
 	}
 }
 
+static inline void EndBeingEffect(Game_data* const gd, Being* const bg, const int effect_indx){
+    const void (*effect[])(Game_data* const, Being* const) = BEING_LASTING_EFFECTS_ENDS;
+    (*(effect + (bg->effects + effect_indx)->id))(gd, bg);
+}
+
+extern inline void EndAllBeingEffects(Game_data* const gd, Being* const bg){
+	for(unsigned int i = 0U; i < bg->effects_num; ++i){
+		EndBeingEffect(gd, bg, i);
+	}
+    bg->effects_num = 0U;
+}
+
 static inline void RemoveBeingEffect(Being* const bg, const int indx){
 	RemoveLastingEffect(bg->effects, indx, bg->effects_num--);
 }
@@ -1109,6 +1134,7 @@ static inline void UpdateBeingEffect(Game_data* const gd, Being* const bg, const
     const void (*effect[])(Game_data* const, Being* const, const int) = BEING_LASTING_EFFECTS;
     (*(effect + (bg->effects + effect_indx)->id))(gd, bg, (bg->effects + effect_indx)->ticks_left--);
 	if((bg->effects + effect_indx)->ticks_left < 1 && bg->effects_num > 0U){
+        EndBeingEffect(gd, bg, effect_indx);
 		RemoveBeingEffect(bg, effect_indx);
 	}
 }
@@ -1123,12 +1149,14 @@ extern inline int BeingHasEffect(Being* const bg, const unsigned int effect_id){
 }
 
 void SlowBeing(Game_data* const gd, Being* const bg, const int ticks_left){
-    if(ticks_left < 2){
-        if(bg->velocity < (being_types + bg->type_id)->velocity){
-            bg->velocity = (being_types + bg->type_id)->velocity;
-        }
-    }else if(ticks_left % 64 == 0){
+    if(ticks_left % 64 == 0){
         AddCurseVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
+    }
+}
+
+void SlowBeingEnd(Game_data* const gd, Being* const bg){
+    if(bg->velocity < (being_types + bg->type_id)->velocity){
+        bg->velocity = (being_types + bg->type_id)->velocity;
     }
 }
 
@@ -1154,6 +1182,7 @@ void CommanderAura(Game_data* const gd, Being* const bg, const int ticks_left){
                     }else{
                         (bg1->effects + effect_indx)->ticks_left = COMMANDER_EFFECT_TICKS;
                     }
+                    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &bg1->position, SPELL1_RGB);
                 }
             }
         }
@@ -1162,14 +1191,16 @@ void CommanderAura(Game_data* const gd, Being* const bg, const int ticks_left){
 }
 
 void CommanderIsNear(Game_data* const gd, Being* const bg, const int ticks_left){
-    if(ticks_left < 2){
-        bg->impact = (being_types + bg->type_id)->impact;
-    }else if(ticks_left % 64 == 0){
+    if(ticks_left % 64 == 0){
         AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
             bg->position.x + (SDL_randf() - 0.5F) * half(BeingSize(bg)),
             bg->position.y + (SDL_randf() - 0.5F) * half(BeingSize(bg))
         });
     }
+}
+
+void CommanderIsNearEnd(Game_data* const gd, Being* const bg){
+    bg->impact = (being_types + bg->type_id)->impact;
 }
 
 void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
@@ -1186,10 +1217,8 @@ void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
 
 void OpeningPortal(Game_data* const gd, Being* const bg, const int ticks_left){
     if(ticks_left < 2){
-        bg->status = being_in_void;
-        bg->effects_num = 0U;
         RemoveBeingFromSegment(bg, &bg->segment->beings, gd->beings.array);
-        bg->position = ZERO_POINT_F;
+        MoveBeingToVoid(bg, gd);
     }
 }
 
@@ -1248,6 +1277,25 @@ void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left
         });
     }
 }
+
+void AllyLifetime(Game_data* const gd, Being* const bg, const int ticks_left){
+    if(ticks_left == 128){
+        AddPortalVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
+        HaltBeing(bg, 128);
+    }else if(ticks_left < 2){
+        RemoveAllyFromSegment(bg, gd->beings.array);
+        bg->type_id = being_weak;
+        const int hit_points = bg->hit_points;
+        SetBeingTypeData(bg);
+        if(hit_points < bg->hit_points){
+            bg->hit_points = hit_points;
+        }
+        MoveBeingToVoid(bg, gd);
+    }
+}
+
+// void BeingLastingEffectVoid(Game_data* const gd, Being* const bg, const int ticks_left){}
+void BeingLastingEffectVoidEnd(Game_data* const gd, Being* const bg){}
 //---------------------------------------------------------------------------------------------------------------
 #define BeingFollowBeingCode    if(bg->status == being_follow_being){\
                                     GetBeingDistances(bg, &bg->target.being->position, &distance_x, &distance_y, &distance_squared);\
@@ -1328,7 +1376,7 @@ static inline void UpdateBeingRanger(Being* const bg, Game_data* const gd){
         return;
     }
     if(bg->status == being_shoot_being){
-        UpdateBeingShoot(bg, &gd->projectiles, &gd->world, &bg->target.being->position, bg->target.being->segment);
+        UpdateBeingShoot(bg, gd, &bg->target.being->position, bg->target.being->segment);
         return;
     }
     if(bg->status == being_search){
@@ -1387,7 +1435,7 @@ static inline void UpdateBeingRanger(Being* const bg, Game_data* const gd){
     }
     MovePlayerIfTooClose(distance_x, distance_y, distance_squared, bg, gd);
     if(bg->status == being_shoot){
-        UpdateBeingShoot(bg, &gd->projectiles, &gd->world, &bg->target.player->position, bg->target.player->segment);
+        UpdateBeingShoot(bg, gd, &bg->target.player->position, bg->target.player->segment);
         return;
     }
     if(bg->status == being_stunned){
@@ -1507,7 +1555,7 @@ static inline void UpdateBeingWarlock(Being* const bg, Game_data* const gd){
         return;
     }
     if(bg->status == being_shoot_being){
-        UpdateBeingShoot(bg, &gd->projectiles, &gd->world, &bg->target.being->position, bg->target.being->segment);
+        UpdateBeingShoot(bg, gd, &bg->target.being->position, bg->target.being->segment);
         return;
     }
     if(bg->status == being_search){
@@ -1566,7 +1614,7 @@ static inline void UpdateBeingWarlock(Being* const bg, Game_data* const gd){
     }
     MovePlayerIfTooClose(distance_x, distance_y, distance_squared, bg, gd);
     if(bg->status == being_shoot){
-        UpdateWarlockShoot(bg, &gd->projectiles, &gd->world, &bg->target.player->position, bg->target.player->segment);
+        UpdateWarlockShoot(bg, gd, &bg->target.player->position, bg->target.player->segment);
         return;
     }
     if(bg->status == being_stunned){
@@ -1606,11 +1654,11 @@ static inline void UpdateAlly0(Being* const bg, Game_data* const gd){
         return;
     }
     if(bg->status == being_attack_being){
-        if(bg->status_ticks_left == 0){
+        if(bg->status_ticks_left == 0 && gd->projectiles.num < MAX_PROJECTILES_NUM){
+            bg->status = being_idle;
             float x, y;
             GetShift(&bg->position, &bg->target.being->position, PROJECTILE_VELOCITY, &x, &y);
-            AddPCProjectileToArray(&gd->projectiles, &bg->position, x, y, &bg->impact, 2U);
-            bg->status = being_idle;
+            AddPCProjectileToArray(&gd->projectiles, &bg->position, x, y, &bg->impact, 0U);
         }else{
             --bg->status_ticks_left;
         }

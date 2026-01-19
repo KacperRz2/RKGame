@@ -19,6 +19,7 @@ void AddBigBurnVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const,
 void AddSmallBurnVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
 void AddBoomVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
 void AddBoltVisualEffect(Visual_effects* const, const SDL_FPoint* const, const position16);
+void AddSpellVisualEffect(Visual_effects* const, const SDL_FPoint* const, const Uint8, const Uint8, const Uint8);
 
 static void DrawBeings(Render_data* const);
 static void DrawColouredThings(Render_data* const);

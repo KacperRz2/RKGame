@@ -149,6 +149,7 @@
 #define MAX_POPULATION_NUM          0x20
 #define COMMANDER_EFFECT_TICKS      1024
 #define HP_REGEN_TICKS              1024
+#define FP_REGEN_TICKS              0x1000
 #define WEAK_EFFECT_TICKS           0x1000
 #define SLOW_EFFECT_TICKS           2048
 #define BURN_TICKS                  0x1000
@@ -180,6 +181,7 @@
 #define SCROLL_PUSH_POWER           12.0F
 #define HORDE_BEING_CHANCE_FACTOR   64//16
 #define MAX_ONE_TYPE_ITEMS          255U
+#define ALLY_LIFETIME               0x2000
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -199,7 +201,10 @@
 
 #define UNCOVERED_SEG_RGB           255U, 255U, 255U
 #define POPULATED_SEG_RGB           127U, 127U, 127U
+#define SPELL0_RGB                  127U, 127U, 63U
+#define SPELL1_RGB                  127U, 15U, 127U
 #define SCR_COSTS                   {\
+                                        1U,\
                                         1U,\
                                         1U,\
                                         1U,\
@@ -219,6 +224,7 @@
                                         100,\
                                         100,\
                                         100,\
+                                        100,\
                                         0,\
                                         20,\
                                         200,\
@@ -228,14 +234,15 @@
                                         7000\
                                     }
 #define SCR_EFFECTS                 {\
-                                        effect0,\
-                                        effect1,\
-                                        effect2,\
-                                        effect3,\
+                                        push,\
+                                        HPRegen,\
+                                        AddAlly,\
+                                        RenewArmour,\
                                         slow,\
                                         fire,\
                                         thunderbolt,\
-                                        effect7,\
+                                        convert,\
+                                        FatigueRegen,\
                                         EffectEmpty\
                                     }
 #define GAME_LASTING_EFFECTS        {\
@@ -247,11 +254,22 @@
                                         CommanderIsNear,\
                                         OpeningPortal,\
                                         Burn,\
-                                        ThunderboltChain\
+                                        ThunderboltChain,\
+                                        AllyLifetime\
+                                    }
+#define BEING_LASTING_EFFECTS_ENDS  {\
+                                        SlowBeingEnd,\
+                                        BeingLastingEffectVoidEnd,\
+                                        CommanderIsNearEnd,\
+                                        BeingLastingEffectVoidEnd,\
+                                        BeingLastingEffectVoidEnd,\
+                                        BeingLastingEffectVoidEnd,\
+                                        BeingLastingEffectVoidEnd\
                                     }
 #define PLAYER_LASTING_EFFECTS      {\
                                         SlowPlayer,\
                                         PlayerHPRegeneration,\
+                                        PlayerFatigueRegeneration,\
                                         PlayerWeakness,\
                                         PlayerDodge\
                                     }

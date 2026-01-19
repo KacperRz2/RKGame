@@ -79,6 +79,11 @@ struct Visual_effect{
 			position16 start_position;
 			Uint8 angle;
 		}d1;
+		struct{
+			Uint8 r;
+			Uint8 g;
+			Uint8 b;
+		}d2;
 	}data;
 	Uint8 type;
 };

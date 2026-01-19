@@ -199,6 +199,7 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 				pc->range_attack.magic *= 0.5F;
 				pc->range_attack.armour_reduction = 0.0F;
 				*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
+    			AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &pc->position, SPELL1_RGB);
 				return false;
 			}
 		}

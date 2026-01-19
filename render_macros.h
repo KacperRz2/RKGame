@@ -55,6 +55,8 @@
 #define SMALL_BURN_SIZE             64U
 #define BURN_EFFECT_TIME            (0x30000000ULL / FRAME_TIME)
 #define BOLT_TICKS                  (0x8000000ULL / FRAME_TIME)
+#define FLASH_TICKS                 (0x6000000ULL / FRAME_TIME)
+#define FLASH_SIZE                  512
 #define LIGHTING_TX_SIZE            64
 #define VIEW_TX_FACTOR              2
 #define SHOP_ICONS_NUM              7
@@ -71,11 +73,11 @@
                                     }
 #define BEINGS_WEAPON_TEXTURES      {\
                                         tx_being_blade,\
-                                        tx_pc_blade,\
+                                        tx_sword,\
                                         tx_weapon1,\
-                                        tx_pc_blade,\
+                                        tx_sword,\
                                         tx_weapon,\
-                                        tx_pc_blade,\
+                                        tx_sword,\
                                         tx_weapon,\
                                         tx_void\
                                     }
@@ -87,9 +89,10 @@
 #define VISUAL_EFFECT_FUNCS         {\
                                         RenderVisualEffectsType0,\
                                         RenderVisualEffectsType1,\
-                                        RenderVisualEffectsType2,\
+                                        RenderBurnEffect,\
                                         RenderVisualEffectsTimer,\
-                                        RenderVisualEffectsBolt\
+                                        RenderVisualEffectsBolt,\
+                                        RenderFlashEffect,\
                                     }
 #define PC_RECT                     {\
                                         VIEWFINDER_CENTER - half(PLAYER_SIZE),\
@@ -203,7 +206,7 @@
 #define RGB_LOWER_RANK              ((Uint8[]){102, 63, 25})
 #define RGB_MEDIUM_RANK             ((Uint8[]){223, 223, 223})
 #define RGB_HIGH_RANK               ((Uint8[]){255, 191, 0})
-#define PC_RGB_0                    ((Uint8[]){255, 0, 0})
+#define PC_RGB_0                    ((Uint8[]){223, 223, 223})
 #define PC_RGB_1                    RGB_HIGH_RANK
 #define BEING0_RGB_0                ((Uint8[]){127, 255, 127})
 #define BEING0_RGB_1                RGB_LOWER_RANK
@@ -282,7 +285,7 @@
                                         (Uint16)    BURN_EFFECT_TIME,\
                                         (Uint16)    BURN_EFFECT_TIME,\
                                         (Uint16)    size,\
-                                        (Uint8)     tx_pixel,\
+                                        (Uint8)     0U,\
                                         (Uint8)     visual_effect_t2\
                                     })
 #define BURN_EF_TIM(posit, si, del) ((Visual_effect){\
@@ -290,7 +293,7 @@
                                         (Uint16)    del,\
                                         (Uint16)    BURN_EFFECT_TIME,\
                                         (Uint16)    si,\
-                                        (Uint8)     tx_pixel,\
+                                        (Uint8)     0U,\
                                         (Uint8)     visual_effect_t2_timer\
                                     })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
@@ -355,7 +358,8 @@
                                         "img1C",\
                                         "img1D",\
                                         "img1E",\
-                                        "void"\
+                                        "img21",\
+                                        "img22"\
                                     }
 
 #define BEING_TEXTURE0_FILE_NAME    "img8"

@@ -9,6 +9,7 @@
 #include <Scroll.h>
 #include <Being.h>
 #include <game.h>
+#include <Player.h>
 
 static void SetViewTexture(Render_data* const rend_data){
 	texture(tx_view) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, rend_data->viewfinder / VIEW_TX_FACTOR, rend_data->viewfinder / VIEW_TX_FACTOR);
@@ -18,7 +19,7 @@ static void SetViewTexture(Render_data* const rend_data){
 	}
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_view));
 	SDL_SetRenderScale(rend_data->renderer, 1.0F / (float)VIEW_TX_FACTOR, 1.0F / (float)VIEW_TX_FACTOR);
-	SDL_SetTextureScaleMode(texture(tx_view), SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(texture(tx_view), SDL_SCALEMODE_PIXELART);
 }
 
 static void DrawShopIcons(Render_data* const rend_data){
@@ -111,6 +112,20 @@ static void DrawShopIcons(Render_data* const rend_data){
 	SDL_DestroySurface(base_surface);
 }
 
+static void DrawTextures(Render_data* const rend_data){
+	DrawBeings(rend_data);
+	DrawColouredThings(rend_data);
+	DrawShopIcons(rend_data);
+	SDL_Surface* surface = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA8888);
+	SDL_WriteSurfacePixel(surface, 0, 0, 0U, 0U, 0U, 0U);
+	texture(tx_void) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!texture(tx_void)){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_DestroySurface(surface);
+}
+
 void GraphicsInitiation(Render_data* const rend_data){
 	SetRenderData(rend_data);
 	SDL_Surface* surface = NULL;
@@ -146,16 +161,19 @@ void GraphicsInitiation(Render_data* const rend_data){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
 		exit(-1);
 	}
-	DrawBeings(rend_data);
-	DrawColouredThings(rend_data);
-	DrawShopIcons(rend_data);
+	DrawTextures(rend_data);
 	SetMouseBarrier(rend_data);
 	SDL_SetTextureBlendMode(texture(tx_lighting), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_barrier), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_bonus_effect), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_bolt), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_projectile), SDL_BLENDMODE_ADD);
+	SDL_SetTextureBlendMode(texture(tx_h_projectile), SDL_BLENDMODE_ADD);
 	SDL_SetTextureBlendMode(texture(tx_pixel), SDL_BLENDMODE_ADD);
+	SDL_SetTextureBlendMode(texture(tx_void), SDL_BLENDMODE_ADD);
+	SDL_SetTextureScaleMode(texture(tx_void), SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(texture(tx_icons), SDL_SCALEMODE_PIXELART);
+	SDL_SetTextureScaleMode(texture(tx_shop_icons), SDL_SCALEMODE_PIXELART);
 	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderTarget(rend_data->renderer, NULL);
 	ResetRenderData(rend_data);
@@ -195,7 +213,6 @@ static void RenderVisualEffectsType0(Visual_effect* const ve, Game_data* const g
 		size,
 		size
 	});
-	SDL_SetTextureAlphaModFloat(texture(ve->data.d0.tx_num), 1.0F);
 }
 
 static void RenderVisualEffectsType1(Visual_effect* const ve, Game_data* const gd){
@@ -220,10 +237,9 @@ static void RenderVisualEffectsType1(Visual_effect* const ve, Game_data* const g
 		size,
 		size
 	}, (double)(rend_data->counter * VORTEX_ROTAT_SPEED), NULL, SDL_FLIP_NONE);
-	SDL_SetTextureAlphaModFloat(texture(ve->data.d0.tx_num), 1.0F);
 }
 
-static void RenderVisualEffectsType2(Visual_effect* const ve, Game_data* const gd){
+static void RenderBurnEffect(Visual_effect* const ve, Game_data* const gd){
 	Render_data* const rend_data = gd->rend_data_ptr;
 	SDL_FPoint rend_point;
 	Segment* seg = GetSegmentUnsafe(&gd->world, ve->position.x, ve->position.y);
@@ -231,31 +247,33 @@ static void RenderVisualEffectsType2(Visual_effect* const ve, Game_data* const g
 		return;
 	}
 	float size;
+	SDL_Texture* texture;
 	if(ve->ticks_left > ve->data.d0.start_ticks - 2U){
-		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), 0.625F, 0.5F, 1.0F);
+		texture = texture(tx_pixel);
+		SDL_SetTextureColorModFloat(texture, 0.625F, 0.5F, 1.0F);
 		size = (float)ve->data.d0.size * ((float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	}else if(ve->ticks_left >= ve->data.d0.start_ticks * 3U / 4U){
+		texture = texture(tx_pixel);
 		const float red = ((float)ve->ticks_left - ve->data.d0.start_ticks * 0.75F) / (ve->data.d0.start_ticks * 0.25F);
-		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), red, pow2(red) * 0.625F, 0.0F);
+		SDL_SetTextureColorModFloat(texture, red, pow2(red) * 0.625F, 0.0F);
 		size = (float)ve->data.d0.size * ((float)ve->ticks_left / (float)ve->data.d0.start_ticks);
 	}else{
 		if(ve->ticks_left == ve->data.d0.start_ticks * 3U / 4U - 1U && SDL_rand(2)){
 			ve->ticks_left = 1U;
 			return;
 		}
+		texture = texture(tx_pixel_blend);
 		const float level = 1.0F - (float)ve->ticks_left / (ve->data.d0.start_ticks * 0.75F);
-		SDL_SetTextureColorModFloat(texture(ve->data.d0.tx_num), level, level, level);
+		SDL_SetTextureColorModFloat(texture, level, level, level);
 		size = (float)ve->data.d0.size * (0.5F - (float)ve->ticks_left / (float)ve->data.d0.start_ticks * 0.5F);
-		SDL_SetTextureBlendMode(texture(ve->data.d0.tx_num), SDL_BLENDMODE_BLEND);
 	} 
-	SDL_SetTextureAlphaModFloat(texture(ve->data.d0.tx_num), (float)ve->ticks_left / (float)ve->data.d0.start_ticks * 0.75F);
-	SDL_RenderTexture(rend_data->renderer, texture(ve->data.d0.tx_num), NULL, &(SDL_FRect){
+	SDL_SetTextureAlphaModFloat(texture, (float)ve->ticks_left / (float)ve->data.d0.start_ticks * 0.75F);
+	SDL_RenderTexture(rend_data->renderer, texture, NULL, &(SDL_FRect){
 		rend_point.x - half(size),
 		rend_point.y - half(size),
 		size,
 		size
 	});
-	SDL_SetTextureBlendMode(texture(ve->data.d0.tx_num), SDL_BLENDMODE_ADD);
 }
 
 static void RenderVisualEffectsTimer(Visual_effect* const ve, Game_data* const gd){
@@ -461,6 +479,25 @@ static void RenderVisualEffectsBolt(Visual_effect* const ve, Game_data* const gd
 	SDL_srand(0ULL);
 }
 
+static void RenderFlashEffect(Visual_effect* const ve, Game_data* const gd){
+	Render_data* const rend_data = gd->rend_data_ptr;
+	SDL_FPoint rend_point;
+	Segment* seg = GetSegmentUnsafe(&gd->world, ve->position.x, ve->position.y);
+	if(!(seg && (seg->flags & segment_in_sight) && GetExtendedRenderPointFromTrue(rend_data, ve->position.x, ve->position.y, half(ve->data.d0.size), human(gd), &rend_point))){
+		return;
+	}
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
+	SDL_SetTextureAlphaModFloat(texture(tx_pixel), ve->ticks_left / (float)FLASH_TICKS);
+	SDL_SetTextureColorMod(texture(tx_pixel), ve->data.d2.r, ve->data.d2.g, ve->data.d2.b);
+	SDL_RenderTexture(rend_data->renderer, texture(tx_pixel), NULL, &(SDL_FRect){
+		rend_point.x - half(FLASH_SIZE),
+		rend_point.y - half(FLASH_SIZE),
+		FLASH_SIZE,
+		FLASH_SIZE
+	});
+	SDL_SetRenderTarget(rend_data->renderer, texture(tx_view));
+}
+
 static void RenderVisualEffects(Render_data* const rend_data, Game_data* const gd){
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_lighting));
 	SDL_SetRenderDrawColor(rend_data->renderer, BLACK_RGB, SDL_ALPHA_OPAQUE);
@@ -539,6 +576,18 @@ extern inline void AddBoltVisualEffect(Visual_effects* const ves, const SDL_FPoi
 	AddVisalEffect(ves, &ve);
 }
 
+extern inline void AddSpellVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position, const Uint8 r, const Uint8 g, const Uint8 b){
+	Visual_effect ve = {
+		*position,
+		FLASH_TICKS
+	};
+	ve.data.d2.r = r;
+	ve.data.d2.g = g;
+	ve.data.d2.b = b;
+	ve.type = visual_effect_t3;
+	AddVisalEffect(ves, &ve);
+}
+
 static void DrawBeings(Render_data* const rend_data){
 	SDL_Surface* surface = NULL;
 	SDL_Surface* surface1 = NULL;
@@ -602,7 +651,8 @@ static void DrawColouredThings(Render_data* const rend_data){
 	surface = SDL_CreateSurface(3, 3, SDL_PIXELFORMAT_RGBA8888);
 	SDL_WriteSurfacePixel(surface, 1, 1, 255U, 255U, 255U, 255U);
 	texture(tx_pixel) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	if(!texture(tx_pixel)){
+	texture(tx_pixel_blend) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!(texture(tx_pixel) && texture(tx_pixel_blend))){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 		exit(-1);
 	}
@@ -711,6 +761,11 @@ static inline void RenderBeing(Render_data* const rend_data, Game_data* const gd
 		};
 		SDL_RenderTextureRotated(rend_data->renderer, texture(tex_weapon), NULL, &rect_blade, (double)RadToDeg(weapon.direction + being_direction), &(SDL_FPoint)WEAPON_ROTATION_POINT, SDL_FLIP_NONE);
 		SDL_RenderTextureRotated(rend_data->renderer, texture(tex_body), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
+		const int max_hp = BeingHP(bg);
+		if(bg->hit_points < max_hp){
+			SDL_SetTextureAlphaModFloat(texture(tx_damage_test), 1.0F - bg->hit_points / (float)max_hp);
+			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_damage_test), NULL, &rect, (double)(being_direction), NULL, SDL_FLIP_NONE);
+		}
 		if(bg->status == being_stunned){
 			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &rect, (double)(rend_data->counter * TEXTURE_ROTA_SPEED), NULL, SDL_FLIP_NONE);
 		}
@@ -1156,6 +1211,7 @@ static void RenderDoors(Render_data* const rend_data, Game_data* const gd){
 		}
 	}
 	if(gd->flags & gamef_horde_attack){
+		SDL_SetTextureAlphaModFloat(texture(tx_creation_point), 1.0F);
 		for(unsigned int i = 0U; i < HORDE_ATTACK_POINTS; ++i){
 			const int ticks_left = (gd->effects + HasEffect(gd->effects, gd->effects_num, game_effect_horde_attack))->ticks_left;
 			if(ticks_left > HORDE_ATTACK_START_TICKS / 8 * 7){
@@ -1975,7 +2031,7 @@ static void RenderPortrait(Render_data* const rend_data, SDL_Texture* const tx_b
 	RenderFrame(rend_data, tx_backgr1, &portrait_frame_rect, FRAME_W);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(rend_data->renderer, &portrait_rect);
-	SDL_RenderTexture(rend_data->renderer, texture(tx_icon), NULL, &portrait_rect);
+	SDL_RenderTexture(rend_data->renderer, texture(tx_portrait), NULL, &portrait_rect);
 }
 
 static SDL_FPoint GetCharacterXPositionAndWidth(const int character_num){
@@ -2399,6 +2455,7 @@ void ToggleFullscreen(Render_data* const rend_data){
 		SDL_SetWindowFullscreen(rend_data->window, true);
 	}
 	SDL_SyncWindow(rend_data->window);
+	SDL_DestroyTexture(texture(tx_view));
 	ResetRenderData(rend_data);
 }
 
