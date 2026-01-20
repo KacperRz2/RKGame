@@ -51,7 +51,7 @@ static void UpdateBeingStunned(Being* const);
 static void UpdateBeingFly(Being* const, Game_data* const);
 static void UpdateBeingAttackAlly(Being* const b, Game_data* const gd, const float attack_range);
 
-static void MoveStrikingBeing(Being* const, float const, float const, float const, Game_data* const);
+static void MoveStrikingBeing(Being* const, float const, float const, float const, Game_data* const, float const);
 static void MoveBackStrikingBeing(Being* const, float const, float const, float const, Game_data* const);
 static void SetBeingPositionIfAllowed(Being* const, float const, float const, Game_data* const);
 

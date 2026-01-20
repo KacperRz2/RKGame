@@ -51,7 +51,7 @@ void CreatePlayer(Player* const pc, const float x, const float y){
 	pc->max_velocity = PLAYER_VELOCITY;
 	pc->dodge_velocity_multipl = DODGE_VELOCITY_MULTIP;
 	pc->hit_points = PC_HP;
-	pc->fatigue_points = (int)(PC_FATIGUE * 0.9F);
+	pc->fatigue_points = PC_FATIGUE;
 	pc->magic_points = PC_MAGIC;
 	pc->max_fatigue = PC_FATIGUE;
 	pc->max_h_p = PC_HP;
@@ -808,8 +808,10 @@ void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
 }
 
 void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
-    HealPlayer(pc, 1);
-	if(ticks_left % 64 == 0){
+	if(!(ticks_left % (HP_REGEN_TICKS / 128))){
+		HealPlayer(pc, PC_HP / 128);
+	}
+	if(!(ticks_left % 64)){
         AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
             pc->position.x + (SDL_randf() - 0.5F) * half(PLAYER_SIZE),
             pc->position.y + (SDL_randf() - 0.5F) * half(PLAYER_SIZE)

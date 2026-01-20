@@ -226,29 +226,9 @@ static int RareEventsService(Game_data* const gd){
 	return 0;
 }
 
-extern inline void AddBoxToArray(Boxes* const bxs, const float position_x, const float position_y){
-	unsigned int new_box_indx = bxs->num;
-	for(unsigned int i = 0U; i < bxs->num; ++i){
-		if(position_x < (bxs->array + i)->location.x){
-			new_box_indx = i;
-			FreeBoxPlaceInArray(bxs, i);
-			break;
-		}
-	}
-	++bxs->num;
-	(bxs->array + new_box_indx)->location.x = position_x;
-	(bxs->array + new_box_indx)->location.y = position_y;
-}
-
 extern inline void AddToBox(Box* const bx, const unsigned int slot, const int type, const unsigned int value){
 	(bx->elements + slot)->type = type;
 	(bx->elements + slot)->value = value;
-}
-
-static inline void FreeBoxPlaceInArray(Boxes* const bxs, const unsigned int indx){
-	for(unsigned int i = bxs->num; i > indx; --i){
-		*(bxs->array + i) = *(bxs->array + i - 1U);
-	}
 }
 
 static void DestroyBoxes(Boxes* const bxs){
@@ -301,7 +281,6 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 				++(*(human(gd)->scrolls + elem->value));
 				elem->type = box_clear;
 			}else{
-				SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "No space for scroll %u!", elem->value);
 				empty = false;
 			}
 		}else if(element_type == box_coins){
@@ -312,11 +291,11 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 			++gd->keys;
 			*(gd->keys_status + elem->value) = key_owned;
 			elem->type = box_clear;
+			AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &(gd->boxes.array + box_indx)->location, SPELL0_RGB);
 		}else if(element_type == box_map){
 			if(*(gd->keys_status + elem->value) == key_location_unknown){
 				*(gd->keys_status + elem->value) = key_location_known;
 			}
-			SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "Key location: x: %u, y: %u!", (gd->world.key_locations + elem->value)->x, (gd->world.key_locations + elem->value)->y);
 			elem->type = box_clear;
 		}else if(element_type == box_mp){
 			human(gd)->magic_points += (int)elem->value;
@@ -688,7 +667,8 @@ void HordeAttack(Game_data* const gd, const int ticks_left){
 		gd->flags &= ~(gamef_horde_attack);
 		gd->horde_data.ticks_from_attack = 0U;
 		gd->enemy_morale = MAX_MORALE;
-	}else if((ticks_left < (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / HORDE_BEING_CHANCE_FACTOR)) || (ticks_left >= (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand(ticks_left / HORDE_BEING_CHANCE_FACTOR))){
+	}else if((ticks_left < (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand((HORDE_ATTACK_START_TICKS - ticks_left) / HORDE_BEING_CHANCE_FACTOR))
+		 || (ticks_left >= (HORDE_ATTACK_START_TICKS / 2) && !SDL_rand(ticks_left / HORDE_BEING_CHANCE_FACTOR))){
 		const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
 		unsigned int point_indx1 = point_indx;
 		do{

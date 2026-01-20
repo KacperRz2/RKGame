@@ -333,7 +333,6 @@
 
 
 #define TEXTURE_FILES_NAMES         {\
-                                        "img1",\
                                         "img3",\
                                         "img4",\
                                         "img5",\

@@ -289,24 +289,6 @@ static inline void UpdateWarlockShoot(Being* const bg, Game_data* const gd, cons
     --bg->status_ticks_left;
 }
 
-static inline void MoveStrikingBeing(Being* const bg, float const distance, float const distance_x, float const distance_y, Game_data* const gd){
-    const float velocity_xy = distance / bg->velocity;
-    const float x_shift = distance_x / velocity_xy;
-    const float y_shift = distance_y / velocity_xy;
-    const float new_x = bg->position.x + x_shift;
-    const float new_y = bg->position.y + y_shift;
-    SetBeingPositionIfAllowed(bg, new_x, new_y, gd);
-}
-
-static inline void MoveBackStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, Game_data* const gd){
-    const float velocity_xy = distance / b->velocity;
-    const float x_shift = distance_x / velocity_xy;
-    const float y_shift = distance_y / velocity_xy;
-    const float new_x = b->position.x - x_shift;
-    const float new_y = b->position.y - y_shift;
-    SetBeingPositionIfAllowed(b, new_x, new_y, gd);
-}
-
 static inline void SetBeingPositionIfAllowed(Being* const bg, float const x, float const y, Game_data* const gd){
     Segment* new_segment = GetSegmentUnsafe(&gd->world, x, y);
     if(new_segment == NULL || new_segment->beings.num >= MAX_SEGM_BEINGS){
@@ -331,6 +313,24 @@ static inline void SetBeingPositionIfAllowed(Being* const bg, float const x, flo
     SetBeingPositionInNewSegment(bg, x, y, new_segment, gd->beings.array);
 }
 
+static inline void MoveStrikingBeing(Being* const bg, float const distance, float const distance_x, float const distance_y, Game_data* const gd, const float velocity){
+    const float velocity_xy = distance / velocity;
+    const float x_shift = distance_x / velocity_xy;
+    const float y_shift = distance_y / velocity_xy;
+    const float new_x = bg->position.x + x_shift;
+    const float new_y = bg->position.y + y_shift;
+    SetBeingPositionIfAllowed(bg, new_x, new_y, gd);
+}
+
+static inline void MoveBackStrikingBeing(Being* const b, float const distance, float const distance_x, float const distance_y, Game_data* const gd){
+    const float velocity_xy = distance / b->velocity;
+    const float x_shift = distance_x / velocity_xy;
+    const float y_shift = distance_y / velocity_xy;
+    const float new_x = b->position.x - x_shift;
+    const float new_y = b->position.y - y_shift;
+    SetBeingPositionIfAllowed(b, new_x, new_y, gd);
+}
+
 static inline void UpdateBeingStrikeAlly(Being* const bg, float const distance_squared, float const distance_x, float const distance_y, Game_data* const gd){
     if(bg->status_ticks_left == 0 || bg->target.being->status == being_dead){
         HaltBeing(bg, BEING_RELOAD_TICKS);
@@ -338,7 +338,7 @@ static inline void UpdateBeingStrikeAlly(Being* const bg, float const distance_s
     }
     if(distance_squared >= pow2(BEING_HALT_DISTANCE)){
         const float distance = SDL_sqrtf(distance_squared);
-        MoveStrikingBeing(bg, distance, distance_x, distance_y, gd);
+        MoveStrikingBeing(bg, distance, distance_x, distance_y, gd, bg->velocity);
     }else if(distance_squared < pow2(BEING_MIN_DISTANCE)){
         const float distance = SDL_sqrtf(distance_squared);
         MoveBackStrikingBeing(bg, distance, distance_x, distance_y, gd);
@@ -362,10 +362,10 @@ static inline void UpdateBeingStrike(Being* const bg, Player* const pc, float co
         StartBeingFollow(bg, BEING_RELOAD_TICKS, distance_squared, distance_x, distance_y);
         return;
     }
-    if(distance_squared >= pow2(BEING_HALT_DISTANCE)){
+    if(distance_squared > pow2(half(BeingSize(bg) + PLAYER_SIZE) + 2.0F)){
         const float distance = SDL_sqrtf(distance_squared);
-        MoveStrikingBeing(bg, distance, distance_x, distance_y, gd);
-    }else if(distance_squared < pow2(BEING_MIN_DISTANCE)){
+        MoveStrikingBeing(bg, distance, distance_x, distance_y, gd, (bg->status_ticks_left > BEING_ATTACK_STEPS * 2 ? bg->velocity : bg->velocity * BEING_CHARGE_VELOCITY_MULT));
+    }else if(distance_squared < pow2(half(BeingSize(bg) + PLAYER_SIZE) + 1.0F)){
         const float distance = SDL_sqrtf(distance_squared);
         MoveBackStrikingBeing(bg, distance, distance_x, distance_y, gd);
     }
@@ -579,15 +579,22 @@ extern inline void HaltBeing(Being* const bg, const int time){
     bg->status_ticks_left = -time;
 }
 
-extern inline bool IsAlly(const Being* const b){
-    return TypeIsAlly(b->type_id);
-}
-
 static inline bool TypeIsAlly(const Uint8 type_id){
     if(type_id > being_warlock){
         return true;
     }
     return false;
+}
+
+extern inline bool IsAlly(const Being* const b){
+    return TypeIsAlly(b->type_id);
+}
+
+static inline void MoveBeingToVoid(Being* const bg, Game_data* const gd){
+    RemoveBeingFromSegment(bg, &bg->segment->beings, gd->beings.array);
+    EndAllBeingEffects(gd, bg);
+    bg->status = being_in_void;
+    bg->position = ZERO_POINT_F;
 }
 
 static inline int GetMoraleDrop(const Uint8 type){
@@ -596,8 +603,9 @@ static inline int GetMoraleDrop(const Uint8 type){
 }
 
 static inline void KillBeing(Being* const bg, Game_data* const gd, const unsigned int iter){
-    const int morale_drop = GetMoraleDrop(bg->type_id);
-    gd->enemy_morale = gd->enemy_morale + MAX_MORALE < morale_drop ? -MAX_MORALE : gd->enemy_morale - morale_drop;
+    if(gd->enemy_morale > 0){
+        gd->enemy_morale -= GetMoraleDrop(bg->type_id);
+    }
     AddDeadVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
     *(gd->beings.indices + iter) = *(gd->beings.indices + --gd->beings.num);
     *(gd->beings.indices + gd->beings.num) = bg->main_indx;
@@ -610,14 +618,7 @@ static inline bool IsDeadBeing(Being* const bg, Game_data* const gd, const unsig
     }
     return false;
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// static void test(Being* bg, Game_data* gd){ 
-//     if((!IsAlly(bg) && bg->status != being_in_void && bg->status != being_dead && (gd->beings.array + *(bg->segment->beings.beings_ind + bg->indx) != bg || bg->indx >= bg->segment->beings.num || GetSegmentSafe(&gd->world, bg->position.x, bg->position.y) != bg->segment)) || (bg->status == being_dead && bg->hit_points > 0)){
-//         SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "ERROR!!!");
-//         exit(-2);
-//     }
-// }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void UpdateBeings(Game_data* const gd){
     if((gd->flags & gamef_horde_attack)){
         bool being_from_void = false;
@@ -652,7 +653,6 @@ void UpdateBeings(Game_data* const gd){
                     continue;
                 }
                 (being_types + bg->type_id)->update(bg, gd);
-                // test(bg, gd);/////////////////////////
             }
         }
         return;
@@ -667,17 +667,20 @@ void UpdateBeings(Game_data* const gd){
                 }
                 if(IsAlly(bg) || bg->status == being_walk || bg->status == being_fly || bg->status == being_stunned || (bg->status_ticks_left < 0 && bg->status == being_idle) || bg->target_last_seen_at.x == 0.0F){
                     (being_types + bg->type_id)->update(bg, gd);
-                    // test(bg, gd);/////////////////////////////////
                 }else if(bg->status != being_in_void){
                     BeingFlee(bg, gd);
                 }
+            }else if(!IsAlly(bg) && (bg->target_last_seen_at.x != 0.0F || IsInUncoveredBigSeg(gd->world.plan, GetBigSegCoordinate(bg->position.x), GetBigSegCoordinate(bg->position.y)))){
+                MoveBeingToVoid(bg, gd);
             }
         }  
         if(!(gd->flags & gamef_morale_break)){
             gd->flags |= gamef_morale_break;
-            gd->enemy_morale -= MORALE_BREAK_DROP;
+            gd->enemy_morale = MIN_MORALE;
         }
-        ++gd->enemy_morale;
+        if(++gd->enemy_morale == 1){
+            gd->enemy_morale = NEW_SPIRIT_MORALE;
+        }
         return;
     }
     if(gd->flags & gamef_morale_break){
@@ -691,7 +694,6 @@ void UpdateBeings(Game_data* const gd){
                 continue;
             }
             (being_types + bg->type_id)->update(bg, gd);
-            // test(bg, gd);/////////////////////////////////
         }
     }
     if(gd->enemy_morale < MAX_MORALE){
@@ -707,7 +709,6 @@ void UpdateBeingsEffects(Game_data* const gd){
             continue;
         }
         UpdateBeingEffects(gd, bg);
-        // test(bg, gd);/////////////////////////////////
     }
 }
 
@@ -776,13 +777,13 @@ static inline void UpdateBeingFly(Being* const bg, Game_data* const gd){
     --bg->status_ticks_left;
 }
 
-static inline void FindTargetForBeing(Being* const b, Players* const plys){
-    b->target.player = plys->array;
-    float distance_squared0 = pow2(b->position.x - plys->array->position.x) + pow2(b->position.y - plys->array->position.y);
+static inline void FindTargetForBeing(Being* const bg, Players* const plys){
+    bg->target.player = plys->array;
+    float distance_squared0 = pow2(bg->position.x - plys->array->position.x) + pow2(bg->position.y - plys->array->position.y);
     for(unsigned int i = 1U; i < plys->num; ++i){
-        const float distance_squared1 = pow2(b->position.x - (plys->array + i)->position.x) + pow2(b->position.y - (plys->array + i)->position.y);
+        const float distance_squared1 = pow2(bg->position.x - (plys->array + i)->position.x) + pow2(bg->position.y - (plys->array + i)->position.y);
         if(distance_squared0 > distance_squared1){
-            b->target.player = plys->array + i;
+            bg->target.player = plys->array + i;
             distance_squared0 = distance_squared1;
         }
     }
@@ -950,7 +951,7 @@ static inline bool AllyNear(Being* const bg, Game_data* const gd){
     return false;
 }
 
-static inline Being* GetOtherBeingNearPlayer(Being* const bg, Game_data* const gd){//
+static inline Being* GetOtherBeingNearPlayer(Being* const bg, Game_data* const gd){
     if(bg->target.player->segment->beings.num > 0U){
         Being* target = (gd->beings.array + *(bg->target.player->segment->beings.beings_ind));
         if(target != bg){
@@ -1087,7 +1088,8 @@ static inline void BeingFlee(Being* const bg, Game_data* const gd){
     const float velocity_xy = distance / bg->velocity;
     StartBeingWalk(bg, (int)(BEING_FLEE_WALK_TICKS * (SDL_randf() * 1.5F + 0.5F)), distance_x / velocity_xy, distance_y / velocity_xy);
 }
-static inline void MoveBeingToVoid(Being* const bg, Game_data* const gd){
+
+static inline void MoveSegmentlessBeingToVoid(Being* const bg, Game_data* const gd){
     EndAllBeingEffects(gd, bg);
     bg->status = being_in_void;
     bg->position = ZERO_POINT_F;
@@ -1217,7 +1219,6 @@ void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
 
 void OpeningPortal(Game_data* const gd, Being* const bg, const int ticks_left){
     if(ticks_left < 2){
-        RemoveBeingFromSegment(bg, &bg->segment->beings, gd->beings.array);
         MoveBeingToVoid(bg, gd);
     }
 }
@@ -1290,11 +1291,10 @@ void AllyLifetime(Game_data* const gd, Being* const bg, const int ticks_left){
         if(hit_points < bg->hit_points){
             bg->hit_points = hit_points;
         }
-        MoveBeingToVoid(bg, gd);
+        MoveSegmentlessBeingToVoid(bg, gd);
     }
 }
 
-// void BeingLastingEffectVoid(Game_data* const gd, Being* const bg, const int ticks_left){}
 void BeingLastingEffectVoidEnd(Game_data* const gd, Being* const bg){}
 //---------------------------------------------------------------------------------------------------------------
 #define BeingFollowBeingCode    if(bg->status == being_follow_being){\

@@ -183,7 +183,6 @@ enum character{
 };
 
 enum texture_num{
-    tx_icon,
     tx_viewfinder,
     tx_pc_blade,
     tx_icons,

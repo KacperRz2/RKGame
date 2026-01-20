@@ -778,48 +778,41 @@ extern inline bool SegmentInSight(const SDL_FPoint* const from, const SDL_FPoint
 }
 
 static void FillBoxes(Game_data* const gd){
-	gd->needed_keys = 0U;
-	Key_location key_locations[MAX_KEYS];
-	do{
-		gd->needed_keys = 0U;
-		unsigned int boxes_with_map[MAX_MAPS];
-		unsigned int maps_num = 0U;
-		for(unsigned int i = 0U; i < BOXES_NUM; ++i){
-			Box* bx = (gd->boxes.array + i);
-			unsigned int slot = 0U;
-			if(SDL_rand(BOXES_NUM) < 7 && gd->needed_keys < MAX_KEYS){
-				AddToBox(bx, slot++, box_key, gd->needed_keys);
-				*(key_locations + gd->needed_keys++) = (Key_location){
-					(Uint8)(bx->location.x / WORLD_SIZE * 255.0F),
-					(Uint8)(bx->location.y / WORLD_SIZE * 255.0F)
-				};
-			}else if(SDL_rand(BOXES_NUM) < 14 && maps_num < MAX_MAPS){
-				AddToBox(bx, slot++, box_map, 0U);
-				*(boxes_with_map + maps_num++) = i;
-			}
-			AddToBox(bx, slot++, box_coins, SDL_rand(BOX_MAX_COINS));
-			for(unsigned int j = slot; j < BOX_SLOTS - 1U; ++j){
-				if(SDL_rand(3)){
-					AddToBox(bx, slot++, box_scroll, GetRandomScroll());
-				}
-			}
-			AddToBox(bx, slot, box_mp, SDL_rand(BOX_MAX_MP));
-		}
-		unsigned int keys_maps = 0b0000000000000000;
-		for(unsigned int i = 0U; i < maps_num; ++i){
-			unsigned int key = SDL_rand(gd->needed_keys);
-			if(keys_maps != (1U << gd->needed_keys) - 1U){
-				while((1 << key) & keys_maps){
-					key = SDL_rand(gd->needed_keys);
-				}
-				keys_maps |= (1 << key);
-			}
-			(gd->boxes.array + *(boxes_with_map + i))->elements->value = key;
-		}
-	}while(gd->needed_keys < KEYS_NUM);
+	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
+		(gd->boxes.array + i)->elements->type = box_mp;
+	}
+	gd->needed_keys = SDL_rand(MAX_KEYS - KEYS_NUM + 1) + KEYS_NUM;
 	gd->world.key_locations = (Key_location*)SDL_malloc(sizeof(Key_location) * gd->needed_keys);
+	Box* bx;
 	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
-		*(gd->world.key_locations + i) = *(key_locations + i);
+		do{
+			bx = (gd->boxes.array + SDL_rand(gd->boxes.num));
+		}while(bx->elements->type == box_key);
+		AddToBox(bx, 0U, box_key, i);
+		*(gd->world.key_locations + i) = (Key_location){
+			(Uint8)(bx->location.x / WORLD_SIZE * 255.0F),
+			(Uint8)(bx->location.y / WORLD_SIZE * 255.0F)
+		};
+		for(unsigned int j = 0U; j < 2U; ++j){
+			do{
+				bx = (gd->boxes.array + SDL_rand(gd->boxes.num));
+			}while(bx->elements->type == box_key || bx->elements->type == box_map);
+			AddToBox(bx, 0U, box_map, i);
+		}
+	}
+	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
+		bx = (gd->boxes.array + i);
+		unsigned int slot = 0U;
+		if(bx->elements->type == box_key || bx->elements->type == box_map){
+			++slot;
+		}
+		AddToBox(bx, slot++, box_coins, SDL_rand(BOX_MAX_COINS));
+		for(unsigned int j = slot; j < BOX_SLOTS - 1U; ++j){
+			if(SDL_rand(3)){
+				AddToBox(bx, slot++, box_scroll, GetRandomScroll());
+			}
+		}
+		AddToBox(bx, slot, box_mp, SDL_rand(BOX_MAX_MP));
 	}
 }
 

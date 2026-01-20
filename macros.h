@@ -8,7 +8,7 @@
 #define half(x)                     ((x) * (0.5F))
 #define human(game_data_ptr)        (game_data_ptr->champions.array + game_data_ptr->human_indx)
 #define BIG_SEGMENTS_X              29U
-#define BIG_SEGMENT_SEGMENTS_X      8U
+#define BIG_SEGMENT_SEGMENTS_X      10U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X)
 #define SEGMENTS_Y			        SEGMENTS_X
 #define SEGMENT_SIZE		        128.0F
@@ -27,23 +27,21 @@
 #define TICK_TIME_MS		        (TICK_TIME / 1000000ULL)
 #define ACCELERATION		        6.25e-2F
 #define PLAYER_VELOCITY		        0x0.Ap+0F
-#define RUN_MULTIPL		            2.0F
+#define RUN_MULTIPL		            2.5F
 #define BLOCK_VELOCITY_MULTIP		0.5F
 #define DODGE_VELOCITY_MULTIP		(PC_DODGE_VELOCITY / PLAYER_VELOCITY)
-#define ROTATION_SPEED		        3.90625e-3F
+#define ROTATION_SPEED		        0xA.0p-11F//0x8.0p-11F
 #define FRAME_TIME			        0x400000ULL
 #define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
-#define MAX_PROJECTILES_NUM	        0x4000U
+#define MAX_PROJECTILES_NUM	        0x1000U
 #define MAX_SEGM_BEINGS		        0x10U
-#define MAX_BEINGS_NUM		        0x4000U
+#define MAX_BEINGS_NUM		        0x3000U
 #define MAX_VISUAL_EFFECTS_NUM		0x800U
-#define MAX_PLAYERS_NUM		        0x4U
+#define MAX_PLAYERS_NUM		        0x1U
 #define START_PLAYERS_NUM		    0x1U
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BEING_HIT_CIRCLE_DIAMET     24.0F
-#define RANGE_SEGMENTS              ((unsigned int)(7000.0F / SEGMENT_SIZE))
-#define PROJECTILE_RAN_SEG          ((unsigned int)(2000.0F / SEGMENT_SIZE))
 #define MAX_HITS                    12U
 #define BLADE_PENETRATION           MAX_HITS
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
@@ -68,15 +66,15 @@
 #define BEING_STUN_AFTER_FLY_DURAT  512
 #define PROJECTILE_VELOCITY         4.0F
 #define FIRE_PROJECTILE_VELOCITY    2.0F
-#define BEING_HALT_DISTANCE         70.0F
-#define BEING_MIN_DISTANCE          64.0F
+#define BEING_HALT_DISTANCE         (BEING_MIN_DISTANCE + 2.0F)
+#define BEING_MIN_DISTANCE          ((float)MAX_BEING_SIZE)
 #define CHECK_COLLISION_DISTANCE    768.0F
 #define RARE_UPDATE_INTERVAL        1U
 #define BLADE_BASE_DIRECTION_PC     (SDL_PI_F * 0.45F)
-#define PC_HP                       0x800
+#define PC_HP                       0x100
 #define PC_FATIGUE                  0x200
-#define PC_MAGIC                    0x100
-#define PC_M_MAGIC                  0x10000000
+#define PC_MAGIC                    20
+// #define PC_M_MAGIC                  0x10000000
 #define MOVING_BACK_VELO_MODI       0.93F
 #define PC_DODGE_FATIG              100
 #define PC_DODGE_FATIG_BLOCK_TIME   50
@@ -106,29 +104,24 @@
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
 #define BLADE_HANDLER_POSITION      0.85F
 #define PC_SHOOT_RELOAD             192
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x2U)
-#define TEST_BEING_VELOCITY         (PLAYER_VELOCITY * 2.5F)
-#define TEST_BEING_DMG_CLOSE        2
-#define TEST_BEING_DMG_FAR          1
+#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x3U)
 #define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
 #define SHOP_SIZE                   128.0F
 #define SCROLL_SIZE                 32.0F
 #define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
 #define BOX_SIZE                    32.0F
-#define PC_START_COINS              123
+#define PC_START_COINS              3
 #define KEYS_NUM                    7U
-#define BOXES_NUM                   0x200U
+#define BOXES_NUM                   0x180U
 #define BOX_SLOTS                   8
 #define BLOCK_COST                  32
 #define PC_BLOCK_FATIG_BLOCK_TIME   64
 #define PC_CAST_FATIG_BLOCK_TIME    64
-#define DEFAULT_FLY_VELOCITY        0.5F
 #define BASE_FLY_VELOCITY           0x3.0p-4F
 #define BASE_FLY_TICKS              10
 #define QUICK_SCROLLS               9U
 #define SCROLLS_NUM                 (scroll_empty + 1U)
 #define OPTIONS_NUM                 5U
-#define BEING_TYPES_NUM             2U
 #define MAX_BEING_EFFECTS           8
 #define MAX_PC_EFFECTS              8
 #define MAX_GAME_EFFECTS            8
@@ -137,25 +130,23 @@
 #define ICONS_IN_VIEWF_ROW          7
 #define ICONS_IN_VIEWF_COL          (SCROLLS_NUM / ICONS_IN_VIEWF_ROW)
 #define BOX_MAX_COINS               256U
-#define BOX_MAX_MP                  32U
+#define BOX_MAX_MP                  16U
 #define MAX_KEYS                    16U
-#define MAX_MAPS                    32U
 #define SMALL_PLAN_SIZE             (BIG_SEGMENTS_X / 4)
 #define BIG_SEGMENT_SIZE            (SEGMENT_SIZE * BIG_SEGMENT_SEGMENTS_X)
 #define HUGE_SEGMENT_SIZE           ((WORLD_SIZE - SEGMENT_SIZE * 2.0F) / (float)HUGE_SEGMENTS_X)
 #define HORDE_ATTACK_START_TICKS    0x800
 #define HORDE_ATTACK_POINTS         8
 #define HUGE_SEGMENTS_X             7
-#define MAX_POPULATION_NUM          0x20
 #define COMMANDER_EFFECT_TICKS      1024
 #define HP_REGEN_TICKS              1024
 #define FP_REGEN_TICKS              0x1000
 #define WEAK_EFFECT_TICKS           0x1000
-#define SLOW_EFFECT_TICKS           2048
+#define SLOW_EFFECT_TICKS           0x800
 #define BURN_TICKS                  0x1000
 #define BOLT_CHAIN_TICKS            0x100U
 #define OPENING_PORTAL_TICKS        128
-#define ATTENTION_RECT_SIZE         (BIG_SEGMENT_SIZE * 3.0F)
+#define ATTENTION_RECT_SIZE         (SEGMENT_SIZE * 32.0F)
 #define SPIRAL_STEPS(range)         (pow2(range * 2 + 1))
 #define ALLY_ATTENTION_RANGE        3U
 #define BEING_ALLY_DETEC_RANGE      1U
@@ -173,15 +164,17 @@
 #define FIRST_SHOP_ROW              2U
 #define SHOP_POSITIONS              (SHOP_ROWS * SHOP_COLS)
 #define MAX_MORALE                  0x4000
-#define MORALE_BREAK_DROP           0x2000
+#define MIN_MORALE                  (-0x1000)
+#define NEW_SPIRIT_MORALE           0x1000
 #define SELL_DIVIDER                10
 #define DODGE_EFFECT_TICKS          64
 #define MAX_NOT_NULL_SEGS           (11U * 37U * pow2(BIG_SEGMENT_SEGMENTS_X))
 #define PC_PUSH_POWER               8.0F
 #define SCROLL_PUSH_POWER           12.0F
-#define HORDE_BEING_CHANCE_FACTOR   64//16
+#define HORDE_BEING_CHANCE_FACTOR   32
 #define MAX_ONE_TYPE_ITEMS          255U
 #define ALLY_LIFETIME               0x2000
+#define BEING_CHARGE_VELOCITY_MULT  0x1.8p+0F
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -204,26 +197,26 @@
 #define SPELL0_RGB                  127U, 127U, 63U
 #define SPELL1_RGB                  127U, 15U, 127U
 #define SCR_COSTS                   {\
-                                        1U,\
-                                        1U,\
-                                        1U,\
-                                        1U,\
-                                        1U,\
-                                        1U,\
-                                        1U,\
-                                        1U,\
-                                        1U,\
+                                        5U,\
+                                        5U,\
+                                        7U,\
+                                        5U,\
+                                        7U,\
+                                        12U,\
+                                        10U,\
+                                        15U,\
+                                        5U,\
                                         0U\
                                     }
 #define ITEMS_PRICES                {\
                                         100,\
                                         100,\
+                                        140,\
                                         100,\
-                                        100,\
-                                        100,\
-                                        100,\
-                                        100,\
-                                        100,\
+                                        140,\
+                                        240,\
+                                        200,\
+                                        300,\
                                         100,\
                                         0,\
                                         20,\
@@ -273,11 +266,12 @@
                                         PlayerWeakness,\
                                         PlayerDodge\
                                     }
+#define MAX_BEING_SIZE              48
 #define BEING_TYPES                 {\
                                         {\
                                             32,\
                                             PLAYER_VELOCITY * 2.5F,\
-                                            500,\
+                                            100,\
                                             {0.0F, 1.0F, 1.0F, 1.125F},\
                                             {10.0F, 0.0F, 0.0F, 0.25F},\
                                             UpdateBeingOrdinary\
@@ -307,7 +301,7 @@
                                             UpdateBeingOrdinary\
                                         },\
                                         {\
-                                            48,\
+                                            MAX_BEING_SIZE,\
                                             PLAYER_VELOCITY * 1.375F,\
                                             2000,\
                                             {15.0F, 0.5F, 0.5F, 0.875F},\
@@ -339,7 +333,7 @@
                                             UpdateAlly0\
                                         }\
                                     }
-#define PC_BLADE_DMG                3600.0F
+#define PC_BLADE_DMG                3200.0F
 #define PC_BLADE_MAGIC              0.0F
 #define PC_BLADE_PENETR             1.0F
 #define PC_RANGE_DMG                10.0F
@@ -349,8 +343,8 @@
 #define PC_RANGE_IMPACT             {PC_RANGE_DMG, PC_RANGE_PENETR, PC_RANGE_MAGIC, 1.0F}
 #define PC_FIRE_PROJECTILE_IMPACT   {16.0F, PC_RANGE_PENETR, 700.0F, 1.0F}
 #define PC_BLADE_PENETRATIONS       {0.0F, 0.0F, 0.5F}
-#define PC_ARMOUR                   {125.0F, 0.875F, 1.0F, 0.5F}//absorption, multipl, magic_multipl, unstability
-#define PC_MAX_ARMOUR               {500.0F, 0.5F, 0.5F, 0.5F}
+#define PC_ARMOUR                   {500.0F, 0.5F, 0.5F, 0.5F}//absorption, multipl, magic_multipl, unstability
+#define PC_MAX_ARMOUR               PC_ARMOUR
 #define PC_MAX_ARMOUR_II_ABS        750.0F
 #define PC_MAX_ARMOUR_II            {PC_MAX_ARMOUR_II_ABS, 0.25F, 0.25F, 0.25F}
 #define PROJECTILES_UPDATE_FUNC     {\
@@ -445,7 +439,7 @@
                                     4, 5\
                                 }
 #define HOSTILES_MORALE_COSTS   {\
-                                    0x40,\
+                                    0x20,\
                                     0x400,\
                                     0x400,\
                                     0x800,\

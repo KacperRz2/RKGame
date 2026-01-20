@@ -69,7 +69,7 @@ static void DrawShopIcons(Render_data* const rend_data){
 	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
 	dst_rect.x += ICON_TX_SIZE_INT;
 	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
-	dst_rect.x += char_x_and_w.y / 2 - ICON_TX_SIZE_INT;
+	dst_rect.x += char_x_and_w.y / 2;
 	SDL_BlitSurfaceScaled(surface, &src_rect, base_surface, &dst_rect, SDL_SCALEMODE_LINEAR);
 
 	char_x_and_w = GetCharacterXPositionAndWidth(s9);
@@ -887,24 +887,24 @@ void RenderTextInfo(Render_data* const rend_data, const Uint64 tps, Game_data* c
 	SDL_RenderDebugTextFormat(rend, x, 190, "Segment beings: %u", human(gd)->segment->beings.num);
 }
 
-static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, const Game_data* const gd){
+static void RenderPlayerStatus(Render_data* const rend_data, Player* const pc, const Game_data* const gd){
 	const float BAR_H = BAR_H_CALC;
 	const SDL_FRect rect_armo = {
 		BAR_X,
 		AREAA_Y + BAR_H + FRAME_W * 2.0F,
-		((1.0F - p->armour.multipl) / (1.0F - p->max_armour.multipl)) * BAR_W,
+		((1.0F - pc->armour.multipl) / (1.0F - pc->max_armour.multipl)) * BAR_W,
 		SMALL_BAR_H
 	};
 	const SDL_FRect rect_marmo = {
 		BAR_X,
 		rect_armo.y + SMALL_BAR_H,
-		((1.0F - p->armour.magic_multipl) / (1.0F - p->max_armour.magic_multipl)) * BAR_W,
+		((1.0F - pc->armour.magic_multipl) / (1.0F - pc->max_armour.magic_multipl)) * BAR_W,
 		SMALL_BAR_H
 	};
 	const SDL_FRect rectHP = {
 		BAR_X,
 		rect_armo.y + BAR_H * 2.0F + FRAME_W * 5.0F,
-		(float)p->hit_points / (float)p->max_h_p * BAR_W,
+		(float)pc->hit_points / (float)pc->max_h_p * BAR_W,
 		BAR_H
 	};
 	const SDL_FPoint MP_position = {
@@ -914,7 +914,7 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, co
 	const SDL_FRect rectFP = {
 		BAR_X,
 		rectHP.y + BAR_H * 2.0F + FRAME_W * 5.0F,
-		(float)p->fatigue_points / (float)p->max_fatigue * BAR_W,
+		(float)pc->fatigue_points / (float)pc->max_fatigue * BAR_W,
 		BAR_H
 	};
 	SDL_SetTextureColorMod(texture(tx_bar), 128U, 128U, 128U);
@@ -926,13 +926,13 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, co
 	SDL_SetTextureColorMod(texture(tx_bar), 0U, 255U, 0U);
 	SDL_RenderTexture(rend_data->renderer, texture(tx_bar), NULL, &rectFP);
 	SDL_SetTextureColorMod(texture(tx_chars), MP_TEXT_RGB);
-	RenderIntCentered(rend_data, MP_position.x, MP_position.y, MP_BAR_H, p->magic_points, BAR_W);
+	RenderIntCentered(rend_data, MP_position.x, MP_position.y, MP_BAR_H, pc->magic_points, BAR_W);
 	SDL_SetTextureColorMod(texture(tx_chars), MP_COST_TEXT_RGB);
-	RenderIntCentered(rend_data, MP_position.x, MP_position.y + MP_BAR_H, MP_BAR_H, ScrollCost(p->selected_scroll), BAR_W);
+	RenderIntCentered(rend_data, MP_position.x, MP_position.y + MP_BAR_H, MP_BAR_H, ScrollCost(pc->selected_scroll), BAR_W);
 	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	RenderIntCentered(rend_data, KEYS_NUM_X, KEYS_NUM_Y, BAR_H, gd->keys, BAR_W - BAR_H - FRAME_W * 2.0F);
-	RenderIntCentered(rend_data, KEYS_NUM_X, COINS_NUM_Y, BAR_H, p->coins, BAR_W - BAR_H - FRAME_W * 2.0F);
-	if(p->blade.charge != PC_BLADE_CHARGE_BASE){
+	RenderIntCentered(rend_data, KEYS_NUM_X, COINS_NUM_Y, BAR_H, pc->coins, BAR_W - BAR_H - FRAME_W * 2.0F);
+	if(pc->blade.charge != PC_BLADE_CHARGE_BASE){
 		const SDL_FRect rect_cha = {
 			half(rend_data->window_w) - half(PLAYER_SIZE),
 			PLAYER_REND_Y + PLAYER_SIZE,
@@ -942,11 +942,11 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const p, co
 		const SDL_FRect rect_chb = {
 			half(rend_data->window_w) - (half(PLAYER_SIZE) - 1.0F),
 			PLAYER_REND_Y + PLAYER_SIZE + 1.0F,
-			(1.0F - p->blade.charge) * (rect_cha.w - 2.0F),
+			(1.0F - pc->blade.charge) * (rect_cha.w - 2.0F),
 			8.0F
 		};
-		const unsigned int red = (unsigned int)((1.0F - p->blade.charge) * 255.0F);
-		const unsigned int green = (unsigned int)(p->blade.charge * 255.0F);
+		const unsigned int red = (unsigned int)((1.0F - pc->blade.charge) * 255.0F);
+		const unsigned int green = (unsigned int)(pc->blade.charge * 255.0F);
 		SDL_SetRenderDrawColor(rend_data->renderer, red / 4, green / 4, 0U, 255U);
 		SDL_RenderRect(rend_data->renderer, &rect_cha);
 		SDL_SetTextureColorMod(texture(tx_bar), red, green, 0U);
@@ -2372,36 +2372,6 @@ void RenderShop(Render_data* const rend_data, const Player* const pc, const Shop
 		width,
 		width
 	});
-	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 0.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
-	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
-	// 	height * FIRST_SHOP_ROW,
-	// 	width,
-	// 	width
-	// });
-	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 3.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
-	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
-	// 	height * FIRST_SHOP_ROW,
-	// 	width,
-	// 	width
-	// });
-	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 4.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
-	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS + 1.0F)),
-	// 	height * FIRST_SHOP_ROW,
-	// 	width,
-	// 	width
-	// });
-	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 5.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
-	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS - 1.0F)),
-	// 	height * (FIRST_SHOP_ROW + 4.0F),
-	// 	width,
-	// 	width
-	// });
-	// SDL_RenderTexture(rend_data->renderer, texture(tx_shop_icons), &(SDL_FRect){ICON_TX_SIZE * 6.0F, 0.0F, ICON_TX_SIZE, ICON_TX_SIZE}, &(SDL_FRect){
-	// 	width * (0.5F + (SHOP_COLS - SHOP_SIDE_COLS)),
-	// 	height * (FIRST_SHOP_ROW + 4.0F),
-	// 	width,
-	// 	width
-	// });
 	SDL_SetTextureColorMod(texture(tx_chars), MP_TEXT_RGB);
 	RenderIntCentered(rend_data, width * 1.5F, height * (FIRST_SHOP_ROW - 1.0F) + width * 0.25F, half(width), pc->magic_points, width * 2.0F);
 	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
