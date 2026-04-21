@@ -490,30 +490,6 @@ void CreateWorld(Game_data* const gd){
 	CreateWorldSegments(world, world_plan_base);
 	PlaceShops(&gd->world);
 	SDL_srand(0ULL);
-
-	const int scale = 3;
-	SDL_Surface* surface1 = SDL_CreateSurface(SEGMENTS_X, SEGMENTS_X, SDL_PIXELFORMAT_RGBA8888);
-	const int factor = 8;
-	SDL_Surface* surface2 = SDL_CreateSurface(SEGMENTS_X / factor, SEGMENTS_X / factor, SDL_PIXELFORMAT_RGBA8888);
-	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
-		for(unsigned int r = 0U; r < SEGMENTS_X; ++r){
-			const float colour = GetSegmentByIndxUnsafe(&gd->world, c, r) == NULL ? 0 : 1;
-			SDL_WriteSurfacePixelFloat(surface1, c, r, colour, colour, colour, SDL_ALPHA_OPAQUE_FLOAT);
-		}
-	}
-	SDL_WriteSurfacePixelFloat(surface2, gd->world.portalA.x / WORLD_SIZE * (SEGMENTS_X / factor), gd->world.portalA.y / WORLD_SIZE * (SEGMENTS_X / factor), 0, 1, 0, .5);
-	SDL_WriteSurfacePixelFloat(surface2, gd->world.portalB.x / WORLD_SIZE * (SEGMENTS_X / factor), gd->world.portalB.y / WORLD_SIZE * (SEGMENTS_X / factor), 0, 1, 0, .5);
-	SDL_WriteSurfacePixelFloat(surface2, gd->world.door.x / WORLD_SIZE * (SEGMENTS_X / factor), gd->world.door.y / WORLD_SIZE * (SEGMENTS_X / factor), 1, 0, 0, .5);
-	for(unsigned int i = 0U; i < SHOPS_NUM; ++i){
-		SDL_WriteSurfacePixelFloat(surface2, (gd->world.shops + i)->location.x / WORLD_SIZE * (SEGMENTS_X / factor), (gd->world.shops + i)->location.y / WORLD_SIZE * (SEGMENTS_X / factor), 0, 0, 1, .5);
-	}
-	SDL_BlitSurfaceScaled(surface2, NULL, surface1, NULL, SDL_SCALEMODE_PIXELART);
-	SDL_Surface* surface = SDL_ScaleSurface(surface1, SEGMENTS_X * scale, SEGMENTS_X * scale, SDL_SCALEMODE_NEAREST);
-	SDL_SavePNG(surface, "FULL_MAP.png");
-	SDL_DestroySurface(surface1);
-	SDL_DestroySurface(surface2);
-	SDL_DestroySurface(surface);
-
 }
 
 int SDLCALL compareBoxes(const void* a, const void* b){
