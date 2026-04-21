@@ -1,7 +1,7 @@
 #ifndef GAME_H_
 #define GAME_H_
 
-static void PopulateBigSeg(Game_data* const, const unsigned int, const unsigned int);
+static void NoticeBigSeg(Game_data* const, const unsigned int, const unsigned int);
 static void PlayerInUncoveredBigSeg(Game_data* const);
 int MainMenuLoop(SDL_Event* const, Render_data* const);
 void GameLoop(Game_data* const);
@@ -31,7 +31,7 @@ static void AddGameEffect(Game_data* const, const Lasting_effect);
 static void RemoveGameEffect(Game_data* const, const int);
 static void UpdateGameEffects(Game_data* const);
 static void UpdateGameEffect(Game_data* const, const int);
-void HordeAttack(Game_data* const, const int);
+static void HordeAttack(Game_data* const, const int);
 
 void SaveGame(const Game_data* const);
 void LoadGame(Game_data* const);

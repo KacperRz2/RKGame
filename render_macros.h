@@ -148,8 +148,8 @@
                                         (float)PLAYER_SIZE * 2.0F\
                                     }
 #define WEAPON_ROTATION_POINT       {\
-                                        half(BLADE_SIZE),\
-                                        BLADE_SIZE * BLADE_HANDLER_POSITION\
+                                        half(WEAPON_SIZE),\
+                                        WEAPON_SIZE * BLADE_HANDLER_POSITION\
                                     }
 #define FRAME_PART_0                ((SDL_FRect){8.0F, 0.0F, 8.0F, 8.0F})
 #define ROW_0_CHARS                 14
@@ -298,6 +298,9 @@
                                     })
 #define CIPHER_NUMS                 {n0,n1,n2,n3,n4,n5,n6,n7,n8,n9}
 #define HORDE_ALERT                 {H,o,r,d,a,exclam_m,char_end}
+#define HORDE_ALERT_X               1.0F
+#define HORDE_ALERT_Y               1.0F
+#define HORDE_ALERT_SIZE            16.0F
 #define MENU_TEXTS                  {\
                                         (Uint8[]){U,s,t,a,w,i,e,n,i,a},\
                                         (Uint8[]){C,o,f,n,i,j,sp,d,o,sp,p,u,n,k,t,u,sp,k,o,n,t,r,o,l,n,e,g,o},\

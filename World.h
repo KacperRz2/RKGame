@@ -3,9 +3,9 @@
 
 unsigned int GetBigSegCoordinate(const float);
 bool IsInUncoveredBigSeg(const Uint64* const, const unsigned int, const unsigned int);
-bool IsInPopulatedBigSeg(const Uint64* const, const unsigned int, const unsigned int);
+bool IsInNoticedBigSeg(const Uint64* const, const unsigned int, const unsigned int);
 void UncoverBigSeg(Uint64* const, const unsigned int, const unsigned int);
-void MarkAsPopulatedBigSeg(Uint64* const, const unsigned int, const unsigned int);
+void MarkAsNoticedBigSeg(Uint64* const, const unsigned int, const unsigned int);
 bool IsVoidBigSeg(const Uint64* const, const unsigned int, const unsigned int);
 void CreateWorld(Game_data* const);
 static void PlaceBoxes(Game_data* const);

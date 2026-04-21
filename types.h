@@ -58,7 +58,7 @@ struct Blade{
 	Uint8 chain;
 	Uint8 chain_next;
 	bool abide;
-	bool freehand;
+	bool loose;
 	Uint16 idle_ticks;
 	float charge;	
 };
@@ -74,17 +74,17 @@ struct Visual_effect{
 			Uint16 start_ticks;
 			Uint16 size;
 			Uint8 tx_num;
-		}d0;
+		}data0;
 		struct{
 			position16 start_position;
 			Uint8 angle;
-		}d1;
+		}data1;
 		struct{
 			Uint8 r;
 			Uint8 g;
 			Uint8 b;
-		}d2;
-	}data;
+		}data2;
+	};
 	Uint8 type;
 };
 struct Visual_effects{
@@ -143,13 +143,13 @@ struct Being{
 	Armour armour;
 	Impact impact;
 	SDL_FPoint special_move_shift;
+	Uint16 main_indx;
+	Uint8 effects_num;
+	Lasting_effect effects[MAX_BEING_EFFECTS];
 	struct rend_fly_help_data{
 		_Float16 start_angle;
 		Sint16 ticks;
 	}rend_fly_help_data;
-	Uint16 main_indx;
-	Uint8 effects_num;
-	Lasting_effect effects[MAX_BEING_EFFECTS];
 };
 struct Beings_array{
 	Being* array;
@@ -165,7 +165,7 @@ struct Projectile{
 	SDL_FPoint position;
 	SDL_FPoint shift_per_tick;
 	Uint8 type_id;
-	union data{
+	union{
 		struct penetrating{
 			Uint16 hit_targets[MAX_HITS];
 			Impact impact;
@@ -179,7 +179,7 @@ struct Projectile{
 			Uint8 effect_id;
 			unsigned int ticks;
 		}special;
-	}data;
+	};
 };
 struct Projectiles_array{
 	Projectile* array;
@@ -235,7 +235,7 @@ struct Player{
 	int hit_points;
 	int fatigue_points;
 	int magic_points;
-	int max_h_p;
+	int max_hp;
 	int max_fatigue;
 	Block_times block_times;
 	Armour armour;

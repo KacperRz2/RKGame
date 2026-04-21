@@ -21,8 +21,10 @@
 #define BOOM_SIZE			        320
 #define BOOM_EFFECTS_NUM		    64U
 #define V_EFFECT_MAX_DELAY          16
-#define BLADE_SIZE                  64.0F
+#define WEAPON_SIZE                 64.0F
+#define BLADE_LEN                   (WEAPON_SIZE * BLADE_HANDLER_POSITION)
 #define DECELERATION		        0.93F
+#define MIN_PC_VELOCITY		        0.05F
 #define TICK_TIME			        0x200000ULL
 #define TICK_TIME_MS		        (TICK_TIME / 1000000ULL)
 #define ACCELERATION		        6.25e-2F
@@ -31,11 +33,13 @@
 #define BLOCK_VELOCITY_MULTIP		0.5F
 #define DODGE_VELOCITY_MULTIP		(PC_DODGE_VELOCITY / PLAYER_VELOCITY)
 #define ROTATION_SPEED		        0xA.0p-11F//0x8.0p-11F
+#define DIRECTION_SHIFT_ADDITION	0.125F
 #define FRAME_TIME			        0x400000ULL
 #define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
 #define MAX_PROJECTILES_NUM	        0x1000U
 #define MAX_SEGM_BEINGS		        0x10U
 #define MAX_BEINGS_NUM		        0x3000U
+#define MAX_START_BEINGS_NUM        0x1000U
 #define MAX_VISUAL_EFFECTS_NUM		0x800U
 #define MAX_PLAYERS_NUM		        0x1U
 #define START_PLAYERS_NUM		    0x1U
@@ -47,6 +51,7 @@
 #define RAD_TO_MINE                 ((float)ANGLE_PARTS * 0.5F / SDL_PI_F)
 #define RANGE                       700.0F
 #define BEING_ATTACK_STEPS          64
+#define BEING_STRIKE_STEPS          (BEING_ATTACK_STEPS * 3)
 
 #define BEING_RELOAD                512
 #define BEING_DEFAULT_LEFT_TICKS    32
@@ -65,6 +70,7 @@
 #define BEING_RELOAD_TICKS          128
 #define BEING_STUN_AFTER_FLY_DURAT  512
 #define PROJECTILE_VELOCITY         4.0F
+#define PC_SHOOT_MAX_SPREAD         0.125F
 #define FIRE_PROJECTILE_VELOCITY    2.0F
 #define BEING_HALT_DISTANCE         (BEING_MIN_DISTANCE + 2.0F)
 #define BEING_MIN_DISTANCE          ((float)MAX_BEING_SIZE)
@@ -88,14 +94,17 @@
 #define PC_FAILURE_FATIG_BLOCK_TIME 2
 #define PC_FAILURE_VELOCITY         0.5F
 #define PC_FATIGUE_GAIN_INTERVAL    3
+#define BLOCKING_PC_FA_GAIN_INTERV  (PC_FATIGUE_GAIN_INTERVAL * 2)
 #define PC_ARMOUR_REGEN_BLOCK       0x2000
 #define PC_ARMOUR_GAIN_INTERVAL     0x100
+#define PC_ARMOUR_GAIN              0.01F
 #define TEST_DAMAGE                 100
 #define TEST_PENETRATION            1U
 #define PC_BLADE_CHECKPOINTS        2U
 #define PC_BLADE_CHARGE_BASE        0xF.Fp-4F
 #define PC_BLADE_CHARGE_MODIFIER    0xF.F8p-4F
 #define PC_BLADE_MAX_IDLE_TICKS     192U
+#define PC_BLD_LAST_HARMLESS_PHASE  1
 #define PC_BLADE_FIRST_MOVE_STEPS   128
 #define PC_BLADE_RETURN_STEPS       384
 #define PC_BLADE_TO_NEXT_STEPS      192
@@ -104,14 +113,15 @@
 #define PC_BLADE_BOUNCE_ANGLE       0.375F
 #define BLADE_HANDLER_POSITION      0.85F
 #define PC_SHOOT_RELOAD             192
-#define MAX_START_BEINGS_NUM        (MAX_BEINGS_NUM / 0x3U)
 #define DOOR_SIZE                   (SEGMENT_SIZE * 0.5F)
 #define SHOP_SIZE                   128.0F
 #define SCROLL_SIZE                 32.0F
 #define BARRIER_SIZE                ((float)PLAYER_SIZE * 2.0F)
 #define BOX_SIZE                    32.0F
 #define PC_START_COINS              3
-#define KEYS_NUM                    7U
+#define MIN_KEYS                    7U
+#define ONE_KEY_MAPS_NUM            2U
+#define BOX_SCROLL_CHANCE_FACTOR    3
 #define BOXES_NUM                   0x180U
 #define BOX_SLOTS                   8
 #define BLOCK_COST                  32
@@ -136,10 +146,16 @@
 #define BIG_SEGMENT_SIZE            (SEGMENT_SIZE * BIG_SEGMENT_SEGMENTS_X)
 #define HUGE_SEGMENT_SIZE           ((WORLD_SIZE - SEGMENT_SIZE * 2.0F) / (float)HUGE_SEGMENTS_X)
 #define HORDE_ATTACK_START_TICKS    0x800
+#define MIN_TICKS_FROM_HORDE        (HORDE_ATTACK_START_TICKS * 2)
+#define MAX_TICKS_FROM_HORDE        (HORDE_ATTACK_START_TICKS * 32)
 #define HORDE_ATTACK_POINTS         8
+#define GET_FROM_VOID_CHANCE_FACTOR 0x10
 #define HUGE_SEGMENTS_X             7
+#define HUGE_SEGMENT_BIG_SEGMENTS_X 3U
 #define COMMANDER_EFFECT_TICKS      1024
 #define HP_REGEN_TICKS              1024
+#define HP_REGEN_TIMES              128
+#define DEFAULT_VIS_EFF_INTERV      64
 #define FP_REGEN_TICKS              0x1000
 #define WEAK_EFFECT_TICKS           0x1000
 #define SLOW_EFFECT_TICKS           0x800
@@ -174,7 +190,10 @@
 #define HORDE_BEING_CHANCE_FACTOR   32
 #define MAX_ONE_TYPE_ITEMS          255U
 #define ALLY_LIFETIME               0x2000
+#define ALLY_LIFETIME_MAX_SHIFT     0x100
 #define BEING_CHARGE_VELOCITY_MULT  0x1.8p+0F
+#define BIG_SEG_PLAN_NULL_SEG       (-1)
+#define NOT_FOUND                   (-1)
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -186,8 +205,6 @@
 #define KEY_SWITCH_RANGE            SDL_SCANCODE_Q
 #define KEY_MANAGE_SCROLLS          SDL_SCANCODE_I
 #define KEY_SHOW_MAP                SDL_SCANCODE_M
-#define KEY_TMP                     SDL_SCANCODE_PERIOD
-#define KEY_TMP1                    SDL_SCANCODE_H
 #define KEY_SELECT                  SDL_SCANCODE_E
 #define BUTTON_ATTACK               SDL_BUTTON_LEFT
 #define BUTTON_BLOCK                SDL_BUTTON_RIGHT
@@ -347,6 +364,8 @@
 #define PC_MAX_ARMOUR               PC_ARMOUR
 #define PC_MAX_ARMOUR_II_ABS        750.0F
 #define PC_MAX_ARMOUR_II            {PC_MAX_ARMOUR_II_ABS, 0.25F, 0.25F, 0.25F}
+#define BURN_EFFECT_INTERVAL        4
+#define BURN_EFFECT_IMPACT          (Impact){1.0F, 1.0F, 2.0F, 1.0F}
 #define PROJECTILES_UPDATE_FUNC     {\
                                         UpdatePCProjectile,\
                                         UpdateHostileProjectile,\
@@ -429,6 +448,7 @@
                                     0, 1, 1, 1, 1, 1, 0,\
                                     0, 0, 1, 1, 1, 0, 0\
                                 }
+#define NOT_NULL_HUGE_SEGS_NUM  37
 #define SHOPS_HUGE_SEGS        {\
                                     2, 1,\
                                     4, 1,\
@@ -448,8 +468,24 @@
                                     0x1000,\
                                     0x0\
                                 }
+#define ZERO_POINT              ((SDL_Point){0, 0})
 #define ZERO_POINT_F            ((SDL_FPoint){0.0F, 0.0F})
 #define SPIRAL_X_SHIFTS         {0,0,1,1,1,0,-1,-1,-1,-1,0,1,2,2,2,2,2,1,0,-1,-2,-2,-2,-2,-2,-2,-1,0,1,2,3,3,3,3,3,3,3,2,1,0,-1,-2,-3,-3,-3,-3,-3,-3,-3,-3,-2,-1,0,1,2,3,4,4,4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-4}
 #define SPIRAL_Y_SHIFTS         {0,-1,-1,0,1,1,1,0,-1,-2,-2,-2,-2,-1,0,1,2,2,2,2,2,1,0,-1,-2,-3,-3,-3,-3,-3,-3,-2,-1,0,1,2,3,3,3,3,3,3,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-3,-2,-1,0,1,2,3,4,4,4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4}
+
+#define SAVE_LEN(nums)          sizeof(struct nums)\
+		                        + sizeof(unsigned int)\
+		                        + sizeof(Player) * nums.champions\
+		                        + sizeof(Being) * nums.beings\
+		                        + sizeof(Projectile) * nums.projectiles\
+		                        + sizeof(Uint64) * (BIG_SEGMENTS_X + 1U)\
+		                        + sizeof(Key_location) * nums.needed_keys\
+		                        + sizeof(Shop) * SHOPS_NUM\
+		                        + sizeof(Box) * nums.boxes\
+		                        + sizeof(Uint8) * (nums.needed_keys + 3U)\
+		                        + sizeof(int)\
+		                        + sizeof(Lasting_effect) * nums.effects\
+		                        + sizeof(union horde_data)\
+		                        + sizeof(struct coordinates) * nums.known_segs
 
 #endif

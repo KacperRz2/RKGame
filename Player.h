@@ -16,7 +16,7 @@ static void SetShiftToBase(Blade* const, Placement* const, const unsigned int);
 static void SetBladePositionToBase(Blade* const);
 static void SetShiftToPosition(Blade*, Placement* const, const Placement* const, const unsigned int);
 static Placement GetBladeLocation(Player* const);
-static bool BladeHitsBeing(Blade* const, Being* const, SDL_FPoint* const);
+static bool BladeHitsBeing(Blade* const, Being* const, const SDL_FPoint* const);
 static bool UnleashDestruction(Game_data* const, const unsigned int);
 static void UpdatePlayerBlade(Game_data* const, const unsigned int);
 bool PointInPlayer(const float, const float, Player* const);
@@ -46,10 +46,10 @@ static void RemovePlayerEffect(Player* const, const int);
 static void UpdatePlayerEffects(Game_data* const, const unsigned int);
 static void UpdatePlayerEffect(Game_data* const, Player* const, const int);
 int PlayerHasEffect(Player* const, const int);
-void SlowPlayer(Game_data* const, Player* const, const int);
-void PlayerHPRegeneration(Game_data* const, Player* const, const int);
-void PlayerFatigueRegeneration(Game_data* const, Player* const, const int);
-void PlayerWeakness(Game_data* const, Player* const, const int);
-void PlayerDodge(Game_data* const, Player* const, const int);
+static void SlowPlayer(Game_data* const, Player* const, const int);
+static void PlayerHPRegeneration(Game_data* const, Player* const, const int);
+static void PlayerFatigueRegeneration(Game_data* const, Player* const, const int);
+static void PlayerWeakness(Game_data* const, Player* const, const int);
+static void PlayerDodge(Game_data* const, Player* const, const int);
 
 #endif

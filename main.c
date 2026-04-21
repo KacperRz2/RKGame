@@ -1,8 +1,13 @@
 #include <header.h>
 
 int main(int argc, char* argv[]){
+	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 	SDL_Event event;
-	Render_data rend_data;
+	Render_data rend_data = {
+		.counter = 0U,
+		.window = NULL,
+		.renderer = NULL
+	};
 	SetSineCosineArrays();
 	GraphicsInitiation(&rend_data);
 	while(1){
@@ -12,7 +17,9 @@ int main(int argc, char* argv[]){
 			Game_data game_data;
 			game_data.rend_data_ptr = &rend_data;
 			game_data.ev_ptr = &event;
-			game_data.seed = (((Uint64)SDL_rand_bits() << 32ULL) + (Uint64)SDL_rand_bits());
+			do{
+				game_data.seed = (((Uint64)SDL_rand_bits() << 32ULL) + (Uint64)SDL_rand_bits());
+			}while(!game_data.seed);
 			SetGameData(&game_data);
 			StartNewLevel(&game_data);
 			DrawMap(&rend_data, &game_data.world);

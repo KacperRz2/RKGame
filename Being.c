@@ -10,7 +10,7 @@
 #include <game.h>
 #include <render.h>
 
-const Being_type being_types[] = BEING_TYPES;
+static const Being_type being_types[] = BEING_TYPES;
 
 static inline void UpdateBeing(Being* const b, Game_data* const gd){
     (being_types + b->type_id)->update(b, gd);
@@ -570,7 +570,7 @@ static inline void UpdateBeingFollow(Being* const bg, float const distance_squar
 }
 
 static inline SDL_FPoint GetHBladeAttackHittingPoint(Being* const bg, const float sine, const float cosine){
-    static const float distance_from_being = WEAPON_ATTACK_Y + BLADE_SIZE * 0.85F - BEING_HIT_CIRCLE_DIAMET;
+    static const float distance_from_being = WEAPON_ATTACK_Y + WEAPON_SIZE * 0.85F - BEING_HIT_CIRCLE_DIAMET;
     return (SDL_FPoint){bg->position.x + sine * distance_from_being, bg->position.y - cosine * distance_from_being};
 }
 
@@ -619,68 +619,88 @@ static inline bool IsDeadBeing(Being* const bg, Game_data* const gd, const unsig
     return false;
 }
 
+static inline bool IsBeingWaiting(const Being* const bg){
+    return bg->status_ticks_left < 0 && bg->status == being_idle;
+}
+
+static inline bool DidBeingSeePlayer(const Being* const bg){
+    return bg->target_last_seen_at.x != 0.0F;
+}
+
+static inline void TryMoveFromVoidToAttackPoint(Being* const bg, Game_data* const gd){
+    const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
+    unsigned int point_indx1 = point_indx;
+    do{
+        const float x = (gd->horde_data.creation_points + point_indx1)->x;
+        const float y = (gd->horde_data.creation_points + point_indx1)->y;
+        Segment* const seg = GetSegmentUnsafe(&gd->world, x, y);
+        if(seg->beings.num < MAX_SEGM_BEINGS){
+            SetBeingPosition(bg, x, y);
+            AddBeingToSegment(seg, bg, &seg->beings);
+            HaltBeing(bg, 1);
+            if(bg->type_id == being_commander){
+                AddBeingEffect(bg, (Lasting_effect){being_effect_commander, COMMANDER_EFFECT_TICKS});
+            }
+            break;
+        }
+        point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
+    }while(point_indx1 != point_indx);
+}
+
+static inline void UpdateBeingsDuringHordeAttack(Game_data* const gd){
+    bool being_from_void = false;
+    for(unsigned int i = 0U; i < gd->beings.num; ++i){
+        Being* bg = (gd->beings.array + *(gd->beings.indices + i));
+        if(bg->status == being_in_void){
+            if(!being_from_void){
+                being_from_void = true;
+                if(!SDL_rand(GET_FROM_VOID_CHANCE_FACTOR)){
+                    TryMoveFromVoidToAttackPoint(bg, gd);
+                }
+            }
+        }else if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
+            if(IsDeadBeing(bg, gd, i)){
+                --i;
+                continue;
+            }
+            (being_types + bg->type_id)->update(bg, gd);
+        }
+    }
+}
+
+static inline void UpdateBeingsBroken(Game_data* const gd){
+    for(unsigned int i = 0U; i < gd->beings.num; ++i){
+        Being* bg = (gd->beings.array + *(gd->beings.indices + i));
+        if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
+            if(IsDeadBeing(bg, gd, i)){
+                --i;
+                continue;
+            }
+            if(IsAlly(bg) || bg->status == being_walk || bg->status == being_fly || bg->status == being_stunned || IsBeingWaiting(bg) || (!DidBeingSeePlayer(bg))){
+                (being_types + bg->type_id)->update(bg, gd);
+            }else if(bg->status != being_in_void){
+                BeingFlee(bg, gd);
+            }
+        }else if(bg->status != being_in_void && !IsAlly(bg) && (DidBeingSeePlayer(bg) || IsInUncoveredBigSeg(gd->world.plan, GetBigSegCoordinate(bg->position.x), GetBigSegCoordinate(bg->position.y)))){
+            MoveBeingToVoid(bg, gd);
+        }
+    }  
+    if(!(gd->flags & gamef_morale_break)){
+        gd->flags |= gamef_morale_break;
+        gd->enemy_morale = MIN_MORALE;
+    }
+    if(++gd->enemy_morale == 1){
+        gd->enemy_morale = NEW_SPIRIT_MORALE;
+    }
+}
+
 void UpdateBeings(Game_data* const gd){
     if((gd->flags & gamef_horde_attack)){
-        bool being_from_void = false;
-        for(unsigned int i = 0U; i < gd->beings.num; ++i){
-            Being* bg = (gd->beings.array + *(gd->beings.indices + i));
-            if(bg->status == being_in_void){
-                if(!being_from_void){
-                    being_from_void = true;
-                    if(!SDL_rand(0x10)){
-                        const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
-                        unsigned int point_indx1 = point_indx;
-                        do{
-                            const float x = (gd->horde_data.creation_points + point_indx1)->x;
-                            const float y = (gd->horde_data.creation_points + point_indx1)->y;
-                            Segment* const seg = GetSegmentUnsafe(&gd->world, x, y);
-                            if(seg->beings.num < MAX_SEGM_BEINGS){
-                                SetBeingPosition(bg, x, y);
-                                AddBeingToSegment(seg, bg, &seg->beings);
-                                HaltBeing(bg, 1);
-                                if(bg->type_id == being_commander){
-                                    AddBeingEffect(bg, (Lasting_effect){being_effect_commander, COMMANDER_EFFECT_TICKS});
-                                }
-                                break;
-                            }
-                            point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
-                        }while(point_indx1 != point_indx);
-                    }
-                }
-            }else if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
-                if(IsDeadBeing(bg, gd, i)){
-                    --i;
-                    continue;
-                }
-                (being_types + bg->type_id)->update(bg, gd);
-            }
-        }
+        UpdateBeingsDuringHordeAttack(gd);
         return;
     }
     if(gd->enemy_morale <= 0){
-        for(unsigned int i = 0U; i < gd->beings.num; ++i){
-            Being* bg = (gd->beings.array + *(gd->beings.indices + i));
-            if(SDL_PointInRectFloat(&bg->position, &human(gd)->attention_rect)){
-                if(IsDeadBeing(bg, gd, i)){
-                    --i;
-                    continue;
-                }
-                if(IsAlly(bg) || bg->status == being_walk || bg->status == being_fly || bg->status == being_stunned || (bg->status_ticks_left < 0 && bg->status == being_idle) || bg->target_last_seen_at.x == 0.0F){
-                    (being_types + bg->type_id)->update(bg, gd);
-                }else if(bg->status != being_in_void){
-                    BeingFlee(bg, gd);
-                }
-            }else if(!IsAlly(bg) && (bg->target_last_seen_at.x != 0.0F || IsInUncoveredBigSeg(gd->world.plan, GetBigSegCoordinate(bg->position.x), GetBigSegCoordinate(bg->position.y)))){
-                MoveBeingToVoid(bg, gd);
-            }
-        }  
-        if(!(gd->flags & gamef_morale_break)){
-            gd->flags |= gamef_morale_break;
-            gd->enemy_morale = MIN_MORALE;
-        }
-        if(++gd->enemy_morale == 1){
-            gd->enemy_morale = NEW_SPIRIT_MORALE;
-        }
+        UpdateBeingsBroken(gd);
         return;
     }
     if(gd->flags & gamef_morale_break){
@@ -1060,9 +1080,8 @@ static inline void BeingFlee(Being* const bg, Game_data* const gd){
     if(FleeBeingCollision(bg, gd)){
         return;
     }
-    DistancesDeclaration
+    float distance_x, distance_y, distance_squared, x_fshift0, y_fshift0, x_fshift1, y_fshift1;
     unsigned int x_shift, y_shift;
-    float x_fshift0, y_fshift0, x_fshift1, y_fshift1;
     unsigned int direction = bg->main_indx % 4U;
     SetShifts
     const unsigned int seg_x = GetBigSegCoordinate(bg->position.x);
@@ -1103,7 +1122,7 @@ extern inline void AddBeingEffect(Being* const bg, const Lasting_effect effect){
 
 extern inline void AddOrUpdateBeingEffect(Being* const bg, const Lasting_effect effect){
 	const int effect_indx = BeingHasEffect(bg, effect.id);
-	if(effect_indx == -1){
+	if(effect_indx == NOT_FOUND){
 		AddBeingEffect(bg, effect);
 	}else{
 		(bg->effects + effect_indx)->ticks_left = effect.ticks_left;
@@ -1147,7 +1166,7 @@ extern inline int BeingHasEffect(Being* const bg, const unsigned int effect_id){
             return i;
         }
     }
-    return -1;
+    return NOT_FOUND;
 }
 
 void SlowBeing(Game_data* const gd, Being* const bg, const int ticks_left){
@@ -1175,7 +1194,7 @@ void CommanderAura(Game_data* const gd, Being* const bg, const int ticks_left){
                 for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
                     Being* bg1 = (gd->beings.array + *(neighbour->beings.beings_ind + i));
                     const int effect_indx = BeingHasEffect(bg1, being_effect_bonus);
-                    if(effect_indx == -1){
+                    if(effect_indx == NOT_FOUND){
                         AddBeingEffect(bg1, (Lasting_effect){being_effect_bonus, COMMANDER_EFFECT_TICKS});
                         bg1->impact.damage *= 2.0F;
                         bg1->impact.armour_reduction *= 10.0F;
@@ -1205,9 +1224,9 @@ void CommanderIsNearEnd(Game_data* const gd, Being* const bg){
     bg->impact = (being_types + bg->type_id)->impact;
 }
 
-void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
-    if(ticks_left % 4 == 0){
-        if(DamageBeing(bg, &(Impact){1.0F, 1.0F, 2.0F, 1.0F}, gd->beings.array)){
+static void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
+    if(!(ticks_left % BURN_EFFECT_INTERVAL)){
+        if(DamageBeing(bg, &BURN_EFFECT_IMPACT, gd->beings.array)){
             bg->effects_num = 0U;
         }
         AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
@@ -1231,7 +1250,7 @@ void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left
             const int rand = SDL_rand(seg->beings.num);
             int indx = rand;
             do{
-                if(bg->indx != indx && BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+                if(bg->indx != indx && BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == NOT_FOUND){
                     bg1 = gd->beings.array + *(seg->beings.beings_ind + indx);
                     goto search_end;
                 }
@@ -1247,7 +1266,7 @@ void ThunderboltChain(Game_data* const gd, Being* const bg, const int ticks_left
                 const int rand = SDL_rand(seg->beings.num);
                 int indx = rand;
                 do{
-                    if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+                    if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == NOT_FOUND){
                         bg1 = gd->beings.array + *(seg->beings.beings_ind + indx);
                         goto search_end;
                     }
@@ -1305,19 +1324,20 @@ void BeingLastingEffectVoidEnd(Game_data* const gd, Being* const bg){}
                                 
 static inline void UpdateBeingOrdinary(Being* const bg, Game_data* const gd){
     if(bg->status == being_walk){
-        UpdateBeingWalk(bg, gd);
-        return;
+        UpdateBeingWalk(bg, gd); return;
     }
     if(bg->status == being_fly){
-        UpdateBeingFly(bg, gd);
-        return;
+        UpdateBeingFly(bg, gd); return;
     }
     if(bg->status == being_search){
-        UpdateBeingSearch(bg, gd);
+        UpdateBeingSearch(bg, gd); return;
+    }
+    float distance_x, distance_y, distance_squared;
+    if(bg->status == being_follow_being){
+        GetBeingDistances(bg, &bg->target.being->position, &distance_x, &distance_y, &distance_squared);
+        UpdateBeingFollow(bg, distance_squared, distance_x, distance_y, gd);
         return;
     }
-    DistancesDeclaration
-    BeingFollowBeingCode
     if(bg->status == being_strike_being){
         GetBeingDistances(bg, &bg->target.being->position, &distance_x, &distance_y, &distance_squared);
         UpdateBeingStrikeAlly(bg, distance_squared, distance_x, distance_y, gd);
@@ -1337,12 +1357,12 @@ static inline void UpdateBeingOrdinary(Being* const bg, Game_data* const gd){
         GetBeingDistances(bg, &pc->position, &distance_x, &distance_y, &distance_squared);
         if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
             bg->status = being_strike;
-            bg->status_ticks_left = BEING_ATTACK_STEPS * 3;
+            bg->status_ticks_left = BEING_STRIKE_STEPS;
         }else if(AllyNear(bg, gd)){
             UpdateBeingAttackAlly(bg, gd, 0.0F);
         }else if(IsClearSightWithKnownDistance(&bg->position, pc->segment, &gd->world, distance_x, distance_y, distance_squared)){
             StartBeingFollow(bg, BEING_DEFAULT_LEFT_TICKS, distance_squared, distance_x, distance_y);
-        }else if(bg->target_last_seen_at.x != 0.0F){
+        }else if(DidBeingSeePlayer(bg)){
             StartBeingSearch(bg, BEING_DEFAULT_LEFT_TICKS);
         }else{
             HaltBeing(bg, NAP_TICKS);
@@ -1354,12 +1374,10 @@ static inline void UpdateBeingOrdinary(Being* const bg, Game_data* const gd){
     }
     MovePlayerIfTooClose(distance_x, distance_y, distance_squared, bg, gd);
     if(bg->status == being_stunned){
-        UpdateBeingStunned(bg);
-        return;
+        UpdateBeingStunned(bg); return;
     }
     if(bg->status == being_strike){
-        UpdateBeingStrike(bg, pc, distance_squared, distance_x, distance_y, gd);
-        return;
+        UpdateBeingStrike(bg, pc, distance_squared, distance_x, distance_y, gd); return;
     }
     if(bg->status == being_follow){
         UpdateBeingFollow(bg, distance_squared, distance_x, distance_y, gd);
@@ -1423,7 +1441,7 @@ static inline void UpdateBeingRanger(Being* const bg, Game_data* const gd){
             UpdateBeingAttackAlly(bg, gd, BEING_SHOOT_DISTANCE);
         }else if(IsClearSightWithKnownDistance(&bg->position, pc->segment, &gd->world, distance_x, distance_y, distance_squared)){
             StartBeingFollow(bg, BEING_DEFAULT_LEFT_TICKS, distance_squared, distance_x, distance_y);
-        }else if(bg->target_last_seen_at.x != 0.0F){
+        }else if(DidBeingSeePlayer(bg)){
             StartBeingSearch(bg, BEING_DEFAULT_LEFT_TICKS);
         }else{
             HaltBeing(bg, NAP_TICKS);
@@ -1521,7 +1539,7 @@ static inline void UpdateBeingCommander(Being* const bg, Game_data* const gd){
             UpdateBeingAttackAlly(bg, gd, 0.0F);
         }else if(IsClearSightWithKnownDistance(&bg->position, pc->segment, &gd->world, distance_x, distance_y, distance_squared)){
             StartBeingFollow(bg, BEING_DEFAULT_LEFT_TICKS, distance_squared, distance_x, distance_y);
-        }else if(bg->target_last_seen_at.x != 0.0F){
+        }else if(DidBeingSeePlayer(bg)){
             StartBeingSearch(bg, BEING_DEFAULT_LEFT_TICKS);
         }else{
             HaltBeing(bg, NAP_TICKS);
@@ -1584,7 +1602,7 @@ static inline void UpdateBeingWarlock(Being* const bg, Game_data* const gd){
         if(distance_squared < pow2(BEING_SHOOT_DISTANCE)){
             if(distance_squared < pow2(BEING_ATTACK_DISTANCE)){
                 bg->status = being_strike;
-                bg->status_ticks_left = BEING_ATTACK_STEPS * 3;
+                bg->status_ticks_left = BEING_STRIKE_STEPS;
                 return;
             }else{
                 if(AllyNear(bg, gd)){
@@ -1602,7 +1620,7 @@ static inline void UpdateBeingWarlock(Being* const bg, Game_data* const gd){
             UpdateBeingAttackAlly(bg, gd, BEING_SHOOT_DISTANCE);
         }else if(IsClearSightWithKnownDistance(&bg->position, pc->segment, &gd->world, distance_x, distance_y, distance_squared)){
             StartBeingFollow(bg, BEING_DEFAULT_LEFT_TICKS, distance_squared, distance_x, distance_y);
-        }else if(bg->target_last_seen_at.x != 0.0F){
+        }else if(DidBeingSeePlayer(bg)){
             StartBeingSearch(bg, BEING_DEFAULT_LEFT_TICKS);
         }else{
             HaltBeing(bg, NAP_TICKS);

@@ -94,7 +94,7 @@ void CommanderAura(Game_data* const, Being* const, const int);
 void CommanderIsNear(Game_data* const, Being* const, const int);
 void CommanderIsNearEnd(Game_data* const, Being* const);
 void OpeningPortal(Game_data* const, Being* const, const int);
-void Burn(Game_data* const, Being* const, const int);
+static void Burn(Game_data* const, Being* const, const int);
 void ThunderboltChain(Game_data* const, Being* const, const int);
 void AllyLifetime(Game_data* const, Being* const, const int);
 void BeingLastingEffectVoidEnd(Game_data* const, Being* const);

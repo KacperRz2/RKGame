@@ -17,7 +17,7 @@ extern inline bool IsInUncoveredBigSeg(const Uint64* const wrld_plan, const unsi
 	return (bool)((*(wrld_plan + y) & ((1ULL << (x * 2U)) | (1ULL << (x * 2U + 1U)))) == ((1ULL << (x * 2U)) | (1ULL << (x * 2U + 1U))));
 }
 
-extern inline bool IsInPopulatedBigSeg(const Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+extern inline bool IsInNoticedBigSeg(const Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
 	return (bool)(*(wrld_plan + y) & (1ULL << (x * 2U + 1U)));
 }
 
@@ -25,7 +25,7 @@ extern inline void UncoverBigSeg(Uint64* const wrld_plan, const unsigned int x, 
 	*(wrld_plan + y) |= (1ULL << (x * 2U)) | (1ULL << (x * 2U + 1U));
 }
 
-extern inline void MarkAsPopulatedBigSeg(Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+extern inline void MarkAsNoticedBigSeg(Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
 	*(wrld_plan + y) |= (1ULL << (x * 2U + 1U));
 }
 
@@ -33,9 +33,7 @@ extern inline bool IsVoidBigSeg(const Uint64* const wrld_plan, const unsigned in
 	return (bool)(x >= BIG_SEGMENTS_X || y >= BIG_SEGMENTS_X || ((*(wrld_plan + y) & ((1ULL << (x * 2U)) | (1ULL << (x * 2U + 1U)))) == (1ULL << (x * 2U))));
 }
 
-static void SetBigSegmentSegments(World* const world, const unsigned int bigc, const unsigned int bigr){
-	Sint8 big_seg_plan[BIG_SEGMENT_SEGMENTS_X][BIG_SEGMENT_SEGMENTS_X];
-	SDL_zeroa(big_seg_plan);
+static void SetBigSegmentPlanWalls(const unsigned int bigc, const unsigned int bigr, Sint8(* big_seg_plan)[BIG_SEGMENT_SEGMENTS_X]){
 	//1
 	int block_size_c = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2 + 1);
 	int block_size_r = SDL_rand(BIG_SEGMENT_SEGMENTS_X / 2);
@@ -196,11 +194,17 @@ static void SetBigSegmentSegments(World* const world, const unsigned int bigc, c
 			*(*(big_seg_plan + c) + (BIG_SEGMENT_SEGMENTS_X - 3)) = 0;
 		}
 	}
+}
+
+static void SetBigSegmentSegments(World* const world, const unsigned int bigc, const unsigned int bigr){
+	Sint8 big_seg_plan[BIG_SEGMENT_SEGMENTS_X][BIG_SEGMENT_SEGMENTS_X];
+	SDL_zeroa(big_seg_plan);
+	SetBigSegmentPlanWalls(bigc, bigr, big_seg_plan);
 	for(unsigned int i = 0U; i < BIG_SEGMENT_SEGMENTS_X; ++i){
 		const unsigned int c = bigc * BIG_SEGMENT_SEGMENTS_X + i;
 		for(unsigned int j = 0U; j < BIG_SEGMENT_SEGMENTS_X; ++j){
 			const unsigned int r = bigr * BIG_SEGMENT_SEGMENTS_X + j;
-			if(*(*(big_seg_plan + i) + j) != -1){
+			if(*(*(big_seg_plan + i) + j) != BIG_SEG_PLAN_NULL_SEG){
 				*(*(world->segments + c) + r) = (Segment*)SDL_malloc(sizeof(Segment));
 				(*(*(world->segments + c) + r))->indx.x = c;
 				(*(*(world->segments + c) + r))->indx.y = r;
@@ -214,77 +218,61 @@ static void SetBigSegmentSegments(World* const world, const unsigned int bigc, c
 	}
 }
 
-void CreateWorld(Game_data* const gd){
-	SDL_srand(gd->seed);
-	bool world_plan_base[BIG_SEGMENTS_X][BIG_SEGMENTS_X] = WORLD_BASE;
-	int small_wordl_plan[SMALL_PLAN_SIZE][SMALL_PLAN_SIZE] = WORLD_SMALL_BASE;
-	World* const world = &gd->world;
-	for(unsigned int i = 0U; i < BIG_SEGMENTS_X; ++i){
-		*(world->plan + i) = 0x0;
+static void SetDoor(SDL_Point* const door_plan_position, SDL_FPoint* const door_world_position, const int rand){
+	if(rand == 0){
+		door_plan_position->x = SMALL_PLAN_SIZE / 2U;
+		door_plan_position->y = 0U;
+	}else if(rand == 1){
+		door_plan_position->x = SMALL_PLAN_SIZE - 1U;
+		door_plan_position->y = SMALL_PLAN_SIZE / 2U;
+	}else if(rand == 2){
+		door_plan_position->x = SMALL_PLAN_SIZE / 2U;
+		door_plan_position->y = SMALL_PLAN_SIZE - 1U;
+	}else{
+		door_plan_position->x = 0U;
+		door_plan_position->y = SMALL_PLAN_SIZE / 2U;
 	}
-	SDL_Point portal0;
-	SDL_Point portal1;
-	SDL_Point door_position;
-	int rand0 = SDL_rand(4);
-	int rand1 = (rand0 + SDL_rand(3) + 1) % 4;
+	door_world_position->x = GetDoorPositionXorY(door_plan_position->x);
+	door_world_position->y = GetDoorPositionXorY(door_plan_position->y);
+}
+
+static void PlaceWorldDoors(World* const world, SDL_Point* const portal0, SDL_Point* const portal1){
+	const int rand0 = SDL_rand(4);
+	const int rand1 = (rand0 + SDL_rand(3) + 1) % 4;
 	int rand2 = (rand0 + SDL_rand(2) + 1) % 4;
 	while(rand2 == rand1){
 		rand2 = (rand0 + SDL_rand(3) + 1) % 4;
 	}
-	if(rand0 == 0){
-		portal0.x = 3U;
-		portal0.y = 0U;
-	}else if(rand0 == 1){
-		portal0.x = 6U;
-		portal0.y = 3U;
-	}else if(rand0 == 2){
-		portal0.x = 3U;
-		portal0.y = 6U;
+	SetDoor(portal0, &world->portalA, rand0);
+	SetDoor(portal1, &world->portalB, rand1);
+	SetDoor(&ZERO_POINT, &world->door, rand2);
+}
+
+static void SetWorldPartsConnection(const int rand, bool(* world_plan_base)[BIG_SEGMENTS_X], const SDL_Point* const fields, const int indx){
+	enum direction{up, right, down, left};
+	const unsigned int step = HUGE_SEGMENT_BIG_SEGMENTS_X + 1U;
+	const unsigned int shift = HUGE_SEGMENT_BIG_SEGMENTS_X / 2U + 1U;
+	if(rand == up){
+		*(*(world_plan_base + shift + (fields + indx)->x * step) + shift + (fields + indx)->y * step - shift) = true;
+	}else if(rand == right){
+		*(*(world_plan_base + shift + (fields + indx)->x * step + shift) + shift + (fields + indx)->y * step) = true;
+	}else if(rand == down){
+		*(*(world_plan_base + shift + (fields + indx)->x * step) + shift + (fields + indx)->y * step + shift) = true;
 	}else{
-		portal0.x = 0U;
-		portal0.y = 3U;
+		*(*(world_plan_base + shift + (fields + indx)->x * step - shift) + shift + (fields + indx)->y * step) = true;
 	}
-	if(rand1 == 0){
-		portal1.x = 3U;
-		portal1.y = 0U;
-	}else if(rand1 == 1){
-		portal1.x = 6U;
-		portal1.y = 3U;
-	}else if(rand1 == 2){
-		portal1.x = 3U;
-		portal1.y = 6U;
-	}else{
-		portal1.x = 0U;
-		portal1.y = 3U;
-	}
-	if(rand2 == 0){
-		door_position.x = 3U;
-		door_position.y = 0U;
-	}else if(rand2 == 1){
-		door_position.x = 6U;
-		door_position.y = 3U;
-	}else if(rand2 == 2){
-		door_position.x = 3U;
-		door_position.y = 6U;
-	}else{
-		door_position.x = 0U;
-		door_position.y = 3U;
-	}
-	world->portalA.x = GetDoorPositionXorY(portal0.x);
-	world->portalA.y = GetDoorPositionXorY(portal0.y);
-	world->portalB.x = GetDoorPositionXorY(portal1.x);
-	world->portalB.y = GetDoorPositionXorY(portal1.y);
-	world->door.x = GetDoorPositionXorY(door_position.x);
-	world->door.y = GetDoorPositionXorY(door_position.y);
+}
+
+static void GenerateWorldPartsConnections(bool(* world_plan_base)[BIG_SEGMENTS_X], int(* small_wordl_plan)[SMALL_PLAN_SIZE], const SDL_Point* const portal0, const SDL_Point* const portal1){
 	enum small_plan_field{
 		small_plan_null,
 		small_plan_unconnected,
 		small_plan_connected
 	};
 	enum direction{up, right, down, left};
-	int fields_left = 36;
+	int fields_left = NOT_NULL_HUGE_SEGS_NUM - 1;
 	int try = 0b0000;
-	SDL_Point fields[37];
+	SDL_Point fields[NOT_NULL_HUGE_SEGS_NUM];
 	do{
 		*fields = (SDL_Point){
 			SDL_rand(SMALL_PLAN_SIZE),
@@ -295,61 +283,42 @@ void CreateWorld(Game_data* const gd){
 	int indx = 0;
 	while(fields_left){
 		if(try == 0b1111){
-			if(((fields + indx)->x + 1 >= 0 && (fields + indx)->x + 1 < 7 && *(*(small_wordl_plan + (fields + indx)->x + 1) + (fields + indx)->y) == small_plan_unconnected)
-				|| ((fields + indx)->y + 1 >= 0 && (fields + indx)->y + 1 < 7 && *(*(small_wordl_plan + (fields + indx)->x) + (fields + indx)->y + 1) == small_plan_unconnected)
-				|| ((fields + indx)->x - 1 >= 0 && (fields + indx)->x - 1 < 7 && *(*(small_wordl_plan + (fields + indx)->x - 1) + (fields + indx)->y) == small_plan_unconnected)
-				|| ((fields + indx)->y - 1 >= 0 && (fields + indx)->y - 1 < 7 && *(*(small_wordl_plan + (fields + indx)->x) + (fields + indx)->y - 1) == small_plan_unconnected)
-			){
-				SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "WORLD ERROR");
-				exit(-100);
-			}
 			--indx;
-			if(indx < 0){
-				SDL_LogInfo(SDL_LOG_CATEGORY_TEST, "indx < 0");
-				exit(-101);
-			}
 			try = 0b0000;
 			continue;
 		}
 		int new_col = (fields + indx)->x;
 		int new_row = (fields + indx)->y;
+		int rand;
 		do{
-			rand0 = SDL_rand(4);
-		}while(try & 1 << rand0);
-		if(rand0 == up){
+			rand = SDL_rand(4);
+		}while(try & 1 << rand);
+		if(rand == up){
 			--new_row;
-		}else if(rand0 == right){
+		}else if(rand == right){
 			++new_col;
-		}else if(rand0 == down){
+		}else if(rand == down){
 			++new_row;
 		}else{
 			--new_col;
 		}
-		if(new_col < 0 || new_col > 6 || new_row < 0 || new_row > 6){
-			if((fields + indx)->x == portal0.x && (fields + indx)->y == portal0.y){
-				new_col = portal1.x;
-				new_row = portal1.y;
-			}else if((fields + indx)->x == portal1.x && (fields + indx)->y == portal1.y){
-				new_col = portal0.x;
-				new_row = portal0.y;
+		if(new_col < 0 || new_col >= SMALL_PLAN_SIZE || new_row < 0 || new_row >= SMALL_PLAN_SIZE){
+			if((fields + indx)->x == portal0->x && (fields + indx)->y == portal0->y){
+				new_col = portal1->x;
+				new_row = portal1->y;
+			}else if((fields + indx)->x == portal1->x && (fields + indx)->y == portal1->y){
+				new_col = portal0->x;
+				new_row = portal0->y;
 			}else{
-				try |= 1 << rand0;
+				try |= 1 << rand;
 				continue;
 			}
 		}
 		if(*(*(small_wordl_plan + new_col) + new_row) != small_plan_unconnected){
-			try |= 1 << rand0;
+			try |= 1 << rand;
 			continue;
 		}
-		if(rand0 == up){
-			*(*(world_plan_base + 2 + (fields + indx)->x * 4    ) + 2 + (fields + indx)->y * 4 - 2) = true;
-		}else if(rand0 == right){
-			*(*(world_plan_base + 2 + (fields + indx)->x * 4 + 2) + 2 + (fields + indx)->y * 4    ) = true;
-		}else if(rand0 == down){
-			*(*(world_plan_base + 2 + (fields + indx)->x * 4    ) + 2 + (fields + indx)->y * 4 + 2) = true;
-		}else{
-			*(*(world_plan_base + 2 + (fields + indx)->x * 4 - 2) + 2 + (fields + indx)->y * 4    ) = true;
-		}
+		SetWorldPartsConnection(rand, world_plan_base, fields, indx);
 		*(*(small_wordl_plan + new_col) + new_row) = small_plan_connected;
 		++indx;
 		(fields + indx)->x = new_col;
@@ -357,8 +326,13 @@ void CreateWorld(Game_data* const gd){
 		try = 0b0000;
 		--fields_left;
 	}
-	for(unsigned int c = 2U; c < BIG_SEGMENTS_X; c += 4U){
-		for(unsigned int r = 2U; r < BIG_SEGMENTS_X; r += 4U){
+}
+
+static void SetWordPartsShapes(bool(* world_plan_base)[BIG_SEGMENTS_X]){
+	const unsigned int shift = HUGE_SEGMENT_BIG_SEGMENTS_X / 2U + 1U;
+	const unsigned int step = HUGE_SEGMENT_BIG_SEGMENTS_X + 1U;
+	for(unsigned int c = shift; c < BIG_SEGMENTS_X; c += step){
+		for(unsigned int r = shift; r < BIG_SEGMENTS_X; r += step){
 			if(*(*(world_plan_base + c) + r) == true && *(*(world_plan_base + c + 1U) + r + 1U) == true){
 				switch(SDL_rand(21)){
 					case 0:
@@ -442,12 +416,47 @@ void CreateWorld(Game_data* const gd){
 						*(*(world_plan_base + c + 1U) + r + 1U) = false;
 						*(*(world_plan_base + c + 1U) + r - 1U) = false;
 						break;
-					default:
-					break;
+					default: break;
 				}
 			}
 		}
 	}
+}
+
+static void MarkAsVoidBigSeg(Uint64* const wrld_plan, const unsigned int x, const unsigned int y){
+	*(wrld_plan + y) |= (1ULL << (x * 2U));
+}
+
+static void RemoveTinyPassages(World* const world){
+	for(unsigned int c = 1U; c < SEGMENTS_X - 1U; ++c){
+		for(unsigned int r = 1U; r < SEGMENTS_X - 1U; ++r){
+			Segment* const seg = GetSegmentByIndxUnsafe(world, c, r);
+			if(!seg){
+				continue;
+			}
+			if(GetSegmentByIndxUnsafe(world, c - 1U, r - 1U) && !(GetSegmentByIndxUnsafe(world, c, r - 1U) || GetSegmentByIndxUnsafe(world, c - 1U, r))){
+				if(SDL_rand(2)){
+					SDL_free(*(*(world->segments + c) + r));
+					*(*(world->segments + c) + r) = NULL;
+				}else{
+					SDL_free(*(*(world->segments + c - 1U) + r - 1U));
+					*(*(world->segments + c - 1U) + r - 1U) = NULL;
+				}
+			}else if(GetSegmentByIndxUnsafe(world, c + 1U, r - 1U) && !(GetSegmentByIndxUnsafe(world, c, r - 1U) || GetSegmentByIndxUnsafe(world, c + 1U, r))){
+				if(SDL_rand(2)){
+					SDL_free(*(*(world->segments + c) + r));
+					*(*(world->segments + c) + r) = NULL;
+				}else{
+					SDL_free(*(*(world->segments + c + 1U) + r - 1U));
+					*(*(world->segments + c + 1U) + r - 1U) = NULL;
+				}
+			}
+		}
+	}
+}
+
+static void CreateWorldSegments(World* const world, bool(* world_plan_base)[BIG_SEGMENTS_X]){
+	SDL_zeroa(world->plan);
 	world->segments = (Segment***)SDL_malloc(sizeof(Segment**) * SEGMENTS_X);
 	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
 		*(world->segments + c) = (Segment**)SDL_malloc(sizeof(Segment*) * SEGMENTS_Y);
@@ -462,37 +471,49 @@ void CreateWorld(Game_data* const gd){
 						*(*(world->segments + c) + r) = NULL;
 					}
 				}
-				*(world->plan + bigr) |= 1ULL << (bigc * 2U);
+				MarkAsVoidBigSeg(world->plan, bigc, bigr);
 			}
 		}
 	}
-	for(unsigned int c = 1U; c < SEGMENTS_X - 1U; ++c){
-		for(unsigned int r = 1U; r < SEGMENTS_X - 1U; ++r){
-			Segment* const seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
-			if(!seg){
-				continue;
-			}
-			if(GetSegmentByIndxUnsafe(&gd->world, c - 1U, r - 1U) && !(GetSegmentByIndxUnsafe(&gd->world, c, r - 1U) || GetSegmentByIndxUnsafe(&gd->world, c - 1U, r))){
-				if(SDL_rand(2)){
-					SDL_free(*(*(world->segments + c) + r));
-					*(*(world->segments + c) + r) = NULL;
-				}else{
-					SDL_free(*(*(world->segments + c - 1U) + r - 1U));
-					*(*(world->segments + c - 1U) + r - 1U) = NULL;
-				}
-			}else if(GetSegmentByIndxUnsafe(&gd->world, c + 1U, r - 1U) && !(GetSegmentByIndxUnsafe(&gd->world, c, r - 1U) || GetSegmentByIndxUnsafe(&gd->world, c + 1U, r))){
-				if(SDL_rand(2)){
-					SDL_free(*(*(world->segments + c) + r));
-					*(*(world->segments + c) + r) = NULL;
-				}else{
-					SDL_free(*(*(world->segments + c + 1U) + r - 1U));
-					*(*(world->segments + c + 1U) + r - 1U) = NULL;
-				}
-			}
-		}
-	}
+	RemoveTinyPassages(world);
+}
+
+void CreateWorld(Game_data* const gd){
+	SDL_srand(gd->seed);
+	bool world_plan_base[BIG_SEGMENTS_X][BIG_SEGMENTS_X] = WORLD_BASE;
+	int small_wordl_plan[SMALL_PLAN_SIZE][SMALL_PLAN_SIZE] = WORLD_SMALL_BASE;
+	World* const world = &gd->world;
+	SDL_Point portal0, portal1;
+	PlaceWorldDoors(world, &portal0, &portal1);
+	GenerateWorldPartsConnections(world_plan_base, small_wordl_plan, &portal0, &portal1);
+	SetWordPartsShapes(world_plan_base);
+	CreateWorldSegments(world, world_plan_base);
 	PlaceShops(&gd->world);
 	SDL_srand(0ULL);
+
+	const int scale = 3;
+	SDL_Surface* surface1 = SDL_CreateSurface(SEGMENTS_X, SEGMENTS_X, SDL_PIXELFORMAT_RGBA8888);
+	const int factor = 8;
+	SDL_Surface* surface2 = SDL_CreateSurface(SEGMENTS_X / factor, SEGMENTS_X / factor, SDL_PIXELFORMAT_RGBA8888);
+	for(unsigned int c = 0U; c < SEGMENTS_X; ++c){
+		for(unsigned int r = 0U; r < SEGMENTS_X; ++r){
+			const float colour = GetSegmentByIndxUnsafe(&gd->world, c, r) == NULL ? 0 : 1;
+			SDL_WriteSurfacePixelFloat(surface1, c, r, colour, colour, colour, SDL_ALPHA_OPAQUE_FLOAT);
+		}
+	}
+	SDL_WriteSurfacePixelFloat(surface2, gd->world.portalA.x / WORLD_SIZE * (SEGMENTS_X / factor), gd->world.portalA.y / WORLD_SIZE * (SEGMENTS_X / factor), 0, 1, 0, .5);
+	SDL_WriteSurfacePixelFloat(surface2, gd->world.portalB.x / WORLD_SIZE * (SEGMENTS_X / factor), gd->world.portalB.y / WORLD_SIZE * (SEGMENTS_X / factor), 0, 1, 0, .5);
+	SDL_WriteSurfacePixelFloat(surface2, gd->world.door.x / WORLD_SIZE * (SEGMENTS_X / factor), gd->world.door.y / WORLD_SIZE * (SEGMENTS_X / factor), 1, 0, 0, .5);
+	for(unsigned int i = 0U; i < SHOPS_NUM; ++i){
+		SDL_WriteSurfacePixelFloat(surface2, (gd->world.shops + i)->location.x / WORLD_SIZE * (SEGMENTS_X / factor), (gd->world.shops + i)->location.y / WORLD_SIZE * (SEGMENTS_X / factor), 0, 0, 1, .5);
+	}
+	SDL_BlitSurfaceScaled(surface2, NULL, surface1, NULL, SDL_SCALEMODE_PIXELART);
+	SDL_Surface* surface = SDL_ScaleSurface(surface1, SEGMENTS_X * scale, SEGMENTS_X * scale, SDL_SCALEMODE_NEAREST);
+	SDL_SavePNG(surface, "FULL_MAP.png");
+	SDL_DestroySurface(surface1);
+	SDL_DestroySurface(surface2);
+	SDL_DestroySurface(surface);
+
 }
 
 int SDLCALL compareBoxes(const void* a, const void* b){
@@ -507,9 +528,10 @@ int SDLCALL compareBoxes(const void* a, const void* b){
 }
 
 static void PlaceBoxes(Game_data* const gd){
+	const int min_segs_from_edge = 2;
 	while(gd->boxes.num < BOXES_NUM){
-		unsigned int c = SDL_rand(SEGMENTS_X - 4) + 2U;
-		unsigned int r = SDL_rand(SEGMENTS_Y - 4) + 2U;
+		unsigned int c = SDL_rand(SEGMENTS_X - min_segs_from_edge * 2) + min_segs_from_edge;
+		unsigned int r = SDL_rand(SEGMENTS_Y - min_segs_from_edge * 2) + min_segs_from_edge;
 		Segment* seg = GetSegmentByIndxUnsafe(&gd->world, c, r);
 		if(seg){
 			const unsigned int new_box_indx = gd->boxes.num++;
@@ -522,7 +544,7 @@ static void PlaceBoxes(Game_data* const gd){
 		SDL_FPoint box_location = (gd->boxes.array + i)->location;
 		(gd->boxes.array + i)->location = ZERO_POINT_F;
 		const int box_indx = GetNearbyBoxIndx(&gd->boxes, &box_location, BOX_SIZE);
-		if(box_indx != -1){
+		if(box_indx != NOT_FOUND){
 			do{
 				box_location.y += BOX_SIZE;
 				if(box_location.y >= WORLD_H - SEGMENT_SIZE * 2.0F){
@@ -624,6 +646,16 @@ static void FillShops(World* const wld){
 	}
 }
 
+static void PlaceBeings(Game_data* const gd, const SDL_FPoint* const start_position){
+	while(gd->beings.num < MAX_START_BEINGS_NUM){
+		const float x = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
+		const float y = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
+		if(pow2(start_position->x - x) + pow2(start_position->y - y) > pow2(BIG_SEGMENT_SIZE)){
+			TryCreateIdleBeing(gd, GetRandomBeingId(), x, y, human(gd));
+		}
+	}
+}
+
 void StartNewLevel(Game_data* const gd){
 	PlaceBoxes(gd);
 	FillBoxes(gd);
@@ -641,14 +673,8 @@ void StartNewLevel(Game_data* const gd){
 	}
 	const unsigned int seg_x = GetBigSegCoordinate(start_position.x);
 	const unsigned int seg_y = GetBigSegCoordinate(start_position.y);
-	MarkAsPopulatedBigSeg(gd->world.plan, seg_x, seg_y);
-	while(gd->beings.num < MAX_START_BEINGS_NUM){
-		const float x = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
-		const float y = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
-		if(pow2(start_position.x - x) + pow2(start_position.y - y) > pow2(BIG_SEGMENT_SIZE)){
-			TryCreateIdleBeing(gd, GetRandomBeingId(), x, y, human(gd));
-		}
-	}
+	MarkAsNoticedBigSeg(gd->world.plan, seg_x, seg_y);
+	PlaceBeings(gd, &start_position);
 }
 
 static SDL_FPoint GetStartPosition(World* const w){
@@ -777,11 +803,7 @@ extern inline bool SegmentInSight(const SDL_FPoint* const from, const SDL_FPoint
 	return (IsClearSight(from, &to, to_s, w) || IsClearSight(from, &p0, to_s, w) || IsClearSight(from, &p1, to_s, w) || IsClearSight(from, &p2, to_s, w));
 }
 
-static void FillBoxes(Game_data* const gd){
-	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
-		(gd->boxes.array + i)->elements->type = box_mp;
-	}
-	gd->needed_keys = SDL_rand(MAX_KEYS - KEYS_NUM + 1) + KEYS_NUM;
+static void PlaceKeysAndMapsInBoxes(Game_data* const gd){
 	gd->world.key_locations = (Key_location*)SDL_malloc(sizeof(Key_location) * gd->needed_keys);
 	Box* bx;
 	for(unsigned int i = 0U; i < gd->needed_keys; ++i){
@@ -793,22 +815,30 @@ static void FillBoxes(Game_data* const gd){
 			(Uint8)(bx->location.x / WORLD_SIZE * 255.0F),
 			(Uint8)(bx->location.y / WORLD_SIZE * 255.0F)
 		};
-		for(unsigned int j = 0U; j < 2U; ++j){
+		for(unsigned int j = 0U; j < ONE_KEY_MAPS_NUM; ++j){
 			do{
 				bx = (gd->boxes.array + SDL_rand(gd->boxes.num));
 			}while(bx->elements->type == box_key || bx->elements->type == box_map);
 			AddToBox(bx, 0U, box_map, i);
 		}
 	}
+}
+
+static void FillBoxes(Game_data* const gd){
 	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
-		bx = (gd->boxes.array + i);
+		(gd->boxes.array + i)->elements->type = box_mp;
+	}
+	gd->needed_keys = SDL_rand(MAX_KEYS - MIN_KEYS + 1) + MIN_KEYS;
+	PlaceKeysAndMapsInBoxes(gd);
+	for(unsigned int i = 0U; i < gd->boxes.num; ++i){
+		Box* bx = (gd->boxes.array + i);
 		unsigned int slot = 0U;
 		if(bx->elements->type == box_key || bx->elements->type == box_map){
 			++slot;
 		}
 		AddToBox(bx, slot++, box_coins, SDL_rand(BOX_MAX_COINS));
 		for(unsigned int j = slot; j < BOX_SLOTS - 1U; ++j){
-			if(SDL_rand(3)){
+			if(SDL_rand(BOX_SCROLL_CHANCE_FACTOR)){
 				AddToBox(bx, slot++, box_scroll, GetRandomScroll());
 			}
 		}

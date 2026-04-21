@@ -24,7 +24,7 @@ Uint8 GetRandomScroll(){
     return SDL_rand(scroll_empty);
 }
 
-bool push(Game_data* const gd){
+static bool push(Game_data* const gd){
     const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
     const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
     if(!target_seg){
@@ -59,13 +59,13 @@ bool push(Game_data* const gd){
     return true;
 }
 
-bool HPRegen(Game_data* const gd){
+static bool HPRegen(Game_data* const gd){
     AddOrUpdatePlayerEffect(human(gd), (Lasting_effect){pc_effect_hpregen, HP_REGEN_TICKS});
     AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &human(gd)->position, SPELL0_RGB);
     return true;
 }
 
-bool AddAlly(Game_data* const gd){
+static bool AddAlly(Game_data* const gd){
     const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
     Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
     if(target_seg && gd->beings.num < MAX_BEINGS_NUM && target_seg->ally_beings.num < MAX_SEGM_BEINGS){
@@ -77,7 +77,7 @@ bool AddAlly(Game_data* const gd){
     return false;
 }
 
-bool RenewArmour(Game_data* const gd){
+static bool RenewArmour(Game_data* const gd){
     human(gd)->armour.absorption = human(gd)->max_armour.absorption;
     human(gd)->armour.multipl = human(gd)->max_armour.multipl;
     human(gd)->armour.magic_multipl = human(gd)->max_armour.magic_multipl;
@@ -85,7 +85,7 @@ bool RenewArmour(Game_data* const gd){
     return true;
 }
 
-bool slow(Game_data* const gd){
+static bool slow(Game_data* const gd){
     const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
     const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
     if(!target_seg){
@@ -103,7 +103,7 @@ bool slow(Game_data* const gd){
             Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
             bg->velocity *= 0.25F;
             const int effect_indx = BeingHasEffect(bg, being_effect_slow);
-            if(effect_indx == -1){
+            if(effect_indx == NOT_FOUND){
                 AddBeingEffect(bg, (Lasting_effect){being_effect_slow, SLOW_EFFECT_TICKS});
             }else{
                 (bg->effects + effect_indx)->ticks_left = SLOW_EFFECT_TICKS;
@@ -119,7 +119,7 @@ bool slow(Game_data* const gd){
     return true;
 }
 
-bool fire(Game_data* const gd){
+static bool fire(Game_data* const gd){
     const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
     float sh_x, sh_y;
     GetShift(&human(gd)->position, &target_xy, FIRE_PROJECTILE_VELOCITY, &sh_x, &sh_y);
@@ -129,7 +129,7 @@ bool fire(Game_data* const gd){
     return true;
 }
 
-bool thunderbolt(Game_data* const gd){
+static bool thunderbolt(Game_data* const gd){
     const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
     Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
     Segment* seg = target_seg;
@@ -141,7 +141,7 @@ bool thunderbolt(Game_data* const gd){
         const int rand = SDL_rand(seg->beings.num);
         int indx = rand;
         do{
-            if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+            if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == NOT_FOUND){
                 bg = gd->beings.array + *(seg->beings.beings_ind + indx);
                 goto search_end;
             }
@@ -156,7 +156,7 @@ bool thunderbolt(Game_data* const gd){
         const int rand = SDL_rand(seg->beings.num);
         int indx = rand;
         do{
-            if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == -1){
+            if(BeingHasEffect(gd->beings.array + *(seg->beings.beings_ind + indx), being_effect_thunderbolt) == NOT_FOUND){
                 bg = gd->beings.array + *(seg->beings.beings_ind + indx);
                 goto search_end;
             }
@@ -173,7 +173,7 @@ bool thunderbolt(Game_data* const gd){
     return true;
 }
 
-bool convert(Game_data* const gd){
+static bool convert(Game_data* const gd){
     const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
     const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
     if(!target_seg){
@@ -199,7 +199,7 @@ bool convert(Game_data* const gd){
                 AddBeingToSegment(neighbour, bg, &neighbour->ally_beings);
                 bg->target.player = human(gd);
                 bg->target_last_seen_at = (position16){bg->target.player->position.x, bg->target.player->position.y};
-                AddBeingEffect(bg, (Lasting_effect){being_effect_ally_lifetime, ALLY_LIFETIME + SDL_rand(256)});
+                AddBeingEffect(bg, (Lasting_effect){being_effect_ally_lifetime, ALLY_LIFETIME + SDL_rand(ALLY_LIFETIME_MAX_SHIFT)});
                 --i;
                 AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, SPELL0_RGB);
                 any = true;
@@ -216,10 +216,10 @@ bool convert(Game_data* const gd){
     return true;
 }
 
-bool FatigueRegen(Game_data* const gd){
+static bool FatigueRegen(Game_data* const gd){
     AddOrUpdatePlayerEffect(human(gd), (Lasting_effect){pc_effect_fpregen, FP_REGEN_TICKS});
     AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &human(gd)->position, SPELL0_RGB);
     return true;
 }
 
-bool EffectEmpty(Game_data* const gd){return false;}
+static bool EffectEmpty(Game_data* const gd){return false;}

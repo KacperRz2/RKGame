@@ -15,8 +15,7 @@ enum control{
     range_mode = 1 << 10,
     stunned = 1 << 11,
     map_look = 1 << 12,
-    dodge_time = 1 << 13,
-    tmp = 1 << 14
+    dodge_time = 1 << 13
 };
 
 enum being_status{
@@ -149,6 +148,7 @@ enum key_info{
 };
 
 enum event{
+    event_ok,
     event_quit_game = 1,
     event_menu,
     event_manage_scrolls
@@ -169,6 +169,22 @@ enum shop_item{
     shop_item_key_location,
     shop_item_armour,
     shop_item_dodge_speed
+};
+
+enum check_queue{
+    check_0,
+    check_1,
+    check_2,
+    check_3,
+    check_4,
+    check_5,
+    checks_num
+};
+
+enum option{
+    opt_exit = -1,
+    opt_void,
+    opt_select
 };
 
 enum character{

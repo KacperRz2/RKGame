@@ -25,7 +25,6 @@ static void DrawBeings(Render_data* const);
 static void DrawColouredThings(Render_data* const);
 static void DrawBeing(Render_data* const, SDL_Texture**, SDL_Surface* const, SDL_Surface* const, const Uint8* const, const Uint8* const);
 static void DrawColouredThing(Render_data* const, SDL_Texture**, SDL_Surface* const, const Uint8* const);
-static void SetRenderData(Render_data* const);
 void ResetRenderData(Render_data* const);
 static void RenderHumanPlayerBlade(Render_data* const, Blade* const);
 static void RenderProjectiles(Render_data* const, Game_data* const);
@@ -34,7 +33,6 @@ static void RenderBeings(Render_data* const, Game_data* const, Segment** const, 
 static void RenderMap(Render_data* const, const Game_data* const, Player* const);
 static bool GetRenderPointFromTrue(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const, World* const);
 static bool GetRenderPointFromTrueWithKnownSegmentVisibility(Render_data* const, const float, const float, const Player* const, SDL_FPoint* const);
-void RenderTextInfo(Render_data* const, const Uint64, Game_data* const);//temporary func.
 static void RenderPlayerStatus(Render_data* const, Player* const, const Game_data* const);
 void RenderMainMenu(Render_data* const, const unsigned int);
 void RenderGame(Render_data* const, Game_data* const, const int);

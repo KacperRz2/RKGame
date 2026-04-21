@@ -17,7 +17,7 @@ extern inline void StopPlayerActions(Player* const pc){
 
 static void InitScrolls(Player* const pc){
 	for(unsigned int i = 0U; i < scroll_empty; ++i){
-		*(pc->scrolls + i) = 1U;
+		*(pc->scrolls + i) = 100U;
 	}
 	*(pc->scrolls + scroll_empty) = 1U;
 	*(pc->scrolls_quick_access) = scroll_empty;
@@ -38,7 +38,7 @@ void CreatePlayer(Player* const pc, const float x, const float y){
 	pc->blade.chain = 0U;
 	pc->blade.chain_next = 0U;
 	pc->blade.abide = false;
-	pc->blade.freehand = false;
+	pc->blade.loose = false;
 	pc->blade.idle_ticks = 0U;
 	pc->blade.charge = PC_BLADE_CHARGE_BASE;
 	pc->blade_attack = (Impact)PC_BLADE_IMPACT;
@@ -54,7 +54,7 @@ void CreatePlayer(Player* const pc, const float x, const float y){
 	pc->fatigue_points = PC_FATIGUE;
 	pc->magic_points = PC_MAGIC;
 	pc->max_fatigue = PC_FATIGUE;
-	pc->max_h_p = PC_HP;
+	pc->max_hp = PC_HP;
 	pc->block_times = (Block_times){0, 0, 0, 0, 0, 0};
 	pc->armour = (Armour)PC_ARMOUR;
 	pc->max_armour = (Armour)PC_MAX_ARMOUR;
@@ -96,61 +96,65 @@ extern inline void UpdatePlayerNewSegment(World* const wld, Player* const pc){
 	pc->segment = GetSegmentUnsafe(wld, pc->position.x, pc->position.y);
 }
 
+static inline void SetPlayerDataForwardMove(Player* const pc, const float angle){
+	pc->velocity += ACCELERATION;
+	pc->move_direction = pc->direction + angle;
+}
+
+static inline void SetPlayerDataBackwardMove(Player* const pc, const float angle){
+	pc->velocity = (pc->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
+	pc->move_direction = pc->direction + angle;
+}
+
+static const Uint32 mfl = forward | back | right | left;
+
+static inline void UpdatePlayerDodge(Player* const pc){
+	if((pc->flags & (dodge | forward)) == dodge){
+		if(pc->fatigue_points >= PC_DODGE_FATIG && pc->block_times.dodge < 1){
+			pc->fatigue_points -= PC_DODGE_FATIG;
+			BlockPlayerFatigue(pc, PC_DODGE_FATIG_BLOCK_TIME);
+			pc->block_times.dodge = PC_DODGE_RELOAD;
+			pc->velocity = pc->max_velocity * pc->dodge_velocity_multipl;
+			pc->flags |= dodge_time;
+			AddOrUpdatePlayerEffect(pc, (Lasting_effect){pc_effect_dodge, DODGE_EFFECT_TICKS});
+		}else{
+			BlockPlayerFatigue(pc, PC_FAILURE_FATIG_BLOCK_TIME);
+			pc->velocity = PC_FAILURE_VELOCITY;
+		}
+		if(!(pc->flags & mfl)){
+			pc->move_direction = pc->direction + SDL_PI_F;
+		}
+		pc->flags &= ~(dodge);
+	}
+}
+
 static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){
 	Player* const pc = gd->champions.array + indx;
-	static const Uint32 tmp = forward | back | right | left;
 	const bool runs = ((pc->flags & (run | forward | back)) == (run | forward));
 	if(pc->velocity > pc->max_velocity * RUN_MULTIPL || (!runs && pc->velocity > pc->max_velocity) || ((pc->flags & block) && pc->velocity > pc->max_velocity * BLOCK_VELOCITY_MULTIP)){
 		pc->velocity *= DECELERATION;
-	}else if((pc->flags & tmp) == forward || (pc->flags & tmp) == (tmp & ~(back))){
-		pc->velocity += ACCELERATION;
-		pc->move_direction = pc->direction;
-	}else if((pc->flags & tmp) == back){
-		pc->velocity = (pc->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		pc->move_direction = pc->direction + SDL_PI_F;
-	}else if((pc->flags & tmp) == right){
-		pc->velocity += ACCELERATION;
-		pc->move_direction = pc->direction + SDL_PI_F * 0.5F;
-	}else if((pc->flags & tmp) == left){
-		pc->velocity += ACCELERATION;
-		pc->move_direction = pc->direction + SDL_PI_F * 1.5F;
-	}else if((pc->flags & tmp) == (forward | right)){
-		pc->velocity += ACCELERATION;
-		pc->move_direction = pc->direction + SDL_PI_F * 0.25F;
-	}else if((pc->flags & tmp) == (forward | left)){
-		pc->velocity += ACCELERATION;
-		pc->move_direction = pc->direction + SDL_PI_F * 1.75F;
-	}else if((pc->flags & tmp) == (back | right)){
-		pc->velocity = (pc->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		pc->move_direction = pc->direction + SDL_PI_F * 0.75F;
-	}else if((pc->flags & tmp) == (back | left)){
-		pc->velocity = (pc->velocity + ACCELERATION) * MOVING_BACK_VELO_MODI;
-		pc->move_direction = pc->direction + SDL_PI_F * 1.25F;
+	}else if((pc->flags & mfl) == forward || (pc->flags & mfl) == (mfl & ~(back))){
+		SetPlayerDataForwardMove(pc, 0.0F);
+	}else if((pc->flags & mfl) == back){
+		SetPlayerDataBackwardMove(pc, SDL_PI_F);
+	}else if((pc->flags & mfl) == right){
+		SetPlayerDataForwardMove(pc, SDL_PI_F * 0.5F);
+	}else if((pc->flags & mfl) == left){
+		SetPlayerDataForwardMove(pc, SDL_PI_F * 1.5F);
+	}else if((pc->flags & mfl) == (forward | right)){
+		SetPlayerDataForwardMove(pc, SDL_PI_F * 0.25F);
+	}else if((pc->flags & mfl) == (forward | left)){
+		SetPlayerDataForwardMove(pc, SDL_PI_F * 1.75F);
+	}else if((pc->flags & mfl) == (back | right)){
+		SetPlayerDataBackwardMove(pc, SDL_PI_F * 0.75F);
+	}else if((pc->flags & mfl) == (back | left)){
+		SetPlayerDataBackwardMove(pc, SDL_PI_F * 1.25F);
 	}else{
 		pc->velocity *= DECELERATION;
-		if(pc->velocity < 0.05F) pc->velocity = 0.0F;
+		if(pc->velocity < MIN_PC_VELOCITY) pc->velocity = 0.0F;
 	}
 	if(!(pc->flags & block)){
-		if(pc->flags & dodge && !(pc->flags & forward)){
-			if(pc->fatigue_points >= PC_DODGE_FATIG && pc->block_times.dodge < 1){
-				pc->fatigue_points -= PC_DODGE_FATIG;
-				BlockPlayerFatigue(pc, PC_DODGE_FATIG_BLOCK_TIME);
-				pc->block_times.dodge = PC_DODGE_RELOAD;
-				if(!(pc->flags & tmp)){
-					pc->move_direction = pc->direction + SDL_PI_F;
-				}
-				pc->velocity = pc->max_velocity * pc->dodge_velocity_multipl;
-				pc->flags |= dodge_time;
-				AddOrUpdatePlayerEffect(pc, (Lasting_effect){pc_effect_dodge, DODGE_EFFECT_TICKS});
-			}else{
-				BlockPlayerFatigue(pc, PC_FAILURE_FATIG_BLOCK_TIME);
-				if(!(pc->flags & tmp)){
-					pc->move_direction = pc->direction + SDL_PI_F;
-				}
-				pc->velocity = PC_FAILURE_VELOCITY;
-			}
-			pc->flags &= ~(dodge);
-		}
+		UpdatePlayerDodge(pc);
 		if(runs){
 			if(pc->fatigue_points <= 1){
 				pc->flags &= ~(run);
@@ -164,11 +168,11 @@ static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){
 	}
 }
 
-static void UpdatePlayerDirection(Player* const p){
-	if(p->direction > 2.0F * SDL_PI_F){
-		p->direction -= 2.0F * SDL_PI_F;
-	}else if(p->direction < 0.0F){
-		p->direction += 2.0F * SDL_PI_F;
+static void UpdatePlayerDirection(Player* const pc){
+	if(pc->direction > FULL_ANGLE){
+		pc->direction -= FULL_ANGLE;
+	}else if(pc->direction < 0.0F){
+		pc->direction += FULL_ANGLE;
 	}
 }
 
@@ -178,15 +182,15 @@ static void UpdatePlayerPoints(Player* const pc){
 			++(pc->fatigue_points);
 		}
 		if(pc->flags & block){
-			BlockPlayerFatigue(pc, PC_FATIGUE_GAIN_INTERVAL * 2);
+			BlockPlayerFatigue(pc, BLOCKING_PC_FA_GAIN_INTERV);
 		}else{
 			BlockPlayerFatigue(pc, PC_FATIGUE_GAIN_INTERVAL);
 		}
 	}else{
 		--(pc->block_times.fatigue);
 	}
-	if(pc->block_times.armour < 1U){
-		PlayerGainArmour(pc, 0.01F);
+	if(pc->block_times.armour < 1){
+		PlayerGainArmour(pc, PC_ARMOUR_GAIN);
 		BlockPlayerArmourRegen(pc, PC_ARMOUR_GAIN_INTERVAL);
 	}else{
 		--(pc->block_times.armour);
@@ -246,7 +250,7 @@ static inline Placement GetBladeLocation(Player* const pc){
 	};
 }
 
-static inline bool BladeHitsBeing(Blade* const bl, Being* const bg, SDL_FPoint* const dangerous_points){
+static inline bool BladeHitsBeing(Blade* const bl, Being* const bg, const SDL_FPoint* const dangerous_points){
 	for(unsigned int i = 0U; i < PC_BLADE_CHECKPOINTS; ++i){
 		if(SDL_fabsf((dangerous_points + i)->x - bg->position.x) < half(BeingSize(bg)) && SDL_fabsf((dangerous_points + i)->y - bg->position.y) < half(BeingSize(bg))){
 			for(unsigned int j = bl->hits; j > 0U; --j){
@@ -260,28 +264,100 @@ static inline bool BladeHitsBeing(Blade* const bl, Being* const bg, SDL_FPoint* 
 	return false;
 }
 
+static inline void SetBladeInactive(Blade* const bl){
+	if(bl->step <= bl->steps){
+		SetBladePositionToBase(bl);
+		bl->abide = false;
+		bl->loose = false;
+		bl->charge = PC_BLADE_CHARGE_BASE;
+		bl->idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
+		bl->step = bl->steps + 1;
+		bl->chain_next = 0U;
+	}
+}
+
+static inline void SetBladeStrikeStart(Blade* const bl, Impact* const blade_attack, const Placement* const destin, const unsigned int chain_len){
+	static const float extra_penetration[] = PC_BLADE_PENETRATIONS;
+	bl->chain = bl->chain_next;
+	bl->key = 0;
+	bl->step = 0;
+	bl->abide = true;
+	bl->idle_ticks = 0U;
+	bl->hits = 0U;
+	const float multip = 1.0F - bl->charge;
+	bl->impact = (Impact){
+		blade_attack->damage * multip,
+		blade_attack->armour_reduction * multip + *(extra_penetration + bl->chain),
+		blade_attack->magic * multip,
+		blade_attack->stun * multip
+	};
+	bl->penetration = (unsigned int)((float)BLADE_PENETRATION * multip);
+	bl->charge = PC_BLADE_CHARGE_BASE;
+	SetShiftToPosition(bl, &bl->step_shift, destin, bl->steps = PC_BLADE_FIRST_MOVE_STEPS);
+	bl->chain_next = (bl->chain_next + 1U) % chain_len;
+	bl->loose = false;
+}
+
+static inline void SetBladeBackToBegin(Blade* const bl){
+	bl->chain_next = 0U;
+	SetShiftToBase(bl, &bl->step_shift, bl->steps = PC_BLADE_RETURN_STEPS);
+	bl->step = 0;
+	bl->loose = true;
+}
+
+static inline void SetBladePhaseEnd(Blade* const bl, const unsigned int strike_phases_num, const Placement* const* const blade_moves){
+	if(bl->loose){
+		bl->loose = false;
+	}else if(bl->key > strike_phases_num - 2){
+		bl->abide = false;
+		bl->loose = true;
+		SetShiftToPosition(bl, &bl->step_shift, *(blade_moves + bl->chain_next), bl->steps = PC_BLADE_TO_NEXT_STEPS);
+	}else{
+		SetShiftToPosition(bl, &bl->step_shift, *(blade_moves + bl->chain) + ++bl->key, bl->steps = PC_BLADE_STRIKE_STEPS);
+	}
+	bl->step = 0;
+}
+
+static inline void BounceBlade(Blade* const bl){
+	bl->placement.direction = bl->chain == 1 ? bl->placement.direction - PC_BLADE_BOUNCE_ANGLE : bl->placement.direction + PC_BLADE_BOUNCE_ANGLE;
+}
+
+static inline void SetBladeBlocked(Blade* const bl, const Placement* const next_in_chain){
+	bl->abide = false;
+	bl->hits = 0U;
+	BounceBlade(bl);
+	SetShiftToPosition(bl, &bl->step_shift, next_in_chain, bl->steps = PC_BLADE_AFTER_BLOCK_STEPS);
+	bl->step = 0;
+}
+
+static inline void TryPushBeingWithBlade(const Player* const pc, Being* const bg){
+	const float stun_power = CalculateStunPower(&pc->blade.impact, &bg->armour);
+	if(stun_power >= 1.0F){
+		if(bg->status == being_stunned){
+			const float angle = GetDirectionToPush(&pc->position, &bg->position);
+			const float vel = BASE_FLY_VELOCITY * stun_power;
+			CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * stun_power);
+		}else{
+			StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * stun_power));
+		}
+	}
+}
+
 static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
-	static const float length_part = BLADE_SIZE * 0.85F / (float)PC_BLADE_CHECKPOINTS;
-	const Placement blade_true_location = GetBladeLocation(gd->champions.array + indx);
+	Player* const pc = gd->champions.array + indx;
+	const Placement blade_true_location = GetBladeLocation(pc);
 	const Segment* seg = GetSegmentUnsafe(&gd->world, blade_true_location.position.x, blade_true_location.position.y);
 	if(seg == NULL){
 		return true;
 	}
+	const float length_part = BLADE_LEN / (float)PC_BLADE_CHECKPOINTS;
 	const float shift_x = SineSafe(blade_true_location.direction) * length_part;
 	const float shift_y = -CosiSafe(blade_true_location.direction) * length_part;
-	SDL_FPoint dangerous_points[PC_BLADE_CHECKPOINTS] = {
-		{blade_true_location.position.x + 2.0F * shift_x, blade_true_location.position.y + 2.0F * shift_y},
-		{blade_true_location.position.x + shift_x, blade_true_location.position.y + shift_y}
+	const SDL_FPoint dangerous_points[PC_BLADE_CHECKPOINTS] = {
+		{blade_true_location.position.x + shift_x, blade_true_location.position.y + shift_y},
+		{blade_true_location.position.x + 2.0F * shift_x, blade_true_location.position.y + 2.0F * shift_y}
 	};
-	Blade* const bl = &(gd->champions.array + indx)->blade;
-
-	if(SDL_randf() < bl->impact.damage / (gd->champions.array + indx)->blade_attack.damage){
-		for(unsigned int i = 0U; i < 2; ++i){
-			const float rand = SDL_randf() * 0.875 + 0.125F;
-			AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){blade_true_location.position.x + 2.0F * shift_x * rand, blade_true_location.position.y + 2.0F * shift_y * rand});
-		}
-	}
-
+	Blade* const bl = &pc->blade;
 	Segment* neighbour_segs[4];
 	Get4NearestSegments(neighbour_segs, &gd->world, seg, blade_true_location.position.x, blade_true_location.position.y);
 	for(unsigned int k = 0U; k < 4; ++k){
@@ -291,12 +367,6 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 			Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
 			if(!BladeHitsBeing(bl, bg, dangerous_points)) continue;
 			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, dangerous_points);
-			for(unsigned int i = 0U; i < 8U; ++i){
-				AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-					bg->position.x + (SDL_randf() - 0.5F) * half(BeingSize(bg)),
-					bg->position.y + (SDL_randf() - 0.5F) * half(BeingSize(bg))
-				});
-			}
 			if(DamageBeing(bg, &bl->impact, gd->beings.array)){
 				if(bl->hits < bl->penetration--){
 					--i;
@@ -304,17 +374,8 @@ static bool UnleashDestruction(Game_data* const gd, const unsigned int indx){
 				}
 			}else{
 				if(bg->status != being_fly){
-					const float stun_power = CalculateStunPower(&bl->impact, &bg->armour);
-					if(stun_power >= 1.0F){
-						if(bg->status == being_stunned){
-							const float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &bg->position);
-							const float vel = BASE_FLY_VELOCITY * stun_power;
-							CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * stun_power);
-						}else{
-							StunBeing(bg, (int)(BEING_DEFAULT_LEFT_TICKS * stun_power));
-						}
-					}
-				};
+					TryPushBeingWithBlade(pc, bg);
+				}
 				if(bl->hits < bl->penetration){
 					*(bl->hit_targets + bl->hits++) = bg->main_indx;
 					continue;
@@ -330,89 +391,39 @@ static void UpdatePlayerBlade(Game_data* const gd, const unsigned int indx){
 	static const Placement blade_key_frames_0[] = PC_BLADE_FRAMES0;
 	static const Placement blade_key_frames_1[] = PC_BLADE_FRAMES1;
 	static const Placement blade_key_frames_2[] = PC_BLADE_FRAMES2;
-	static const Placement* blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
+	static const Placement* const blade_moves[] = {blade_key_frames_0, blade_key_frames_1, blade_key_frames_2};
 	static const unsigned int sizes[] = {SDL_arraysize(blade_key_frames_0), SDL_arraysize(blade_key_frames_1), SDL_arraysize(blade_key_frames_2)};
-	static const float extra_penetration[] = PC_BLADE_PENETRATIONS;
-	Blade* const bl = &(gd->champions.array + indx)->blade;
-	if((gd->champions.array + indx)->flags & range_mode){
-		if(bl->step <= bl->steps){
-			SetBladePositionToBase(bl);
-			bl->abide = false;
-			bl->freehand = false;
-			bl->charge = PC_BLADE_CHARGE_BASE;
-			bl->idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
-			bl->step = bl->steps + 1;
-			bl->chain_next = 0U;
-		}
+	Player* const pc = gd->champions.array + indx;
+	Blade* const bl = &pc->blade;
+	if(pc->flags & range_mode){
+		SetBladeInactive(bl);
 		return;
 	}
-	if((gd->champions.array + indx)->flags & block){
+	if(pc->flags & block){
 		bl->abide = false;
 		bl->charge = PC_BLADE_CHARGE_BASE;
 		bl->idle_ticks = PC_BLADE_MAX_IDLE_TICKS;
-	}else if((gd->champions.array + indx)->flags & attack){
+	}else if(pc->flags & attack){
 		bl->charge *= PC_BLADE_CHARGE_MODIFIER;
-		BlockPlayerFatigue(gd->champions.array + indx, 1);
+		BlockPlayerFatigue(pc, 1);
 	} 
 	if(!bl->abide){
 		if(bl->charge != PC_BLADE_CHARGE_BASE){
-			if(!((gd->champions.array + indx)->flags & attack)){
-				bl->chain = bl->chain_next;
-				bl->key = 0;
-				bl->step = 0;
-				bl->abide = true;
-				bl->idle_ticks = 0U;
-				bl->hits = 0U;
-				const float multip = 1.0F - bl->charge;
-				bl->impact = (Impact){
-					(gd->champions.array + indx)->blade_attack.damage * multip,
-					(gd->champions.array + indx)->blade_attack.armour_reduction * multip + *(extra_penetration + bl->chain),
-					(gd->champions.array + indx)->blade_attack.magic * multip,
-					(gd->champions.array + indx)->blade_attack.stun * multip
-				};
-				bl->penetration = (unsigned int)((float)BLADE_PENETRATION * multip);
-				bl->charge = PC_BLADE_CHARGE_BASE;
-				SetShiftToPosition(bl, &bl->step_shift, *(blade_moves + bl->chain), bl->steps = PC_BLADE_FIRST_MOVE_STEPS);
-				bl->chain_next = (bl->chain_next + 1U) % SDL_arraysize(sizes);
-				bl->freehand = false;
+			if(!(pc->flags & attack)){
+				SetBladeStrikeStart(bl, &pc->blade_attack, *(blade_moves + bl->chain_next), SDL_arraysize(sizes));
 				return;
 			}
-
-			if(SDL_randf() > bl->charge){
-				const Placement blade_true_location = GetBladeLocation(gd->champions.array + indx);
-				const float shift_x = SineSafe(blade_true_location.direction) * BLADE_SIZE * 0.85F;
-				const float shift_y = -CosiSafe(blade_true_location.direction) * BLADE_SIZE * 0.85F;
-				const float rand = SDL_randf() * 0.875 + 0.125F;
-				AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){blade_true_location.position.x + shift_x * rand, blade_true_location.position.y + shift_y * rand});
-			}
-
 		}else if(++bl->idle_ticks > PC_BLADE_MAX_IDLE_TICKS){
-			bl->chain_next = 0U;
-			SetShiftToBase(bl, &bl->step_shift, bl->steps = PC_BLADE_RETURN_STEPS);
-			bl->step = 0;
-			bl->freehand = true;
+			SetBladeBackToBegin(bl);
 		}
-		if(!bl->freehand) return;
+		if(!bl->loose) return;
 	}
 	if(bl->step == bl->steps){
-		if(bl->freehand){
-			bl->freehand = false;
-		}else if(bl->key > *(sizes + bl->chain) - 2){
-			bl->abide = false;
-			bl->freehand = true;
-			SetShiftToPosition(bl, &bl->step_shift, *(blade_moves + bl->chain_next), bl->steps = PC_BLADE_TO_NEXT_STEPS);
-		}else{
-			SetShiftToPosition(bl, &bl->step_shift, *(blade_moves + bl->chain) + ++bl->key, bl->steps = PC_BLADE_STRIKE_STEPS);
-		}
-		bl->step = 0;
+		SetBladePhaseEnd(bl, *(sizes + bl->chain), blade_moves);
 	}else{
 		ShiftBlade(bl, &bl->step_shift);
-		if(!bl->freehand && bl->key > 1 && (bl->freehand = UnleashDestruction(gd, indx))){
-			bl->abide = false;
-			bl->hits = 0U;
-			bl->placement.direction = bl->chain == 1 ? bl->placement.direction - PC_BLADE_BOUNCE_ANGLE : bl->placement.direction + PC_BLADE_BOUNCE_ANGLE;
-			SetShiftToPosition(bl, &bl->step_shift, *(blade_moves + bl->chain_next), bl->steps = PC_BLADE_AFTER_BLOCK_STEPS);
-			bl->step = 0;
+		if(!bl->loose && bl->key > PC_BLD_LAST_HARMLESS_PHASE && (bl->loose = UnleashDestruction(gd, indx))){
+			SetBladeBlocked(bl, *(blade_moves + bl->chain_next));
 		}
 	}
 	++bl->step;
@@ -461,39 +472,41 @@ extern inline void DamagePlayer(Player* const pc, const Impact* impact){
 }
 
 static void UpdatePlayerFire(Game_data* const gd, const unsigned int indx){
-	if((gd->champions.array + indx)->block_times.shoot > 0){
-		--(gd->champions.array + indx)->block_times.shoot;
-	}else if((gd->champions.array + indx)->selected_scroll == scroll_empty && ((gd->champions.array + indx)->flags & (range_mode | attack | block)) == (range_mode | attack) && gd->projectiles.num < MAX_PROJECTILES_NUM){
+	Player* const pc = gd->champions.array + indx;
+	if(pc->block_times.shoot > 0){
+		--pc->block_times.shoot;
+	}else if(pc->selected_scroll == scroll_empty && (pc->flags & (range_mode | attack | block)) == (range_mode | attack) && gd->projectiles.num < MAX_PROJECTILES_NUM){
 		float x, y;
-		GetShiftFromAngle((gd->champions.array + indx)->direction + 0.125F * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &x, &y);
-		AddPCProjectileToArray(&gd->projectiles, &(gd->champions.array + indx)->position, x, y, &(gd->champions.array + indx)->range_attack, TEST_PENETRATION);
-		(gd->champions.array + indx)->block_times.shoot = PC_SHOOT_RELOAD;
-		BlockPlayerFatigue(gd->champions.array + indx, PC_CAST_FATIG_BLOCK_TIME);
-    	AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &(gd->champions.array + indx)->position, SPELL0_RGB);
+		GetShiftFromAngle(pc->direction + PC_SHOOT_MAX_SPREAD * (SDL_randf() - 0.5F), PROJECTILE_VELOCITY, &x, &y);
+		AddPCProjectileToArray(&gd->projectiles, &pc->position, x, y, &pc->range_attack, TEST_PENETRATION);
+		pc->block_times.shoot = PC_SHOOT_RELOAD;
+		BlockPlayerFatigue(pc, PC_CAST_FATIG_BLOCK_TIME);
+    	AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &pc->position, SPELL0_RGB);
 	}
 }
 
 static void UpdatePlayerPush(Game_data* const gd, const unsigned int indx){
-	if((gd->champions.array + indx)->block_times.push > 0){
-		--(gd->champions.array + indx)->block_times.push;
-	}else if(((gd->champions.array + indx)->flags & (attack | block)) == (attack | block) && (gd->champions.array + indx)->fatigue_points >= PC_PUSH_FATIG){
-		(gd->champions.array + indx)->fatigue_points -= PC_PUSH_FATIG;
-		BlockPlayerFatigue(gd->champions.array + indx, PC_PUSH_FATIG_BLOCK_TIME);
-		(gd->champions.array + indx)->block_times.push = PC_PUSH_RELOAD;
-		Segment* seg = GetSegmentUnsafe(&gd->world, (gd->champions.array + indx)->position.x, (gd->champions.array + indx)->position.y);
+	Player* const pc = gd->champions.array + indx;
+	if(pc->block_times.push > 0){
+		--pc->block_times.push;
+	}else if((pc->flags & (attack | block)) == (attack | block) && pc->fatigue_points >= PC_PUSH_FATIG){
+		pc->fatigue_points -= PC_PUSH_FATIG;
+		BlockPlayerFatigue(pc, PC_PUSH_FATIG_BLOCK_TIME);
+		pc->block_times.push = PC_PUSH_RELOAD;
+		Segment* seg = GetSegmentUnsafe(&gd->world, pc->position.x, pc->position.y);
 		Segment* neighbour_segs[4];
-		Get4NearestSegments(neighbour_segs, &gd->world, seg, (gd->champions.array + indx)->position.x, (gd->champions.array + indx)->position.y);
-		for(unsigned int k = 0U; k < 4; ++k){
+		Get4NearestSegments(neighbour_segs, &gd->world, seg, pc->position.x, pc->position.y);
+		for(unsigned int k = 0U; k < 4U; ++k){
 			Segment* neighbour = *(neighbour_segs + k);
 			if(neighbour == NULL) continue;
 			for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
 				Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
-				if(bg->status != being_fly && pow2((gd->champions.array + indx)->position.x - bg->position.x) + pow2((gd->champions.array + indx)->position.y - bg->position.y) < pow2(PC_PUSH_REACH)){
-					float angle = GetDirectionToPush(&(gd->champions.array + indx)->position, &bg->position);
+				if(bg->status != being_fly && pow2(pc->position.x - bg->position.x) + pow2(pc->position.y - bg->position.y) < pow2(PC_PUSH_REACH)){
+					float angle = GetDirectionToPush(&pc->position, &bg->position);
 					if(angle < 0.0F){
 						angle += FULL_ANGLE;
 					}
-					const float difference = SDL_fabsf((gd->champions.array + indx)->direction - angle);
+					const float difference = SDL_fabsf(pc->direction - angle);
 					if(difference <= SDL_PI_F * 0.5F || difference >= SDL_PI_F * 1.5F){
 						const float power = PC_PUSH_POWER * bg->armour.unstability;
 						if(bg->status == being_stunned){
@@ -527,16 +540,17 @@ extern inline float GetDirectionToPush(const SDL_FPoint* const pushing, const SD
 }
 
 static void UpdatePlayerCast(Game_data* const gd, const unsigned int indx){
-	if((gd->champions.array + indx)->block_times.cast > 0){
-		--(gd->champions.array + indx)->block_times.cast;
-	}else if((gd->champions.array + indx)->flags & cast){
-		(gd->champions.array + indx)->flags &= ~(cast);
-		const int cost = ScrollCost((gd->champions.array + indx)->selected_scroll);
-		if(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll) > 0U && (gd->champions.array + indx)->magic_points >= cost && UseScroll(gd)){
-			(gd->champions.array + indx)->magic_points -= cost;
-			--(*((gd->champions.array + indx)->scrolls + (gd->champions.array + indx)->selected_scroll));
-			(gd->champions.array + indx)->block_times.cast = PC_CAST_RELOAD;
-			BlockPlayerFatigue(gd->champions.array + indx, PC_CAST_FATIG_BLOCK_TIME);
+	Player* const pc = gd->champions.array + indx;
+	if(pc->block_times.cast > 0){
+		--pc->block_times.cast;
+	}else if(pc->flags & cast){
+		pc->flags &= ~(cast);
+		const int cost = ScrollCost(pc->selected_scroll);
+		if(*(pc->scrolls + pc->selected_scroll) > 0U && pc->magic_points >= cost && UseScroll(gd)){
+			pc->magic_points -= cost;
+			--(*(pc->scrolls + pc->selected_scroll));
+			pc->block_times.cast = PC_CAST_RELOAD;
+			BlockPlayerFatigue(pc, PC_CAST_FATIG_BLOCK_TIME);
 		}
 	}
 }
@@ -547,8 +561,8 @@ extern inline void HealPlayer(Player* const pc, const int points){
 }
 
 static inline void UpdatePlayerHitPoints(Player* const pc){
-	if(pc->hit_points > pc->max_h_p){
-		pc->hit_points = pc->max_h_p;
+	if(pc->hit_points > pc->max_hp){
+		pc->hit_points = pc->max_hp;
 	}
 }
 
@@ -741,7 +755,7 @@ static inline void StunPlayer(Player* const pc, float power){
 	power *= 16.0F - (pc->fatigue_points / (float)pc->max_fatigue * 15.0F);
 	if(power > 0.5F){
 		const int effect_indx = PlayerHasEffect(pc, pc_effect_slow);
-		if(effect_indx == -1){
+		if(effect_indx == NOT_FOUND){
 			AddPlayerEffect(pc, (Lasting_effect){pc_effect_slow, PC_DODGE_RELOAD});
 			pc->flags |= stunned;
 		}else{
@@ -765,7 +779,7 @@ extern inline void AddPlayerEffect(Player* const pc, const Lasting_effect effect
 
 extern inline void AddOrUpdatePlayerEffect(Player* const pc, const Lasting_effect effect){
 	const int effect_indx = PlayerHasEffect(pc, effect.id);
-	if(effect_indx == -1){
+	if(effect_indx == NOT_FOUND){
 		AddPlayerEffect(pc, effect);
 	}else{
 		(pc->effects + effect_indx)->ticks_left = effect.ticks_left;
@@ -797,21 +811,21 @@ extern inline int PlayerHasEffect(Player* const pc, const int effect_id){
             return i;
         }
     }
-    return -1;
+    return NOT_FOUND;
 }
 
-void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
+static void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_left){
     if(ticks_left < 2){
         pc->max_velocity = PLAYER_VELOCITY;
 		pc->flags &= ~(stunned);
     }
 }
 
-void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
-	if(!(ticks_left % (HP_REGEN_TICKS / 128))){
-		HealPlayer(pc, PC_HP / 128);
+static void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
+	if(!(ticks_left % (HP_REGEN_TICKS / HP_REGEN_TIMES))){
+		HealPlayer(pc, PC_HP / HP_REGEN_TIMES);
 	}
-	if(!(ticks_left % 64)){
+	if(!(ticks_left % DEFAULT_VIS_EFF_INTERV)){
         AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
             pc->position.x + (SDL_randf() - 0.5F) * half(PLAYER_SIZE),
             pc->position.y + (SDL_randf() - 0.5F) * half(PLAYER_SIZE)
@@ -819,11 +833,11 @@ void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks
     }
 }
 
-void PlayerFatigueRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
+static void PlayerFatigueRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
 	if(pc->fatigue_points < pc->max_fatigue){
 		++pc->fatigue_points;
 	}
-	if(ticks_left % 64 == 0){
+	if(ticks_left % DEFAULT_VIS_EFF_INTERV == 0){
         AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
             pc->position.x + (SDL_randf() - 0.5F) * half(PLAYER_SIZE),
             pc->position.y + (SDL_randf() - 0.5F) * half(PLAYER_SIZE)
@@ -831,7 +845,7 @@ void PlayerFatigueRegeneration(Game_data* const gd, Player* const pc, const int 
     }
 }
 
-void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left){
+static void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left){
 	if(ticks_left < 2){
 		if(pc->blade_attack.damage < PC_BLADE_DMG){
         	pc->blade_attack.damage = PC_BLADE_DMG;
@@ -851,12 +865,12 @@ void PlayerWeakness(Game_data* const gd, Player* const pc, const int ticks_left)
 		if(pc->range_attack.armour_reduction < PC_RANGE_PENETR){
         	pc->range_attack.armour_reduction = PC_RANGE_PENETR;
 		}
-    }else if(ticks_left % 64 == 0){
+    }else if(ticks_left % DEFAULT_VIS_EFF_INTERV == 0){
         AddCurseVisualEffect(&gd->rend_data_ptr->visual_effects, &pc->position);
     }
 }
 
-void PlayerDodge(Game_data* const gd, Player* const pc, const int ticks_left){
+static void PlayerDodge(Game_data* const gd, Player* const pc, const int ticks_left){
 	if(ticks_left < 2){
 		pc->flags &= ~(dodge_time);
     }
