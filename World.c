@@ -7,7 +7,7 @@
 #include <Player.h>
 #include <Being.h>
 #include <game.h>
-#include <scroll.h>
+#include <Scroll.h>
 
 extern inline unsigned int GetBigSegCoordinate(const float x){
 	return (unsigned int)(x / BIG_SEGMENT_SIZE);

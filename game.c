@@ -11,6 +11,7 @@
 #include <game.h>
 #include <function.h>
 #include <Scroll.h>
+#include <stdlib.h>
 
 static inline void NoticeBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){
 	if(IsVoidBigSeg(gd->world.plan, x, y) || IsInNoticedBigSeg(gd->world.plan, x, y)){

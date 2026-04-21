@@ -10,6 +10,7 @@
 #include <Being.h>
 #include <game.h>
 #include <Player.h>
+#include <stdlib.h>
 
 static void SetViewTexture(Render_data* const rend_data){
 	texture(tx_view) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, rend_data->viewfinder / VIEW_TX_FACTOR, rend_data->viewfinder / VIEW_TX_FACTOR);
