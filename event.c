@@ -124,7 +124,7 @@ int MainMenuEventsService(SDL_Event* const ev, Render_data* const rend_data, uns
 				break;
 			default: break;
 			}
-		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			return *menu_position;
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
 			SetPointedOptionMouseSelection(rend_data, menu_position);
@@ -176,7 +176,7 @@ int ManageScrollsEventsService(SDL_Event* const ev, Player* const pc, Render_dat
 				return event_ok;
 			default: break;
 			}
-		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			SetSelectetScrollMouseSelection(rend_data, pc);
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
 			SetPointedScrollMouseSelection(rend_data, pc);
@@ -211,7 +211,7 @@ int MenuEventsService(Game_data* const gd){
 				return event_ok;
 			default: break;
 			}
-		}else if(gd->ev_ptr->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+		}else if(gd->ev_ptr->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			return ActivateMenuOption(pc->help_data.menu_position, gd);
 		}else if(gd->ev_ptr->type == SDL_EVENT_MOUSE_MOTION){
 			SetPointedOptionMouseSelection(gd->rend_data_ptr, &pc->help_data.menu_position);
@@ -246,7 +246,7 @@ int ShopEventsService(SDL_Event* const ev, Player* const pc, Render_data* const 
 				return opt_exit;
 			default: break;
 			}
-		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			return opt_select;
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
 			pc->help_data.menu_position = GetMouseShopSelection(rend_data);
