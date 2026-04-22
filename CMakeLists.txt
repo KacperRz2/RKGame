@@ -12,8 +12,4 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
 add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
-add_executable(KGame src/main.c src/Being.c src/event.c src/function.c src/game.c src/Player.c src/Projectile.c src/render.c src/Scroll.c src/World.c)
-
-target_link_libraries(KGame PRIVATE SDL3::SDL3)
-
-target_include_directories(KGame PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+add_subdirectory(src)
