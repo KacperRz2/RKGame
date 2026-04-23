@@ -8,32 +8,53 @@ extern "C" {
 TEST(GetDistanceSquaredTest, ZeroForSamePoints) {
     SDL_FPoint a = {0.0F, 0.0F};
     SDL_FPoint b = {0.0F, 0.0F};
-    EXPECT_EQ(GetDistanceSquared(&a, &b), 0);
+    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
     a = {1.0F, 1.0F};
     b = {1.0F, 1.0F};
-    EXPECT_EQ(GetDistanceSquared(&a, &b), 0);
+    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
     a = {-1.0F, -1.0F};
     b = {-1.0F, -1.0F};
-    EXPECT_EQ(GetDistanceSquared(&a, &b), 0);
+    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
 }
 
 TEST(GetDistanceSquaredTest, PositiveResult) {
     SDL_FPoint a = {1.0F, 2.0F};
     SDL_FPoint b = {3.0F, 4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0);
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
     a = {-1.0F, -2.0F};
     b = {-3.0F, -4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0);
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
     a = {-1.0F, 2.0F};
     b = {3.0F, -4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0);
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
     a = {1.0F, -2.0F};
     b = {-3.0F, 4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0);
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
     a = {-1.0F, 2.0F};
     b = {-3.0F, 4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0);
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
     a = {1.0F, -2.0F};
     b = {3.0F, -4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0);
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
+}
+
+TEST(GetDistanceSquaredTest, CorrectResult) {
+    SDL_FPoint a = {1.0F, 2.0F};
+    SDL_FPoint b = {3.0F, 4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
+    a = {-1.0F, -2.0F};
+    b = {-3.0F, -4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
+    a = {-1.0F, 2.0F};
+    b = {3.0F, -4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 52.0F);
+    a = {1.0F, -2.0F};
+    b = {-3.0F, 4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 52.0F);
+    a = {-1.0F, 2.0F};
+    b = {-3.0F, 4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
+    a = {1.0F, -2.0F};
+    b = {3.0F, -4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
 }
