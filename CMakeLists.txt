@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(KGame VERSION 1.0)
+project(KGame LANGUAGES C CXX VERSION 1.0)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED True)
@@ -13,3 +13,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
 add_subdirectory(src)
+
+option(BUILD_TESTING "Build the testing suite" ON)
+if(BUILD_TESTING AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_subdirectory(tests)
+endif()
