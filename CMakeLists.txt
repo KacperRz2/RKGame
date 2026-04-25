@@ -15,6 +15,6 @@ add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 add_subdirectory(src)
 
 option(BUILD_TESTING "Build the testing suite" ON)
-if(BUILD_TESTING AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
