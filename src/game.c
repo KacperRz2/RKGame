@@ -1,5 +1,24 @@
 #include <common.h>
+#include <event.h>
 #include <stdlib.h>
+
+static void NoticeBigSeg(Game_data* const, const unsigned int, const unsigned int);
+static void PlayerInUncoveredBigSeg(Game_data* const);
+static void EndLoop(SDL_Event* const, Game_data* const, const int);
+static int RareEventsService(Game_data* const);
+static void DestroyBoxes(Boxes* const);
+static void LootBox(Game_data* const, const unsigned int);
+static void DestroyBoxInArray(Boxes* const, unsigned int);
+static int GetNearbyShopIndx(Game_data* const);
+static void EnterShop(Game_data* const, Player* const, const unsigned int);
+static int UpdateGame(Game_data* const);
+static SDL_FPoint GetBeingCreationPoint(Game_data* const, const float);
+static void UpdateEffects(Game_data* const);
+static void AddGameEffect(Game_data* const, const Lasting_effect);
+static void RemoveGameEffect(Game_data* const, const int);
+static void UpdateGameEffects(Game_data* const);
+static void UpdateGameEffect(Game_data* const, const int);
+static void HordeAttack(Game_data* const, const int);
 
 static inline void NoticeBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){
 	if(IsVoidBigSeg(gd->world.plan, x, y) || IsInNoticedBigSeg(gd->world.plan, x, y)){

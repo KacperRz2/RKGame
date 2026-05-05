@@ -1,4 +1,37 @@
 #include <common.h>
+#include <function.h>
+
+static void UpdatePlayerMove(Game_data* const, const unsigned int);
+static void UpdatePlayerDirection(Player* const);
+static void UpdatePlayerPoints(Player* const);
+static void UpdatePlayer(Game_data* const, const unsigned int);
+static void ShiftBlade(Blade* const, Placement*);
+static void SetBladePosition(Blade* const, const Placement*);
+static void SetShiftToBase(Blade* const, Placement* const, const unsigned int);
+static void SetBladePositionToBase(Blade* const);
+static void SetShiftToPosition(Blade*, Placement* const, const Placement* const, const unsigned int);
+static Placement GetBladeLocation(Player* const);
+static bool BladeHitsBeing(Blade* const, Being* const, const SDL_FPoint* const);
+static bool UnleashDestruction(Game_data* const, const unsigned int);
+static void UpdatePlayerBlade(Game_data* const, const unsigned int);
+static void UpdatePlayerFire(Game_data* const, const unsigned int);
+static void UpdatePlayerPush(Game_data* const, const unsigned int);
+static void UpdatePlayerCast(Game_data* const, const unsigned int);
+static void UpdatePlayerHitPoints(Player* const);
+static void BlockPlayerFatigue(Player* const, const int);
+static void BlockPlayerArmourRegen(Player* const, const int);
+static void PlayerGainArmour(Player* const, const float);
+static void UpdateCPUPlayerFlags(Game_data* const, const unsigned int);
+static Being* BeingNear(Segment* s, Game_data* const);
+static void StunPlayer(Player* const, float);
+static void RemovePlayerEffect(Player* const, const int);
+static void UpdatePlayerEffects(Game_data* const, const unsigned int);
+static void UpdatePlayerEffect(Game_data* const, Player* const, const int);
+static void SlowPlayer(Game_data* const, Player* const, const int);
+static void PlayerHPRegeneration(Game_data* const, Player* const, const int);
+static void PlayerFatigueRegeneration(Game_data* const, Player* const, const int);
+static void PlayerWeakness(Game_data* const, Player* const, const int);
+static void PlayerDodge(Game_data* const, Player* const, const int);
 
 extern inline void StopPlayerActions(Player* const pc){
 	pc->flags &= (range_mode | stunned | dodge_time);

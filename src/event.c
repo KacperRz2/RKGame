@@ -1,4 +1,5 @@
 #include <common.h>
+#include <event.h>
 
 int EventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend_data){
 	while(SDL_PollEvent(ev)){

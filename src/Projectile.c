@@ -1,4 +1,17 @@
 #include <common.h>
+#include <function.h>
+
+static bool ProjectileHitsBeing(Projectile* const, Being* const);
+static void DestroyProjectileInArray(Projectiles_array* const, const unsigned int);
+static void MoveProjectile(Projectile* const);
+static bool ProjectileHitsPlayer(Projectile* const, Game_data* const, const unsigned int);
+
+static bool UpdatePCProjectile(Projectile* const, Game_data* const);
+static bool UpdateHostileProjectile(Projectile* const, Game_data* const);
+static bool UpdateSpecialProjectile(Projectile* const, Game_data* const);
+
+static bool WarlockProjectile(Projectile* const, Game_data* const);
+static bool FireProjectile(Projectile* const, Game_data* const);
 
 void DestroyProjectiles(Projectiles_array* const prs){
     SDL_free(prs->array);

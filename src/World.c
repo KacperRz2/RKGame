@@ -1,5 +1,13 @@
 #include <common.h>
 
+static void PlaceBoxes(Game_data* const);
+static void PlaceShops(World* const);
+static SDL_FPoint GetStartPosition(World* const);
+static float SegPosition(const unsigned int);
+static unsigned int HugeSegCenterBigSegCoordinate(const unsigned int);
+static float GetDoorPositionXorY(const unsigned int);
+static void FillBoxes(Game_data* const);
+
 extern inline unsigned int GetBigSegCoordinate(const float x){
 	return (unsigned int)(x / BIG_SEGMENT_SIZE);
 }

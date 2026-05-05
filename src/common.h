@@ -33,8 +33,6 @@ struct Lasting_effect{
 };
 
 #include <macros.h>
-#include <function.h>
-#include <event.h>
 #include <World.h>
 #include <render.h>
 #include <Projectile.h>
