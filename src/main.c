@@ -1,4 +1,6 @@
-#include <header.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <common.h>
 
 int main(int argc, char* argv[]){
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);

@@ -1,14 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <Being.h>
-#include <World.h>
-#include <function.h>
-#include <Player.h>
-#include <Projectile.h>
-#include <game.h>
-#include <render.h>
+#include <common.h>
 
 static const Being_type being_types[] = BEING_TYPES;
 

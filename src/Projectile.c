@@ -1,14 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <Projectile.h>
-#include <Being.h>
-#include <World.h>
-#include <Player.h>
-#include <function.h>
-#include <game.h>
-#include <render.h>
+#include <common.h>
 
 void DestroyProjectiles(Projectiles_array* const prs){
     SDL_free(prs->array);

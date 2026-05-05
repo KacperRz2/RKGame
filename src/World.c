@@ -1,13 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <World.h>
-#include <function.h>
-#include <Player.h>
-#include <Being.h>
-#include <game.h>
-#include <Scroll.h>
+#include <common.h>
 
 extern inline unsigned int GetBigSegCoordinate(const float x){
 	return (unsigned int)(x / BIG_SEGMENT_SIZE);
@@ -713,6 +704,7 @@ static float GetDoorPositionXorY(const unsigned int small_plan_position){
 	if(small_plan_position == 6){
 		return WORLD_SIZE - SEGMENT_SIZE * 1.25F;
 	}
+	return SEGMENT_SIZE * 1.25F;
 }
 
 extern inline bool IsClearSight(const SDL_FPoint* const from, const SDL_FPoint* const to, const Segment* const to_s, const World* const w){

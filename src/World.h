@@ -1,6 +1,60 @@
 #ifndef WORLD_H_
 #define WORLD_H_
 
+typedef struct Placement Placement;
+typedef struct position16 position16;
+typedef struct Segment_beings Segment_beings;
+typedef struct Key_location Key_location;
+typedef struct Segment Segment;
+typedef struct Shop Shop;
+typedef struct World World;
+
+enum segment_flags{
+    segment_in_sight = 1 << 0,
+    segment_known = 1 << 1
+};
+enum key_info{
+    key_location_unknown,
+    key_location_known,
+    key_owned
+};
+
+struct Placement{
+    SDL_FPoint position;
+    float direction;
+};
+struct position16{
+    _Float16 x;
+    _Float16 y;
+};
+struct Segment_beings{
+    Uint16 beings_ind[MAX_SEGM_BEINGS];
+    Uint8 num;
+};
+struct Key_location{
+    Uint8 x;
+    Uint8 y;
+};
+struct Segment{
+    Uint8 flags;
+    Segment_beings beings;
+    Segment_beings ally_beings;
+    struct coordinates {Uint16 x; Uint16 y;} indx;
+};
+struct Shop{
+    SDL_FPoint location;
+    Uint8 scrolls[SHOP_SCROLLS_NUM];
+};
+struct World{
+    Segment*** segments;
+    Uint64 plan[BIG_SEGMENTS_X];
+    SDL_FPoint portalA;
+    SDL_FPoint portalB;
+    SDL_FPoint door;
+    Key_location* key_locations;
+    Shop shops[SHOPS_NUM];
+};
+
 unsigned int GetBigSegCoordinate(const float);
 bool IsInUncoveredBigSeg(const Uint64* const, const unsigned int, const unsigned int);
 bool IsInNoticedBigSeg(const Uint64* const, const unsigned int, const unsigned int);

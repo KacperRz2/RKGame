@@ -1,8 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <function.h>
+#include <common.h>
 
 float si[ANGLE_PARTS];
 float co[ANGLE_PARTS];

@@ -1,14 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <Scroll.h>
-#include <function.h>
-#include <Being.h>
-#include <Player.h>
-#include <World.h>
-#include <render.h>
-#include <Projectile.h>
+#include <common.h>
 
 extern inline int ScrollCost(const unsigned int scroll_id){
     const int costs[] = SCR_COSTS;

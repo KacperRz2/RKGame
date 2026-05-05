@@ -1,15 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <Projectile.h>
-#include <Player.h>
-#include <function.h>
-#include <World.h>
-#include <Being.h>
-#include <Scroll.h>
-#include <game.h>
-#include <render.h>
+#include <common.h>
 
 extern inline void StopPlayerActions(Player* const pc){
 	pc->flags &= (range_mode | stunned | dodge_time);
@@ -635,7 +624,7 @@ static void UpdateCPUPlayerFlags(Game_data* const gd, const unsigned int indx){
 	float d_x;
 	float d_y;
 	float d_squared;
-	if(target = BeingNear(pc->segment, gd)){
+	if((target = BeingNear(pc->segment, gd))){
 		d_x = target->position.x - pc->position.x;
 		d_y = target->position.y - pc->position.y;
 		d_squared = pow2(d_x) + pow2(d_y);

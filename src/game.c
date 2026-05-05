@@ -1,16 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <event.h>
-#include <render.h>
-#include <World.h>
-#include <Player.h>
-#include <Projectile.h>
-#include <Being.h>
-#include <game.h>
-#include <function.h>
-#include <Scroll.h>
+#include <common.h>
 #include <stdlib.h>
 
 static inline void NoticeBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){

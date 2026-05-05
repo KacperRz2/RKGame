@@ -1,11 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <enum.h>
-#include <types.h>
-#include <event.h>
-#include <render.h>
-#include <Player.h>
-#include <game.h>
+#include <common.h>
 
 int EventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend_data){
 	while(SDL_PollEvent(ev)){

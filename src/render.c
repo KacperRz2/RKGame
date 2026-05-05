@@ -1,15 +1,4 @@
-#include <SDL3/SDL.h>
-#include <macros.h>
-#include <render_macros.h>
-#include <enum.h>
-#include <types.h>
-#include <render.h>
-#include <function.h>
-#include <World.h>
-#include <Scroll.h>
-#include <Being.h>
-#include <game.h>
-#include <Player.h>
+#include <common.h>
 #include <stdlib.h>
 
 static void SetViewTexture(Render_data* const rend_data){
