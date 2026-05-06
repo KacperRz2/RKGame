@@ -1,5 +1,6 @@
 #include <common.h>
 #include <function.h>
+#include <event.h>
 #include <stdlib.h>
 // render macros ==================================================================
 #define texture(num)	            (*(rend_data->textures + num))
@@ -950,7 +951,7 @@ static void RenderVisualEffects(Render_data* const rend_data, Game_data* const g
 	SDL_SetRenderDrawColor(rend_data->renderer, BLACK_RGB, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_view));
-	const void (*render[])(Visual_effect* const, Game_data* const) = VISUAL_EFFECT_FUNCS;
+	void (*const render[])(Visual_effect* const, Game_data* const) = VISUAL_EFFECT_FUNCS;
 	for(unsigned int i = 0U; i < rend_data->visual_effects.num; ++i){
 		Visual_effect* ve = rend_data->visual_effects.array + i;
 		(*(render + ve->type))(ve, gd);

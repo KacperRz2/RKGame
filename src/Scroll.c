@@ -18,7 +18,7 @@ extern inline int ScrollCost(const unsigned int scroll_id){
 }
 
 extern inline bool UseScroll(Game_data* const gd){
-    const bool (*effect[])(Game_data* const) = SCR_EFFECTS;
+    bool (*const effect[])(Game_data* const) = SCR_EFFECTS;
     return (*(effect + human(gd)->selected_scroll))(gd);
 }
 

@@ -1196,7 +1196,7 @@ extern inline void AddOrUpdateBeingEffect(Being* const bg, const Lasting_effect 
 }
 
 static inline void EndBeingEffect(Game_data* const gd, Being* const bg, const int effect_indx){
-    const void (*effect[])(Game_data* const, Being* const) = BEING_LASTING_EFFECTS_ENDS;
+    void (*const effect[])(Game_data* const, Being* const) = BEING_LASTING_EFFECTS_ENDS;
     (*(effect + (bg->effects + effect_indx)->id))(gd, bg);
 }
 
@@ -1218,7 +1218,7 @@ static inline void UpdateBeingEffects(Game_data* const gd, Being* const bg){
 }
 
 static inline void UpdateBeingEffect(Game_data* const gd, Being* const bg, const int effect_indx){
-    const void (*effect[])(Game_data* const, Being* const, const int) = BEING_LASTING_EFFECTS;
+    void (*const effect[])(Game_data* const, Being* const, const int) = BEING_LASTING_EFFECTS;
     (*(effect + (bg->effects + effect_indx)->id))(gd, bg, (bg->effects + effect_indx)->ticks_left--);
 	if((bg->effects + effect_indx)->ticks_left < 1 && bg->effects_num > 0U){
         EndBeingEffect(gd, bg, effect_indx);

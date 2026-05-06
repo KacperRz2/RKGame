@@ -1,5 +1,6 @@
 #include <common.h>
 #include <event.h>
+#include <function.h>
 #include <stdlib.h>
 
 static void NoticeBigSeg(Game_data* const, const unsigned int, const unsigned int);
@@ -712,7 +713,7 @@ static inline void UpdateGameEffects(Game_data* const gd){
 }
 
 static inline void UpdateGameEffect(Game_data* const gd, const int effect_indx){
-    const void (*effect[])(Game_data* const, const int) = GAME_LASTING_EFFECTS;
+    void (*const effect[])(Game_data* const, const int) = GAME_LASTING_EFFECTS;
     (*(effect + (gd->effects + effect_indx)->id))(gd, (gd->effects + effect_indx)->ticks_left--);
 	if((gd->effects + effect_indx)->ticks_left < 1){
 		RemoveGameEffect(gd, effect_indx);

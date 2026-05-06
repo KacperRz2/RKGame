@@ -820,7 +820,7 @@ static inline void UpdatePlayerEffects(Game_data* const gd, const unsigned int i
 }
 
 static inline void UpdatePlayerEffect(Game_data* const gd, Player* const pc, const int effect_indx){
-    const void (*effect[])(Game_data* const, Player* const, const int) = PLAYER_LASTING_EFFECTS;
+    void (*const effect[])(Game_data* const, Player* const, const int) = PLAYER_LASTING_EFFECTS;
     (*(effect + (pc->effects + effect_indx)->id))(gd, pc, (pc->effects + effect_indx)->ticks_left--);
 	if((pc->effects + effect_indx)->ticks_left < 1){
 		RemovePlayerEffect(pc, effect_indx);

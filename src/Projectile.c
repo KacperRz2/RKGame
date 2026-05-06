@@ -70,7 +70,7 @@ static inline void MoveProjectile(Projectile* const pr){
 }
 
 void UpdateProjectiles(Game_data* const gd){
-	const bool (*update[])(Projectile* const, Game_data* const) = PROJECTILES_UPDATE_FUNC;
+	bool (*const update[])(Projectile* const, Game_data* const) = PROJECTILES_UPDATE_FUNC;
 	for(Projectile* pr = gd->projectiles.array; pr != (gd->projectiles.array + gd->projectiles.num); ++pr){
 		if(!((*(update + pr->type_id))(pr, gd))){
 			--pr;
@@ -162,7 +162,7 @@ static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const gd){
 }
 
 static bool UpdateSpecialProjectile(Projectile* const pr, Game_data* const gd){
-	const bool (*update[])(Projectile* const, Game_data* const) = SPEC_PROJECTILES_FUNC;
+	bool (*const update[])(Projectile* const, Game_data* const) = SPEC_PROJECTILES_FUNC;
 	return (*(update + pr->special.effect_id))(pr, gd);
 }
 
