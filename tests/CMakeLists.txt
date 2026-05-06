@@ -13,7 +13,7 @@ enable_testing()
 set(RELEASE_CONFIG "$<CONFIG:Release>")
 
 add_library(KGame_test ../src/function.c)
-target_link_libraries(KGame_test SDL3::SDL3)
+target_link_libraries(KGame_test SDL3-static)
 target_include_directories(KGame_test PRIVATE ../src)
 
 set_target_properties(KGame_test PROPERTIES EXCLUDE_FROM_ALL ${RELEASE_CONFIG})
