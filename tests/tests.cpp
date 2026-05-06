@@ -71,6 +71,21 @@ TEST(RadToDegTest, CorrectResult){
     EXPECT_FLOAT_EQ(RadToDeg(SDL_PI_F * 3.0F), 540.0F);
 }
 
+TEST(SineUnsafeTest, CorrectResult){
+    SetSineCosineArrays();
+    EXPECT_NEAR(SineUnsafe(SDL_PI_F), 0.0F, MIN_ANGLE);
+    EXPECT_NEAR(SineUnsafe(SDL_PI_F * 0.75F), SDL_sinf(SDL_PI_F * 0.75F), MIN_ANGLE);
+    EXPECT_NEAR(SineUnsafe(SDL_PI_F * 0.5F), 1.0F, MIN_ANGLE);
+    EXPECT_NEAR(SineUnsafe(SDL_PI_F * 0.25F), SDL_sinf(SDL_PI_F * 0.25F), MIN_ANGLE);
+    EXPECT_FLOAT_EQ(SineUnsafe(0.0F), 0.0F);
+}
+
+TEST(SineUnsafeDeathTest, BadArgument){
+    SetSineCosineArrays();
+    EXPECT_DEATH(SineUnsafe(-SDL_PI_F * 2.0F), ".*");
+    EXPECT_DEATH(SineUnsafe(-SDL_PI_F * 0.5F), ".*");
+}
+
 TEST(SineSafeTest, CorrectResult){
     SetSineCosineArrays();
     EXPECT_FLOAT_EQ(SineSafe(SDL_PI_F * 2.0F), 0.0F);
@@ -83,3 +98,4 @@ TEST(SineSafeTest, CorrectResult){
     EXPECT_NEAR(SineSafe(-SDL_PI_F * 0.5F), -1.0F, MIN_ANGLE);
     EXPECT_NEAR(SineSafe(SDL_PI_F * 3.0F), 0.0F, MIN_ANGLE);
 }
+
