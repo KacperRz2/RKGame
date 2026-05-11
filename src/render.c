@@ -1009,6 +1009,11 @@ extern inline void AddBoomVisualEffectTimer(Visual_effects* const ves, const SDL
 	AddVisalEffect(ves, &BURN_EF_TIM(*position, SDL_rand(BOOM_SIZE / 2) + BOOM_SIZE * 15U / 2U + 1U, delay));
 }
 
+
+static inline float GetAngle(const SDL_FPoint* const a, const SDL_FPoint* const b){
+	return arctan2(b->y - a->y, b->x - a->x) + SDL_PI_F * 0.5F;
+}
+
 extern inline void AddBoltVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position, const position16 start_position){
 	Visual_effect ve = {
 		*position,
