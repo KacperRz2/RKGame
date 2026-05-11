@@ -164,3 +164,74 @@ INSTANTIATE_TEST_SUITE_P(
         arctan2Params{-16000.0F, -0.08F}
     )
 );
+
+struct GetShiftParams{
+    SDL_FPoint position, destination;
+    float velocity, expect_x, expect_y;
+};
+
+class GetShiftTest : public testing::TestWithParam<GetShiftParams>{};
+
+TEST_P(GetShiftTest, CorrectResult){
+    GetShiftParams p = GetParam();
+    float x, y;
+    GetShift(&p.position, &p.destination, p.velocity, &x, &y);
+    EXPECT_NEAR(x, p.expect_x, 0.001F);
+    EXPECT_NEAR(y, p.expect_y, 0.001F);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    GetShiftTests,
+    GetShiftTest,
+    testing::Values(
+        GetShiftParams{
+            {1.0F, 2.0F}, {3.0F, 4.0F},
+            1.0F, 0.7071F, 0.7071F
+        },
+        GetShiftParams{
+            {-1.0F, -2.0F}, {-3.0F, -4.0F},
+            1.0F, -0.7071F, -0.7071F
+        },
+        GetShiftParams{
+            {-1.0F, 2.0F}, {3.0F, -4.0F},
+            1.0F, 0.5547F, -0.8321F
+        },
+        GetShiftParams{
+            {1.0F, -2.0F}, {-3.0F, 4.0F},
+            1.0F, -0.5547F, 0.8321F
+        },
+        GetShiftParams{
+            {-1.0F, 2.0F}, {-3.0F, 4.0F},
+            1.0F, -0.7071F, 0.7071F
+        },
+        GetShiftParams{
+            {1.0F, -2.0F}, {3.0F, -4.0F},
+            1.0F, 0.7071F, -0.7071F
+        },
+
+        GetShiftParams{
+            {1.0F, 2.0F}, {3.0F, 4.0F},
+            123.0F, 86.9741F, 86.9741F
+        },
+        GetShiftParams{
+            {-1.0F, -2.0F}, {-3.0F, -4.0F},
+            123.0F, -86.9741F, -86.9741F
+        },
+        GetShiftParams{
+            {-1.0F, 2.0F}, {3.0F, -4.0F},
+            123.0F, 68.2281F, -102.3422F
+        },
+        GetShiftParams{
+            {1.0F, -2.0F}, {-3.0F, 4.0F},
+            123.0F, -68.2281F, 102.3422F
+        },
+        GetShiftParams{
+            {-1.0F, 2.0F}, {-3.0F, 4.0F},
+            123.0F, -86.9741F, 86.9741F
+        },
+        GetShiftParams{
+            {1.0F, -2.0F}, {3.0F, -4.0F},
+            123.0F, 86.9741F, -86.9741F
+        }
+    )
+);
