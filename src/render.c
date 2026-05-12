@@ -335,7 +335,8 @@
 #define DEFEAT_TEXT_LEN             7U
 #define VICTORY_TEXT                {S,u,k,c,e,s,exclam_m}
 #define VICTORY_TEXT_LEN            7U
-
+#define CREDITS_TEXT                {A,u,t,o,r,sp,g,r,y,s28,sp,K,a,c,p,e,r,sp,R,z,ą,ż,e,w,s,k,i}
+#define CREDITS_TEXT_LEN            27U
 
 #define TEXTURE_FILES_NAMES         {\
                                         "img3",\
@@ -1372,12 +1373,10 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const pc, c
 	}
 }
 
-void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_position){
+static void RenderMainMenuPage(Render_data* const rend_data, const unsigned int menu_position, const int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
-	const Uint8* texts[] = MAIN_MENU_TEXTS;
-	const unsigned int texts_chars_num[] = MAIN_MENU_TEXTS_SIZES;
 	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
 	const float text_height = icon_size * 0.5F;
 	SDL_FPoint dst_point_text = {
@@ -1391,13 +1390,19 @@ void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_positi
 		rend_data->viewfinder_rect.w - FRAME_W * 2.0F,
 		icon_size
 	};
-	for(unsigned int i = 0U; i < OPTIONS_NUM; ++i){
+	for(unsigned int i = 0U; i < options_num; ++i){
 		RenderTextCentered(rend_data, 0.0F, dst_point_text.y, text_height, *(texts + i), *(texts_chars_num + i), rend_data->viewfinder);
 		dst_point_text.y += shift;
 	}
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	SDL_RenderPresent(rend_data->renderer);
+}
+
+void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_position){
+	const Uint8* texts[] = MAIN_MENU_TEXTS;
+	const unsigned int texts_chars_num[] = MAIN_MENU_TEXTS_SIZES;
+	RenderMainMenuPage(rend_data, menu_position, OPTIONS_NUM, texts, texts_chars_num);
 }
 
 static inline void RenderViewfinderBackground(Render_data* const rend_data){
@@ -2713,24 +2718,26 @@ static int GetMouseMenuPositionNum(const Render_data* const rend_data){
 	return NOT_FOUND;
 }
 
-void RenderDefeatedScreen(Render_data* const rend_data){
+static void RenderMessageScreen(Render_data* const rend_data, const Uint8 red, const Uint8 gre, const Uint8 blu, const Uint8 *const text, const int text_len){
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
-	SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);
+	SDL_SetTextureColorMod(texture(tx_chars), red, gre, blu);
 	const float text_height = rend_data->window_h * 0.125F;
-	RenderTextCentered(rend_data, 0.0F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])DEFEAT_TEXT, DEFEAT_TEXT_LEN, rend_data->window_w);
+	RenderTextCentered(rend_data, 0.0F, WINDOW_CENTER_Y - half(text_height), text_height, text, text_len, rend_data->window_w);
 	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	SDL_RenderPresent(rend_data->renderer);
 }
 
+void RenderDefeatedScreen(Render_data* const rend_data){
+	RenderMessageScreen(rend_data, 255U, 0U, 0U, (Uint8[])DEFEAT_TEXT, DEFEAT_TEXT_LEN);
+}
+
 void RenderVictoryScreen(Render_data* const rend_data){
-	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
-	SDL_RenderClear(rend_data->renderer);
-	SDL_SetTextureColorMod(texture(tx_chars), 0U, 255U, 0U);
-	const float text_height = rend_data->window_h * 0.125F;
-	RenderTextCentered(rend_data, 0.0F, WINDOW_CENTER_Y - half(text_height), text_height, (Uint8[])VICTORY_TEXT, VICTORY_TEXT_LEN, rend_data->window_w);
-	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
-	SDL_RenderPresent(rend_data->renderer);
+	RenderMessageScreen(rend_data, 0U, 255U, 0U, (Uint8[])VICTORY_TEXT, VICTORY_TEXT_LEN);
+}
+
+void RenderCreditsScreen(Render_data* const rend_data){
+	RenderMessageScreen(rend_data, WHITE_RGB, (Uint8[])CREDITS_TEXT, CREDITS_TEXT_LEN);
 }
 
 extern inline void SetMouseBarrier(Render_data* const rend_data){

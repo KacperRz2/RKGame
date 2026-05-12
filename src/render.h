@@ -126,6 +126,7 @@ void SetPointedOptionMouseSelection(const Render_data* const, unsigned int* cons
 int GetMouseScrollManagPositionNum(const Render_data* const);
 void RenderDefeatedScreen(Render_data* const);
 void RenderVictoryScreen(Render_data* const);
+void RenderCreditsScreen(Render_data* const);
 void SetMouseBarrier(Render_data* const);
 void RenderShop(Render_data* const, const Player* const, const Shop* const, const Uint8* const, const unsigned int, const Uint8* const, const unsigned int, const int);
 void ToggleFullscreen(Render_data* const);

@@ -117,6 +117,7 @@ struct Game_data{
 
 int MainMenuLoop(SDL_Event* const, Render_data* const);
 void GameLoop(Game_data* const);
+void CreditsLoop(SDL_Event* const, Render_data *const);
 void SetGameData(Game_data* const);
 void ClearGameData(Game_data* const);
 void AddToBox(Box* const, const unsigned int, const int, const unsigned int);

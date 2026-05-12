@@ -1,3 +1,4 @@
+#include "render.h"
 #include <common.h>
 #include <event.h>
 #include <function.h>
@@ -5,7 +6,7 @@
 
 static void NoticeBigSeg(Game_data* const, const unsigned int, const unsigned int);
 static void PlayerInUncoveredBigSeg(Game_data* const);
-static void EndLoop(SDL_Event* const, Game_data* const, const int);
+static void EndLoop(SDL_Event* const, Render_data* const, const int);
 static int RareEventsService(Game_data* const);
 static void DestroyBoxes(Boxes* const);
 static void LootBox(Game_data* const, const unsigned int);
@@ -77,7 +78,7 @@ void GameLoop(Game_data* const gd){
 				time = SDL_GetTicksNS();
 				prev_frame_time = time;
 			}else{
-				EndLoop(gd->ev_ptr, gd, update_result);
+				EndLoop(gd->ev_ptr, gd->rend_data_ptr, update_result);
 				break;
 			}
 		}
@@ -97,38 +98,33 @@ void GameLoop(Game_data* const gd){
     }
 }
 
-static void EndLoop(SDL_Event* const e, Game_data* const gd, const int result){
-	if(result == update_defeated){
-		for(unsigned int i = 0U; i < 50U; ++i){
-			RenderDefeatedScreen(gd->rend_data_ptr);
-			SDL_Delay(40U);
-		}
-		SDL_PumpEvents();
-		SDL_FlushEvent(SDL_EVENT_KEY_UP);
-		SDL_FlushEvent(SDL_EVENT_MOUSE_BUTTON_UP);
-		while(1){
-			if(EndingEventsService(e)){
-				break;
-			}
-			RenderDefeatedScreen(gd->rend_data_ptr);
-        	SDL_Delay(FRAME_TIME_MS);
-		}
-	}else{
-		for(unsigned int i = 0U; i < 50U; ++i){
-			RenderVictoryScreen(gd->rend_data_ptr);
-			SDL_Delay(40U);
-		}
-		SDL_PumpEvents();
-		SDL_FlushEvent(SDL_EVENT_KEY_UP);
-		SDL_FlushEvent(SDL_EVENT_MOUSE_BUTTON_UP);
-		while(1){
-			if(EndingEventsService(e)){
-				break;
-			}
-			RenderVictoryScreen(gd->rend_data_ptr);
-        	SDL_Delay(FRAME_TIME_MS);
-		}
+static void MessageScreenLoop(SDL_Event* const e, Render_data *const rend_data, void (*RendFunc)(Render_data *const)){
+	for(unsigned int i = 0U; i < 50U; ++i){
+		RendFunc(rend_data);
+		SDL_Delay(40U);
 	}
+	SDL_PumpEvents();
+	SDL_FlushEvent(SDL_EVENT_KEY_UP);
+	SDL_FlushEvent(SDL_EVENT_MOUSE_BUTTON_UP);
+	while(1){
+		if(EndingEventsService(e)){
+			break;
+		}
+		RendFunc(rend_data);
+		SDL_Delay(FRAME_TIME_MS);
+	}
+}
+
+static void EndLoop(SDL_Event* const ev, Render_data *const rend_data, const int result){
+	if(result == update_defeated){
+		MessageScreenLoop(ev, rend_data, RenderDefeatedScreen);
+	}else{
+		MessageScreenLoop(ev, rend_data, RenderVictoryScreen);
+	}
+}
+
+void CreditsLoop(SDL_Event* const ev, Render_data *const rend_data){
+	MessageScreenLoop(ev, rend_data, RenderCreditsScreen);
 }
 
 void SetGameData(Game_data* const gd){
