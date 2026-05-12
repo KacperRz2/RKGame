@@ -5,6 +5,7 @@ target_sources(KGame
   PRIVATE FILE_SET HEADERS
 )
 
-target_link_libraries(KGame PRIVATE SDL3-static)
+target_link_libraries(KGame PRIVATE SDL3-static enet)
+target_include_directories(KGame PRIVATE ../vendored/enet/include)
 
 set_target_properties(KGame PROPERTIES UNITY_BUILD ON)
