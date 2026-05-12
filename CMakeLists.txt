@@ -16,7 +16,8 @@ add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
 add_subdirectory(src)
 
-option(KGAME_BUILD_TESTING "Build the testing suite" ON)
-if(KGAME_BUILD_TESTING)
+option(BUILD_TESTING "Enable testing and build tests" ON)
+if(BUILD_TESTING)
+    enable_testing()
     add_subdirectory(tests)
 endif()

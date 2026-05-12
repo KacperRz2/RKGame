@@ -208,7 +208,6 @@ INSTANTIATE_TEST_SUITE_P(
             {1.0F, -2.0F}, {3.0F, -4.0F},
             1.0F, 0.7071F, -0.7071F
         },
-
         GetShiftParams{
             {1.0F, 2.0F}, {3.0F, 4.0F},
             123.0F, 86.9741F, 86.9741F
