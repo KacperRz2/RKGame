@@ -6,60 +6,6 @@ extern "C" {
     #include "../src/macros.h"
 }
 
-TEST(GetDistanceSquaredTest, ZeroForSamePoints){
-    SDL_FPoint a = {0.0F, 0.0F};
-    SDL_FPoint b = {0.0F, 0.0F};
-    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
-    a = {1.0F, 1.0F};
-    b = {1.0F, 1.0F};
-    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
-    a = {-1.0F, -1.0F};
-    b = {-1.0F, -1.0F};
-    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
-}
-
-TEST(GetDistanceSquaredTest, PositiveResult){
-    SDL_FPoint a = {1.0F, 2.0F};
-    SDL_FPoint b = {3.0F, 4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
-    a = {-1.0F, -2.0F};
-    b = {-3.0F, -4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
-    a = {-1.0F, 2.0F};
-    b = {3.0F, -4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
-    a = {1.0F, -2.0F};
-    b = {-3.0F, 4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
-    a = {-1.0F, 2.0F};
-    b = {-3.0F, 4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
-    a = {1.0F, -2.0F};
-    b = {3.0F, -4.0F};
-    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
-}
-
-TEST(GetDistanceSquaredTest, CorrectResult){
-    SDL_FPoint a = {1.0F, 2.0F};
-    SDL_FPoint b = {3.0F, 4.0F};
-    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
-    a = {-1.0F, -2.0F};
-    b = {-3.0F, -4.0F};
-    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
-    a = {-1.0F, 2.0F};
-    b = {3.0F, -4.0F};
-    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 52.0F);
-    a = {1.0F, -2.0F};
-    b = {-3.0F, 4.0F};
-    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 52.0F);
-    a = {-1.0F, 2.0F};
-    b = {-3.0F, 4.0F};
-    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
-    a = {1.0F, -2.0F};
-    b = {3.0F, -4.0F};
-    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
-}
-
 TEST(RadToDegTest, CorrectResult){
     EXPECT_FLOAT_EQ(RadToDeg(SDL_PI_F * 2.0F), 360.0F);
     EXPECT_FLOAT_EQ(RadToDeg(SDL_PI_F), 180.0F);
@@ -234,3 +180,92 @@ INSTANTIATE_TEST_SUITE_P(
         }
     )
 );
+
+struct GetShiftFromAngleParams{
+    float angle, velocity, expect_x, expect_y;
+};
+
+class GetShiftFromAngleTest : public testing::TestWithParam<GetShiftFromAngleParams>{};
+
+TEST_P(GetShiftFromAngleTest, CorrectResult){
+    SetSineCosineArrays();
+    GetShiftFromAngleParams p = GetParam();
+    float x, y;
+    GetShiftFromAngle(p.angle, p.velocity, &x, &y);
+    EXPECT_NEAR(x, p.expect_x, MIN_ANGLE * p.velocity);
+    EXPECT_NEAR(y, p.expect_y, MIN_ANGLE * p.velocity);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    GetShiftFromAngleTests,
+    GetShiftFromAngleTest,
+    testing::Values(
+        GetShiftFromAngleParams{SDL_PI_F * 0.5F, 1.0F, 1.0F, 0.0F},
+        GetShiftFromAngleParams{SDL_PI_F * 0.25F, 1.0F, 0.7071F, -0.7071F},
+        GetShiftFromAngleParams{SDL_PI_F * 0.75F, 1.0F, 0.7071F, 0.7071F},
+        GetShiftFromAngleParams{SDL_PI_F * 0.0F, 1.0F, 0.0F, -1.0F},
+        GetShiftFromAngleParams{SDL_PI_F * 1.0F, 1.0F, 0.0F, 1.0F},
+        GetShiftFromAngleParams{SDL_PI_F * 1.25F, 1.0F, -0.7071F, 0.7071F},
+        GetShiftFromAngleParams{SDL_PI_F * 1.456F, 1.0F, -0.9905F, 0.1378F},
+        GetShiftFromAngleParams{SDL_PI_F * 0.5F, 123.0F, 123.0F, 0.0F},
+        GetShiftFromAngleParams{SDL_PI_F * 0.25F, 123.0F, 86.9741F, -86.9741F},
+        GetShiftFromAngleParams{SDL_PI_F * 0.75F, 123.0F, 86.9741F, 86.9741F},
+        GetShiftFromAngleParams{SDL_PI_F * 0.0F, 123.0F, 0.0F, -123.0F},
+        GetShiftFromAngleParams{SDL_PI_F * 1.0F, 123.0F, 0.0F, 123.0F},
+        GetShiftFromAngleParams{SDL_PI_F * 1.456F, 123.0F, -121.8267F, 16.9482F}
+    )
+);
+
+TEST(GetDistanceSquaredTest, ZeroForSamePoints){
+    SDL_FPoint a = {0.0F, 0.0F};
+    SDL_FPoint b = {0.0F, 0.0F};
+    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
+    a = {1.0F, 1.0F};
+    b = {1.0F, 1.0F};
+    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
+    a = {-1.0F, -1.0F};
+    b = {-1.0F, -1.0F};
+    EXPECT_EQ(GetDistanceSquared(&a, &b), 0.0F);
+}
+
+TEST(GetDistanceSquaredTest, PositiveResult){
+    SDL_FPoint a = {1.0F, 2.0F};
+    SDL_FPoint b = {3.0F, 4.0F};
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
+    a = {-1.0F, -2.0F};
+    b = {-3.0F, -4.0F};
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
+    a = {-1.0F, 2.0F};
+    b = {3.0F, -4.0F};
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
+    a = {1.0F, -2.0F};
+    b = {-3.0F, 4.0F};
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
+    a = {-1.0F, 2.0F};
+    b = {-3.0F, 4.0F};
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
+    a = {1.0F, -2.0F};
+    b = {3.0F, -4.0F};
+    EXPECT_GT(GetDistanceSquared(&a, &b), 0.0F);
+}
+
+TEST(GetDistanceSquaredTest, CorrectResult){
+    SDL_FPoint a = {1.0F, 2.0F};
+    SDL_FPoint b = {3.0F, 4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
+    a = {-1.0F, -2.0F};
+    b = {-3.0F, -4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
+    a = {-1.0F, 2.0F};
+    b = {3.0F, -4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 52.0F);
+    a = {1.0F, -2.0F};
+    b = {-3.0F, 4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 52.0F);
+    a = {-1.0F, 2.0F};
+    b = {-3.0F, 4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
+    a = {1.0F, -2.0F};
+    b = {3.0F, -4.0F};
+    EXPECT_FLOAT_EQ(GetDistanceSquared(&a, &b), 8.0F);
+}
