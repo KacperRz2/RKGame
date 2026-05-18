@@ -95,7 +95,7 @@ int EventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend
 	return event_ok;
 }
 
-int MainMenuEventsService(SDL_Event* const ev, Render_data* const rend_data, unsigned int* const menu_position){
+int MenuEventsService(SDL_Event* const ev, Render_data* const rend_data, unsigned int* const menu_position, const unsigned int options_num){
 	while(SDL_PollEvent(ev)){
 		if(ev->type == SDL_EVENT_KEY_DOWN){
 			switch(ev->key.scancode){
@@ -107,21 +107,27 @@ int MainMenuEventsService(SDL_Event* const ev, Render_data* const rend_data, uns
 			case SDL_SCANCODE_DOWN:
 			case KEY_MOVE_RIGHT:
 			case SDL_SCANCODE_RIGHT:
-				++(*menu_position); break;
+				if(*menu_position < options_num - 1U){
+					++(*menu_position);
+				}
+				break;
 			case KEY_MOVE_FORWARD:
 			case SDL_SCANCODE_UP:
 			case KEY_MOVE_LEFT:
 			case SDL_SCANCODE_LEFT:
-				--(*menu_position); break;
+				if(*menu_position > 0U){
+					--(*menu_position);
+				}
+				break;
 			case SDL_SCANCODE_ESCAPE:
-				*menu_position = menu_quit;
+				*menu_position = options_num - 1U;
 				break;
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			return *menu_position;
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
-			SetPointedOptionMouseSelection(rend_data, menu_position);
+			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
 		}
 	}
 	return menu_unknown;
@@ -179,41 +185,6 @@ int ManageScrollsEventsService(SDL_Event* const ev, Player* const pc, Render_dat
 	pc->help_data.menu_position += SCROLLS_NUM;
 	pc->help_data.menu_position %= SCROLLS_NUM;
 	return event_manage_scrolls;
-}
-
-int MenuEventsService(Game_data* const gd){
-	Player* const pc = human(gd);
-	while(SDL_PollEvent(gd->ev_ptr)){
-		if(gd->ev_ptr->type == SDL_EVENT_KEY_DOWN){
-			switch(gd->ev_ptr->key.scancode){
-			case KEY_SELECT:
-			case SDL_SCANCODE_RETURN:
-				return ActivateMenuOption(pc->help_data.menu_position, gd);
-			case KEY_MOVE_BACK:
-			case SDL_SCANCODE_DOWN:
-			case KEY_MOVE_RIGHT:
-			case SDL_SCANCODE_RIGHT:
-				++pc->help_data.menu_position; break;
-			case KEY_MOVE_FORWARD:
-			case SDL_SCANCODE_UP:
-			case KEY_MOVE_LEFT:
-			case SDL_SCANCODE_LEFT:
-				--pc->help_data.menu_position; break;
-			case SDL_SCANCODE_ESCAPE:
-				SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
-				SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
-				return event_ok;
-			default: break;
-			}
-		}else if(gd->ev_ptr->type == SDL_EVENT_MOUSE_BUTTON_UP){
-			return ActivateMenuOption(pc->help_data.menu_position, gd);
-		}else if(gd->ev_ptr->type == SDL_EVENT_MOUSE_MOTION){
-			SetPointedOptionMouseSelection(gd->rend_data_ptr, &pc->help_data.menu_position);
-		}
-	}
-	pc->help_data.menu_position += OPTIONS_NUM;
-	pc->help_data.menu_position %= OPTIONS_NUM;
-	return event_menu;
 }
 
 int EndingEventsService(SDL_Event* const ev){

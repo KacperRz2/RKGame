@@ -1,3 +1,4 @@
+#include "SDL3/SDL_oldnames.h"
 #include <common.h>
 #include <function.h>
 #include <event.h>
@@ -199,11 +200,11 @@
                                         shift * ICONS_IN_VIEWF_ROW,\
                                         shift * 5\
                                     }
-#define MENU_RECT                   {\
+#define MENU_RECT(options_num)      {\
                                         rend_data->viewfinder_rect.x + FRAME_W,\
                                         rend_data->viewfinder_rect.y + icon_size + FRAME_W * 2.5F,\
                                         rend_data->viewfinder_rect.w - FRAME_W * 2.0F,\
-                                        shift * OPTIONS_NUM\
+                                        shift * options_num\
                                     }
 #define RGB_LOWER_RANK              ((Uint8[]){102, 63, 25})
 #define RGB_MEDIUM_RANK             ((Uint8[]){223, 223, 223})
@@ -426,7 +427,7 @@ static void RenderInt(Render_data* const, const float, const float, const float,
 static void RenderIntCentered(Render_data* const, const float, const float, const float, int, const float);
 static void RenderTextFromRight(Render_data* const, float, const float, const float, const Uint8*, const unsigned int);
 static void RenderIntFromRight(Render_data* const, const float, const float, const float, int);
-static int GetMouseMenuPositionNum(const Render_data* const);
+static int GetMouseMenuPositionNum(const Render_data* const, const unsigned int);
 static SDL_FRect GetScrollTextureSrcRect(unsigned int);
 
 enum inoc_position{
@@ -1373,10 +1374,8 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const pc, c
 	}
 }
 
-static void RenderMainMenuPage(Render_data* const rend_data, const unsigned int menu_position, const int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
-	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
-	SDL_RenderClear(rend_data->renderer);
-	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
+static void RenderMenuPage(Render_data* const rend_data, const unsigned int menu_position, const int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
+	SDL_RenderFillRect(rend_data->renderer, NULL);
 	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
 	const float text_height = icon_size * 0.5F;
 	SDL_FPoint dst_point_text = {
@@ -1395,14 +1394,17 @@ static void RenderMainMenuPage(Render_data* const rend_data, const unsigned int 
 		dst_point_text.y += shift;
 	}
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
-	SDL_SetRenderViewport(rend_data->renderer, NULL);
-	SDL_RenderPresent(rend_data->renderer);
 }
 
 void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_position){
 	const Uint8* texts[] = MAIN_MENU_TEXTS;
 	const unsigned int texts_chars_num[] = MAIN_MENU_TEXTS_SIZES;
-	RenderMainMenuPage(rend_data, menu_position, OPTIONS_NUM, texts, texts_chars_num);
+	SDL_SetRenderViewport(rend_data->renderer, NULL);
+	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
+	SDL_RenderClear(rend_data->renderer);
+	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
+	RenderMenuPage(rend_data, menu_position, OPTIONS_NUM, texts, texts_chars_num);
+	SDL_RenderPresent(rend_data->renderer);
 }
 
 static inline void RenderViewfinderBackground(Render_data* const rend_data){
@@ -2084,28 +2086,10 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 }
 
 static void RenderMenu(Render_data* const rend_data, const Player* const pc){
-	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 127);
-	SDL_RenderFillRect(rend_data->renderer, NULL);
 	const Uint8* texts[] = MENU_TEXTS;
 	const unsigned int texts_chars_num[] = MENU_TEXTS_SIZES;
-	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
-	const float text_height = icon_size * 0.5F;
-	SDL_FPoint dst_point_text = {
-		icon_size,
-		icon_size * 1.25F + FRAME_W * 3.0F
-	};
-	const float shift = icon_size + FRAME_W;
-	const SDL_FRect menu_ptr_rect = {
-		FRAME_W,
-		icon_size + FRAME_W * 3.0F + shift * pc->help_data.menu_position,
-		rend_data->viewfinder_rect.w - FRAME_W * 2.0F,
-		icon_size
-	};
-	for(unsigned int i = 0U; i < OPTIONS_NUM; ++i){
-		RenderTextCentered(rend_data, 0.0F, dst_point_text.y, text_height, *(texts + i), *(texts_chars_num + i), rend_data->viewfinder);
-		dst_point_text.y += shift;
-	}
-	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
+	SDL_SetRenderDrawColor(rend_data->renderer, BLACK_RGB, 127U);
+	RenderMenuPage(rend_data, pc->help_data.menu_position, OPTIONS_NUM, texts, texts_chars_num);
 }
 
 static void DrawBackground(Render_data* const rend_data){
@@ -2679,8 +2663,8 @@ unsigned int GetMouseShopSelection(const Render_data* const rend_data){
 	return col + row * SHOP_COLS;
 }
 
-void SetPointedOptionMouseSelection(const Render_data* const rend_data, unsigned int* const menu_position){
-	const int num = GetMouseMenuPositionNum(rend_data);
+void SetPointedOptionMouseSelection(const Render_data* const rend_data, unsigned int* const menu_position, const unsigned int options_num){
+	const int num = GetMouseMenuPositionNum(rend_data, options_num);
 	if(num >= 0){
 		*menu_position = num;
 	}
@@ -2702,18 +2686,18 @@ int GetMouseScrollManagPositionNum(const Render_data* const rend_data){
 	return NOT_FOUND;
 }
 
-static int GetMouseMenuPositionNum(const Render_data* const rend_data){
+static int GetMouseMenuPositionNum(const Render_data* const rend_data, const unsigned int options_num){
 	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
 	const float shift = icon_size + FRAME_W;
-	const SDL_FRect menu_rect = MENU_RECT;
+	const SDL_FRect menu_rect = MENU_RECT(options_num);
 	SDL_FPoint mouse;
 	SDL_GetMouseState(&mouse.x, &mouse.y);
 	if(SDL_PointInRectFloat(&mouse, &menu_rect)){
 		const unsigned int num = (unsigned int)((mouse.y - menu_rect.y) / shift);
-		if(num < OPTIONS_NUM){
+		if(num < options_num){
 			return num;
 		}
-		return OPTIONS_NUM - 1U;
+		return options_num - 1U;
 	}
 	return NOT_FOUND;
 }

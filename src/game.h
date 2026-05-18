@@ -124,7 +124,6 @@ void AddToBox(Box* const, const unsigned int, const int, const unsigned int);
 int GetNearbyBoxIndx(const Boxes* const, const SDL_FPoint* const, const float);
 int CalculateDamage(const Impact* const, const Armour* const);
 float CalculateStunPower(const Impact* const, const Armour* const);
-int ActivateMenuOption(const unsigned int, Game_data* const);
 int ItemPrice(const unsigned int);
 
 int HasEffect(Lasting_effect* const, const unsigned int, const unsigned int);

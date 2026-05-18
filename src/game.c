@@ -1,3 +1,4 @@
+#include "macros.h"
 #include "render.h"
 #include <common.h>
 #include <event.h>
@@ -21,6 +22,7 @@ static void RemoveGameEffect(Game_data* const, const int);
 static void UpdateGameEffects(Game_data* const);
 static void UpdateGameEffect(Game_data* const, const int);
 static void HordeAttack(Game_data* const, const int);
+static int ActivateMenuOption(const unsigned int, Game_data* const);
 
 static inline void NoticeBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){
 	if(IsVoidBigSeg(gd->world.plan, x, y) || IsInNoticedBigSeg(gd->world.plan, x, y)){
@@ -43,17 +45,15 @@ static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
 	}
 }
 
-int MainMenuLoop(SDL_Event* const e, Render_data* const rend_data){
+int MainMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
     int option = menu_unknown;
 	unsigned int menu_position = 0U;
     while(1){
         RenderMainMenu(rend_data, menu_position);
-        option = MainMenuEventsService(e, rend_data, &menu_position);
-		menu_position += OPTIONS_NUM;
-		menu_position %= OPTIONS_NUM;
+        option = MenuEventsService(ev, rend_data, &menu_position, OPTIONS_NUM);
         if(option != menu_unknown) break;
         SDL_Delay(FRAME_TIME_MS);
-    }
+	}
     return option;
 }
 
@@ -69,8 +69,8 @@ void GameLoop(Game_data* const gd){
 			state = EventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
-		}else if(state == event_menu){
-			state = MenuEventsService(gd);
+		}else if(state == event_menu && menu_unknown != MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &human(gd)->help_data.menu_position, OPTIONS_NUM)){
+			state = ActivateMenuOption(human(gd)->help_data.menu_position, gd);
 		}
 		const int update_result = UpdateGame(gd);
 		if(update_result != update_ok){
@@ -124,6 +124,7 @@ static void EndLoop(SDL_Event* const ev, Render_data *const rend_data, const int
 }
 
 void CreditsLoop(SDL_Event* const ev, Render_data *const rend_data){
+	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	MessageScreenLoop(ev, rend_data, RenderCreditsScreen);
 }
 
@@ -616,7 +617,7 @@ static int UpdateGame(Game_data* const gd){
 	return update_ok;
 }
 
-int ActivateMenuOption(const unsigned int option, Game_data* const gd){
+static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 	if(option == menu_p_continue){
 		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 		return event_ok;

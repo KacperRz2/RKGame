@@ -122,7 +122,7 @@ void ResetTextTextureAlpha(Render_data* const);
 void SetSelectetScrollMouseSelection(const Render_data* const, Player* const);
 void SetPointedScrollMouseSelection(const Render_data* const, Player* const);
 unsigned int GetMouseShopSelection(const Render_data* const);
-void SetPointedOptionMouseSelection(const Render_data* const, unsigned int* const);
+void SetPointedOptionMouseSelection(const Render_data* const, unsigned int* const, const unsigned int);
 int GetMouseScrollManagPositionNum(const Render_data* const);
 void RenderDefeatedScreen(Render_data* const);
 void RenderVictoryScreen(Render_data* const);
