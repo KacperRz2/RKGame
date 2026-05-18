@@ -132,6 +132,7 @@
 #define QUICK_SCROLLS               9U
 #define SCROLLS_NUM                 (scroll_empty + 1U)
 #define OPTIONS_NUM                 5U
+#define SETTINGS_NUM                2U
 #define MAX_BEING_EFFECTS           8
 #define MAX_PC_EFFECTS              8
 #define MAX_GAME_EFFECTS            8

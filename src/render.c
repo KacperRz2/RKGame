@@ -332,6 +332,16 @@
                                         7U,\
                                         7U,\
                                     }
+#define SETTINGS_TEXTS             {\
+                                        (Uint8[]){W,ł,dot,s1,W,y,ł,dot,sp,p,e,ł,n,y,sp,e,k,r,a,n},\
+                                        (Uint8[])RETURN_TEXT,\
+                                    }
+#define SETTINGS_TEXTS_SIZES       {\
+                                        20U,\
+                                        RETURN_TEXT_LEN,\
+}
+#define RETURN_TEXT                 {P,o,w,r,ó,t}
+#define RETURN_TEXT_LEN             6U
 #define DEFEAT_TEXT                 {P,o,r,a,ż,k,a}
 #define DEFEAT_TEXT_LEN             7U
 #define VICTORY_TEXT                {S,u,k,c,e,s,exclam_m}
@@ -1396,15 +1406,25 @@ static void RenderMenuPage(Render_data* const rend_data, const unsigned int menu
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
 }
 
-void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_position){
-	const Uint8* texts[] = MAIN_MENU_TEXTS;
-	const unsigned int texts_chars_num[] = MAIN_MENU_TEXTS_SIZES;
+static void RenderMainMenuPage(Render_data* const rend_data, const unsigned int menu_position, const int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
-	RenderMenuPage(rend_data, menu_position, OPTIONS_NUM, texts, texts_chars_num);
+	RenderMenuPage(rend_data, menu_position, options_num, texts, texts_chars_num);
 	SDL_RenderPresent(rend_data->renderer);
+}
+
+void RenderMainMenu(Render_data* const rend_data, const unsigned int menu_position){
+	const Uint8* texts[] = MAIN_MENU_TEXTS;
+	const unsigned int texts_chars_num[] = MAIN_MENU_TEXTS_SIZES;
+	RenderMainMenuPage(rend_data, menu_position, OPTIONS_NUM, texts, texts_chars_num);
+}
+
+void RenderSettingsMenu(Render_data* const rend_data, const unsigned int menu_position){
+	const Uint8* texts[] = SETTINGS_TEXTS;
+	const unsigned int texts_chars_num[] = SETTINGS_TEXTS_SIZES;
+	RenderMainMenuPage(rend_data, menu_position, SETTINGS_NUM, texts, texts_chars_num);
 }
 
 static inline void RenderViewfinderBackground(Render_data* const rend_data){

@@ -11,14 +11,8 @@ enum menu_option{
     menu_settings,
     menu_credits,
     menu_quit,
-    menu_unknown
-};
-enum menu_position{
-    menu_p_settings,
-    menu_p_load,
-    menu_p_continue,
-    menu_p_save,
-    menu_p_quit
+    menu_unknown,
+    menu_escape
 };
 enum box_content_type{
     box_mp,

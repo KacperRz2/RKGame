@@ -114,6 +114,7 @@ void AddSpellVisualEffect(Visual_effects* const, const SDL_FPoint* const, const 
 
 void ResetRenderData(Render_data* const);
 void RenderMainMenu(Render_data* const, const unsigned int);
+void RenderSettingsMenu(Render_data* const, const unsigned int);
 void RenderGame(Render_data* const, Game_data* const, const int);
 void ClearRenderData(Render_data* const);
 void DrawMap(Render_data* const, const World* const);

@@ -1,3 +1,4 @@
+#include "game.h"
 #include "macros.h"
 #include "render.h"
 #include <common.h>
@@ -24,6 +25,22 @@ static void UpdateGameEffect(Game_data* const, const int);
 static void HordeAttack(Game_data* const, const int);
 static int ActivateMenuOption(const unsigned int, Game_data* const);
 
+enum menu_in_game_option{
+	menu_ig_settings,
+	menu_ig_load,
+	menu_ig_continue,
+	menu_ig_save,
+	menu_ig_quit,
+	menu_ig_unknown,
+	menu_ig_escape
+};
+enum settings_option{
+	settings_fullscreen,
+	settings_quit,
+	settings_unknown,
+	settings_escape
+};
+
 static inline void NoticeBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){
 	if(IsVoidBigSeg(gd->world.plan, x, y) || IsInNoticedBigSeg(gd->world.plan, x, y)){
 		return;
@@ -45,16 +62,40 @@ static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
 	}
 }
 
+static void SettingsMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
+	unsigned int option = settings_unknown;
+	unsigned int menu_position = settings_fullscreen;
+	while(1){
+		RenderSettingsMenu(rend_data, menu_position);
+		option = MenuEventsService(ev, rend_data, &menu_position, settings_unknown);
+		if(settings_fullscreen == option){
+			ToggleFullscreen(rend_data);
+			option = settings_unknown;
+		}
+		if(option != settings_unknown) break;
+		SDL_Delay(FRAME_TIME_MS);
+	}
+}
+
 int MainMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
-    int option = menu_unknown;
-	unsigned int menu_position = 0U;
+    unsigned int option = menu_unknown;
+	unsigned int menu_position = menu_start;
     while(1){
         RenderMainMenu(rend_data, menu_position);
-        option = MenuEventsService(ev, rend_data, &menu_position, OPTIONS_NUM);
-        if(option != menu_unknown) break;
-        SDL_Delay(FRAME_TIME_MS);
+		option = MenuEventsService(ev, rend_data, &menu_position, OPTIONS_NUM);
+		if(menu_settings == option){
+			SettingsMenuLoop(ev, rend_data);
+			option = menu_unknown;
+		}
+		if(option < menu_unknown) break;
+		SDL_Delay(FRAME_TIME_MS);
 	}
     return option;
+}
+
+static inline void ResetTime(Uint64 *const time, Uint64 *const prev_frame_time){
+	*time = SDL_GetTicksNS();
+	*prev_frame_time = *time;
 }
 
 void GameLoop(Game_data* const gd){
@@ -69,14 +110,22 @@ void GameLoop(Game_data* const gd){
 			state = EventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
-		}else if(state == event_menu && menu_unknown != MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &human(gd)->help_data.menu_position, OPTIONS_NUM)){
-			state = ActivateMenuOption(human(gd)->help_data.menu_position, gd);
+		}else if(state == event_menu){
+			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &human(gd)->help_data.menu_position, menu_ig_unknown);
+			if(menu_ig_unknown != option){
+				if(menu_ig_escape == option){
+					option = menu_ig_continue;
+				}
+				state = ActivateMenuOption(option, gd);
+			}
+		}else if(event_used_pause == state){
+			ResetTime(&time, &prev_frame_time);
+			state = event_ok;
 		}
 		const int update_result = UpdateGame(gd);
 		if(update_result != update_ok){
 			if(update_result == update_shop){
-				time = SDL_GetTicksNS();
-				prev_frame_time = time;
+				ResetTime(&time, &prev_frame_time);
 			}else{
 				EndLoop(gd->ev_ptr, gd->rend_data_ptr, update_result);
 				break;
@@ -618,21 +667,22 @@ static int UpdateGame(Game_data* const gd){
 }
 
 static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
-	if(option == menu_p_continue){
+	if(option == menu_ig_continue){
 		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 		return event_ok;
-	}else if(option == menu_p_load){
+	}else if(option == menu_ig_load){
 		ClearGameData(gd);
 		LoadGame(gd);
 		return event_ok;
-	}else if(option == menu_p_save){
+	}else if(option == menu_ig_save){
 		SaveGame(gd);
 		return event_quit_game;
-	}else if(option == menu_p_quit){
+	}else if(option == menu_ig_quit){
 		return event_quit_game;
-	}else if(option == menu_p_settings){
-		ToggleFullscreen(gd->rend_data_ptr);
-		return event_menu;
+	}else if(option == menu_ig_settings){
+		SettingsMenuLoop(gd->ev_ptr, gd->rend_data_ptr);
+		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
+		return event_used_pause;
 	}else{
 		return event_menu;
 	}

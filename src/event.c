@@ -95,7 +95,7 @@ int EventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend
 	return event_ok;
 }
 
-int MenuEventsService(SDL_Event* const ev, Render_data* const rend_data, unsigned int* const menu_position, const unsigned int options_num){
+unsigned int MenuEventsService(SDL_Event* const ev, Render_data* const rend_data, unsigned int* const menu_position, const unsigned int options_num){
 	while(SDL_PollEvent(ev)){
 		if(ev->type == SDL_EVENT_KEY_DOWN){
 			switch(ev->key.scancode){
@@ -121,16 +121,18 @@ int MenuEventsService(SDL_Event* const ev, Render_data* const rend_data, unsigne
 				break;
 			case SDL_SCANCODE_ESCAPE:
 				*menu_position = options_num - 1U;
+				return options_num + 1U;
 				break;
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
+			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
 			return *menu_position;
-		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
+		}else if(ev->type == SDL_EVENT_MOUSE_MOTION || ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
 			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
 		}
 	}
-	return menu_unknown;
+	return options_num;
 }
 
 int ManageScrollsEventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend_data){

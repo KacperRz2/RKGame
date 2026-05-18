@@ -38,8 +38,6 @@ int main(int argc, char* argv[]){
 			GameLoop(&game_data);
 			ClearGameData(&game_data);
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
-		}else if(option == menu_settings){
-			ToggleFullscreen(&rend_data);
 		}else if(option == menu_credits){
 			CreditsLoop(&event, &rend_data);
 		}
