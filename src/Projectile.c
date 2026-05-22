@@ -231,17 +231,19 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 			float angle = FULL_ANGLE * SDL_randf();
 			float rand_float = SDL_randf();
 			float distance = half(BOOM_SIZE) * rand_float;
-			AddBigBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-				pr->position.x + SineUnsafe(angle) * distance,
-				pr->position.y - CosiUnsafe(angle) * distance
-			}, V_EFFECT_MAX_DELAY * rand_float + 1U);
+			float veffect_x = pr->position.x + SineUnsafe(angle) * distance;
+			float veffect_y = pr->position.y - CosiUnsafe(angle) * distance;
+			if(GetSegmentSafe(&gd->world, veffect_x, veffect_y)){
+				AddBigBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){veffect_x, veffect_y}, V_EFFECT_MAX_DELAY * rand_float + 1U);
+			}
 			angle = FULL_ANGLE * SDL_randf();
 			rand_float = SDL_randf();
 			distance = half(BOOM_SIZE) * rand_float;
-			AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-				pr->position.x + SineUnsafe(angle) * distance,
-				pr->position.y - CosiUnsafe(angle) * distance
-			}, V_EFFECT_MAX_DELAY * SDL_randf() + 1U);
+			veffect_x = pr->position.x + SineUnsafe(angle) * distance;
+			veffect_y = pr->position.y - CosiUnsafe(angle) * distance;
+			if(GetSegmentSafe(&gd->world, veffect_x, veffect_y)){
+				AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){veffect_x, veffect_y}, V_EFFECT_MAX_DELAY * SDL_randf() + 1U);
+			}
 		}
 		const int range = 2;
 		const unsigned int array_size = pow2(1 + range * 2);
