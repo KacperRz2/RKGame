@@ -1,1 +1,1 @@
-A 2D action game where the player explores procedurally generated environments and battles hordes of enemies using a variety of abilities and spells.
+A multi-platform 2D action game featuring procedurally generated environments, intense horde battles, and a rich system of abilities and spells. Supports 2-player LAN co-op.
