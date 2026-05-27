@@ -92,16 +92,17 @@ struct Render_data{
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Texture* textures[txs_num];
+
 };
 
 void GraphicsInitiation(Render_data* const);
 
 void AddVisalEffect(Visual_effects* const, const Visual_effect* const);
-void AddDamageVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddDamageVisualEffect(Game_data* const, const SDL_FPoint* const);
 void AddBonusVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddCurseVisualEffect(Visual_effects* const, const SDL_FPoint* const);
-void AddDeadVisualEffect(Visual_effects* const, const SDL_FPoint* const);
-void AddPortalVisualEffect(Visual_effects* const, const SDL_FPoint* const);
+void AddDeadVisualEffect(Game_data* const, const SDL_FPoint* const);
+void AddPortalVisualEffect(Game_data* const, const SDL_FPoint* const);
 void AddProjectileVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddBigBurnVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddSmallBurnVisualEffect(Visual_effects* const, const SDL_FPoint* const);
@@ -109,12 +110,15 @@ void AddBoomVisualEffect(Visual_effects* const, const SDL_FPoint* const);
 void AddBigBurnVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
 void AddSmallBurnVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
 void AddBoomVisualEffectTimer(Visual_effects* const, const SDL_FPoint* const, const unsigned int);
-void AddBoltVisualEffect(Visual_effects* const, const SDL_FPoint* const, const position16);
-void AddSpellVisualEffect(Visual_effects* const, const SDL_FPoint* const, const Uint8, const Uint8, const Uint8);
+void AddBoltVisualEffect(Game_data* const, const SDL_FPoint* const, const position16);
+void AddSpellVisualEffect(Game_data* const, const SDL_FPoint* const, const Uint8, const Uint8, const Uint8);
+void AddFireExplosionVisualEffect(Game_data *const, const SDL_FPoint *const);
 
 void ResetRenderData(Render_data* const);
 void RenderMainMenu(Render_data* const, const unsigned int);
 void RenderSettingsMenu(Render_data* const, const unsigned int);
+void RenderNewGameMenu(Render_data* const, const unsigned int);
+void RenderMultiplayerMenu(Render_data* const, const unsigned int);
 void RenderGame(Render_data* const, Game_data* const, const int);
 void ClearRenderData(Render_data* const);
 void DrawMap(Render_data* const, const World* const);
@@ -128,9 +132,12 @@ int GetMouseScrollManagPositionNum(const Render_data* const);
 void RenderDefeatedScreen(Render_data* const);
 void RenderVictoryScreen(Render_data* const);
 void RenderCreditsScreen(Render_data* const);
+void RenderConnectingScreen(Render_data* const);
 void SetMouseBarrier(Render_data* const);
 void RenderShop(Render_data* const, const Player* const, const Shop* const, const Uint8* const, const unsigned int, const Uint8* const, const unsigned int, const int);
 void ToggleFullscreen(Render_data* const);
 SDL_FPoint GetMouseWorldPosition(const Game_data* const);
+void RenderClientGame(Render_data* const, Game_data* const, const int);
+bool IsPointOnPCView(const Render_data* const, const float, const float, const Player* const, const float, const float);
 
 #endif

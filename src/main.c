@@ -16,25 +16,35 @@ int main(int argc, char* argv[]){
 	while(1){
 		const int option = MainMenuLoop(&event, &rend_data);
 		if(option == menu_quit) break;
-		if(option == menu_start){
+		if(option == menu_start || menu_multipl_host == option){
 			Game_data game_data;
 			game_data.rend_data_ptr = &rend_data;
 			game_data.ev_ptr = &event;
 			do{
 				game_data.seed = (((Uint64)SDL_rand_bits() << 32ULL) + (Uint64)SDL_rand_bits());
 			}while(!game_data.seed);
-			SetGameData(&game_data);
-			StartNewLevel(&game_data);
-			DrawMap(&rend_data, &game_data.world);
-			SaveGame(&game_data);
-			GameLoop(&game_data);
-			ClearGameData(&game_data);
+			if(option == menu_start){
+				SetGameData(&game_data);
+				StartNewLevel(&game_data);
+				DrawMap(&rend_data, &game_data.world);
+				SaveGame(&game_data, SAVE_PATH0);
+				GameLoop(&game_data);
+				ClearGameData(&game_data);
+			}else{
+				HostGameLoop(&game_data);
+			}
+			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
+		}else if(menu_multipl == option){
+			Game_data game_data;
+			game_data.rend_data_ptr = &rend_data;
+			game_data.ev_ptr = &event;
+			ClientGameLoop(&game_data);
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
 		}else if(option == menu_load){
 			Game_data game_data;
 			game_data.rend_data_ptr = &rend_data;
 			game_data.ev_ptr = &event;
-			LoadGame(&game_data);
+			LoadGame(&game_data, SAVE_PATH0);
 			GameLoop(&game_data);
 			ClearGameData(&game_data);
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);

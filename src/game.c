@@ -1,17 +1,15 @@
-#include "game.h"
-#include "macros.h"
-#include "render.h"
 #include <common.h>
 #include <event.h>
 #include <function.h>
 #include <stdlib.h>
+#include <enet/enet.h>
 
 static void NoticeBigSeg(Game_data* const, const unsigned int, const unsigned int);
-static void PlayerInUncoveredBigSeg(Game_data* const);
+static void PlayerInUncoveredBigSeg(Game_data* const, const float, const float);
 static void EndLoop(SDL_Event* const, Render_data* const, const int);
 static int RareEventsService(Game_data* const);
 static void DestroyBoxes(Boxes* const);
-static void LootBox(Game_data* const, const unsigned int);
+static void LootBox(Game_data* const, Player *const, const unsigned int);
 static void DestroyBoxInArray(Boxes* const, unsigned int);
 static int GetNearbyShopIndx(Game_data* const);
 static void EnterShop(Game_data* const, Player* const, const unsigned int);
@@ -40,6 +38,20 @@ enum settings_option{
 	settings_unknown,
 	settings_escape
 };
+enum new_game_option{
+	new_game_single,
+	new_game_multipl,
+	new_game_quit,
+	new_game_unknown,
+	new_game_escape
+};
+enum multipl_option{
+	multipl_host,
+	multipl_join,
+	multipl_quit,
+	multipl_unknown,
+	multipl_escape
+};
 
 static inline void NoticeBigSeg(Game_data* const gd, const unsigned int x, const unsigned int y){
 	if(IsVoidBigSeg(gd->world.plan, x, y) || IsInNoticedBigSeg(gd->world.plan, x, y)){
@@ -49,9 +61,9 @@ static inline void NoticeBigSeg(Game_data* const gd, const unsigned int x, const
 	UpdateMap(gd->rend_data_ptr, POPULATED_SEG_RGB, x, y);
 }
 
-static inline void PlayerInUncoveredBigSeg(Game_data* const gd){
-	const unsigned int seg_x = GetBigSegCoordinate(human(gd)->position.x);
-	const unsigned int seg_y = GetBigSegCoordinate(human(gd)->position.y);
+static inline void PlayerInUncoveredBigSeg(Game_data* const gd, const float px, const float py){
+	const unsigned int seg_x = GetBigSegCoordinate(px);
+	const unsigned int seg_y = GetBigSegCoordinate(py);
 	if(!IsInUncoveredBigSeg(gd->world.plan, seg_x, seg_y)){
 		UncoverBigSeg(gd->world.plan, seg_x, seg_y);
 		NoticeBigSeg(gd, seg_x + 1U, seg_y);
@@ -77,6 +89,40 @@ static void SettingsMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
 	}
 }
 
+static int MultiplayerMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
+	unsigned int option = multipl_unknown;
+	unsigned int menu_position = multipl_host;
+	while(1){
+		RenderMultiplayerMenu(rend_data, menu_position);
+		option = MenuEventsService(ev, rend_data, &menu_position, multipl_unknown);
+		if(multipl_host == option){
+			return menu_multipl_host;
+		}else if(multipl_join == option){
+			return menu_multipl;
+		}
+		if(option != multipl_unknown) break;
+		SDL_Delay(FRAME_TIME_MS);
+	}
+	return menu_unknown;
+}
+
+static int NewGameMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
+	unsigned int option = new_game_unknown;
+	unsigned int menu_position = new_game_single;
+	while(1){
+		RenderNewGameMenu(rend_data, menu_position);
+		option = MenuEventsService(ev, rend_data, &menu_position, new_game_unknown);
+		if(new_game_single == option){
+			return menu_start;
+		}else if(new_game_multipl == option){
+			return MultiplayerMenuLoop(ev, rend_data);
+		}
+		if(option != new_game_unknown) break;
+		SDL_Delay(FRAME_TIME_MS);
+	}
+	return menu_unknown;
+}
+
 int MainMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
     unsigned int option = menu_unknown;
 	unsigned int menu_position = menu_start;
@@ -86,6 +132,8 @@ int MainMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
 		if(menu_settings == option){
 			SettingsMenuLoop(ev, rend_data);
 			option = menu_unknown;
+		}else if(menu_start == option){
+			return NewGameMenuLoop(ev, rend_data);
 		}
 		if(option < menu_unknown) break;
 		SDL_Delay(FRAME_TIME_MS);
@@ -107,11 +155,11 @@ void GameLoop(Game_data* const gd){
     while(state != event_quit_game){
         timer = SDL_GetTicksNS();
 		if(state == event_ok){
-			state = EventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
+			state = EventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_manage_scrolls){
-			state = ManageScrollsEventsService(gd->ev_ptr, human(gd), gd->rend_data_ptr);
+			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_menu){
-			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &human(gd)->help_data.menu_position, menu_ig_unknown);
+			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &host(gd)->help_data.menu_position, menu_ig_unknown);
 			if(menu_ig_unknown != option){
 				if(menu_ig_escape == option){
 					option = menu_ig_continue;
@@ -147,7 +195,7 @@ void GameLoop(Game_data* const gd){
     }
 }
 
-static void MessageScreenLoop(SDL_Event* const e, Render_data *const rend_data, void (*RendFunc)(Render_data *const)){
+static void MessageScreenLoop(SDL_Event* const ev, Render_data *const rend_data, void (*RendFunc)(Render_data *const)){
 	for(unsigned int i = 0U; i < 50U; ++i){
 		RendFunc(rend_data);
 		SDL_Delay(40U);
@@ -156,7 +204,7 @@ static void MessageScreenLoop(SDL_Event* const e, Render_data *const rend_data, 
 	SDL_FlushEvent(SDL_EVENT_KEY_UP);
 	SDL_FlushEvent(SDL_EVENT_MOUSE_BUTTON_UP);
 	while(1){
-		if(EndingEventsService(e)){
+		if(EndingEventsService(ev)){
 			break;
 		}
 		RendFunc(rend_data);
@@ -183,7 +231,7 @@ void SetGameData(Game_data* const gd){
 	gd->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
 	gd->champions.num = 0U;
 	gd->boxes.num = 0U;
-	gd->human_indx = 0U;
+	gd->host_indx = 0U;
 	CreateWorld(gd);
 	gd->projectiles.array = (Projectile*)SDL_malloc(sizeof(Projectile) * MAX_PROJECTILES_NUM);
 	gd->beings.array = (Being*)SDL_malloc(sizeof(Being) * MAX_BEINGS_NUM);
@@ -201,6 +249,10 @@ void SetGameData(Game_data* const gd){
 	gd->keys = 0U;
 	gd->effects_num = 0U;
 	gd->horde_data.ticks_from_attack = 0U;
+	gd->announcements.unimportant = NULL;
+	gd->announcements.important = NULL;
+	gd->announcements.unimportant_num = 0U;
+	gd->announcements.important_num = 0U;
 	SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 }
@@ -214,11 +266,15 @@ void ClearGameData(Game_data* const gd){
 	gd->champions.num = 0U;
 	gd->rend_data_ptr->visual_effects.num = 0U;
 	SDL_free(gd->keys_status);
+	SDL_free(gd->announcements.unimportant);
+	SDL_free(gd->announcements.important);
+	gd->announcements.unimportant_num = 0U;
+	gd->announcements.important_num = 0U;
 	DestroyWorld(&gd->world);
 }
 
 static inline int RarePlayerEventsService(Game_data* const gd, const int check_queue){
-	Player* const pc = human(gd);
+	Player* const pc = host(gd);
 	if(check_queue == check_0){
 		if(SDL_fabsf(pc->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (pc->flags & action)){
 			SetPlayerPosition(pc, gd->world.portalB.x, gd->world.portalB.y);
@@ -239,7 +295,7 @@ static inline int RarePlayerEventsService(Game_data* const gd, const int check_q
 	}else if(check_queue == check_2 && (pc->flags & action) && gd->boxes.num > 0U){
 		const int box_indx = GetNearbyBoxIndx(&gd->boxes, &pc->position, PLAYER_SIZE);
 		if(box_indx != NOT_FOUND){
-			LootBox(gd, box_indx);
+			LootBox(gd, pc, box_indx);
 	 		pc->flags &= ~(action);
 		}
 	}else if(check_queue == check_3){
@@ -247,10 +303,12 @@ static inline int RarePlayerEventsService(Game_data* const gd, const int check_q
 			pc->flags &= ~(action);
 			return update_victory;
 		}
-		pc->attention_rect.x = pc->position.x - half(ATTENTION_RECT_SIZE);
-		pc->attention_rect.y = pc->position.y - half(ATTENTION_RECT_SIZE);
+		for(unsigned int i = 0U; i < gd->champions.num; ++i){
+			(gd->champions.array + i)->attention_rect.x = (gd->champions.array + i)->position.x - half(ATTENTION_RECT_SIZE);
+			(gd->champions.array + i)->attention_rect.y = (gd->champions.array + i)->position.y - half(ATTENTION_RECT_SIZE);
+		}
 	}else if(check_queue == check_4){
-		PlayerInUncoveredBigSeg(gd);
+		PlayerInUncoveredBigSeg(gd, pc->position.x, pc->position.y);
 	}
 	return update_ok;
 }
@@ -314,7 +372,13 @@ int GetNearbyBoxIndx(const Boxes* const bxs, const SDL_FPoint* const position, c
 	return NOT_FOUND;
 }
 
-static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
+static inline void SetKeyStatus(Game_data *const gd, const Uint16 indx, const Uint8 status){
+	*(gd->keys_status + indx) = status;
+	struct tmps{Uint32 id; Uint32 status;};
+	AddAnnouncement(gd, annncmnt_update_key, &(struct tmps){indx, status});
+}
+
+static inline void LootBox(Game_data* const gd, Player *const pc, const unsigned int box_indx){
 	Box_element* elem = (gd->boxes.array + box_indx)->elements;
 	int element_type;
 	bool empty = true;
@@ -322,28 +386,34 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 	while(1){
 		element_type = elem->type;
 		if(element_type == box_scroll){
-			if(*(human(gd)->scrolls + elem->value) < MAX_ONE_TYPE_ITEMS){
-				++(*(human(gd)->scrolls + elem->value));
+			if(*(pc->scrolls + elem->value) < MAX_ONE_TYPE_ITEMS){
+				++(*(pc->scrolls + elem->value));
+				if(pc == gd->champions.array + 1){
+					struct tmps{Uint32 id; Uint32 num;};
+					AddAnnouncement(gd, annncmnt_update_scroll, &(struct tmps){elem->value, *(pc->scrolls + elem->value)});
+				}
 				elem->type = box_clear;
 			}else{
 				empty = false;
 			}
 		}else if(element_type == box_coins){
-			human(gd)->coins += (int)elem->value;
+			pc->coins += (int)elem->value;
 			elem->type = box_clear;
 		}else if(element_type == box_key){
 			found_key = true;
 			++gd->keys;
-			*(gd->keys_status + elem->value) = key_owned;
+			// *(gd->keys_status + elem->value) = key_owned;
+			SetKeyStatus(gd, elem->value, key_owned);
 			elem->type = box_clear;
-			AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &(gd->boxes.array + box_indx)->location, SPELL0_RGB);
+			AddSpellVisualEffect(gd, &(gd->boxes.array + box_indx)->location, SPELL0_RGB);
 		}else if(element_type == box_map){
 			if(*(gd->keys_status + elem->value) == key_location_unknown){
-				*(gd->keys_status + elem->value) = key_location_known;
+				SetKeyStatus(gd, elem->value, key_location_known);
+				// *(gd->keys_status + elem->value) = key_location_known;
 			}
 			elem->type = box_clear;
 		}else if(element_type == box_mp){
-			human(gd)->magic_points += (int)elem->value;
+			pc->magic_points += (int)elem->value;
 			elem->value = 0U;
 			break;
 		}
@@ -351,9 +421,18 @@ static inline void LootBox(Game_data* const gd, const unsigned int box_indx){
 	}
 	if(empty){
 		DestroyBoxInArray(&gd->boxes, box_indx);
+		AddAnnouncement(gd, annncmnt_destroy_box, &(Uint64){box_indx});
 	}
 	if(found_key){
-		SaveGame(gd);
+		if(gd->flags & gamef_multiplayer){
+			SaveGame(gd, SAVE_PATHMP);
+		}else{
+			SaveGame(gd, SAVE_PATH0);
+		}
+	}
+	if(pc == gd->champions.array + 1){
+		struct tmps{int mp; int coin;};
+		AddAnnouncement(gd, annncmnt_update_mp_and_coin, &(struct tmps){pc->magic_points, pc->coins});
 	}
 }
 
@@ -372,22 +451,22 @@ static int GetNearbyShopIndx(Game_data* const gd){
 	int new_center = (right - left) / 2 + left;
 	do{
 		center = new_center;
-		if(SDL_fabsf(human(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE){
+		if(SDL_fabsf(host(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE){
 			do{
-				if(SDL_fabsf(human(gd)->position.y - (gd->world.shops + center)->location.y) < SHOP_ENTRY_RANGE){
+				if(SDL_fabsf(host(gd)->position.y - (gd->world.shops + center)->location.y) < SHOP_ENTRY_RANGE){
 					return center;
 				}
 				++center;
-			}while(center < SHOPS_NUM && SDL_fabsf(human(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE);
+			}while(center < SHOPS_NUM && SDL_fabsf(host(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE);
 			center = new_center - 1;
-			while(center >= 0 && SDL_fabsf(human(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE){
-				if(SDL_fabsf(human(gd)->position.y - (gd->world.shops + center)->location.y) < SHOP_ENTRY_RANGE){
+			while(center >= 0 && SDL_fabsf(host(gd)->position.x - (gd->world.shops + center)->location.x) < SHOP_ENTRY_RANGE){
+				if(SDL_fabsf(host(gd)->position.y - (gd->world.shops + center)->location.y) < SHOP_ENTRY_RANGE){
 					return center;
 				}
 				--center;
 			};
 			return NOT_FOUND;
-		}else if(human(gd)->position.x > (gd->world.shops + center)->location.x){
+		}else if(host(gd)->position.x > (gd->world.shops + center)->location.x){
 			left = center;
 		}else{
 			right = center;
@@ -464,12 +543,14 @@ static inline bool SelectedFinalize(const unsigned int row, struct transaction_d
 				}else if(item_num == shop_item_key_location){
 					const unsigned int key_indx = SDL_rand(gd->needed_keys);
 					if(*(gd->keys_status + key_indx) == key_location_unknown){
-						*(gd->keys_status + key_indx) = key_location_known;
+						SetKeyStatus(gd, key_indx, key_location_known);
+						// *(gd->keys_status + key_indx) = key_location_known;
 					}else{
 						unsigned int key_indx1 = (key_indx + 1U) % gd->needed_keys;
 						do{
 							if(*(gd->keys_status + key_indx1) == key_location_unknown){
-								*(gd->keys_status + key_indx1) = key_location_known;
+								// *(gd->keys_status + key_indx1) = key_location_known;
+								SetKeyStatus(gd, key_indx1, key_location_known);
 								break;
 							}
 							key_indx1 = (key_indx1 + 1U) % gd->needed_keys;
@@ -660,7 +741,7 @@ static int UpdateGame(Game_data* const gd){
 		UpdateEffects(gd);
 		--ticks_to_rare_update;
 	}
-	if(human(gd)->hit_points < 1){
+	if(host(gd)->hit_points < 1){
 		return update_defeated;
 	}
 	return update_ok;
@@ -671,11 +752,24 @@ static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 		return event_ok;
 	}else if(option == menu_ig_load){
-		ClearGameData(gd);
-		LoadGame(gd);
+		if(gd->flags & gamef_multiplayer){
+			if(gd->flags & gamef_is_serv_host){
+				ClearGameData(gd);
+				LoadGame(gd, SAVE_PATHMP);
+			}else{
+				SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
+			}
+		}else{
+			ClearGameData(gd);
+			LoadGame(gd, SAVE_PATH0);
+		}
 		return event_ok;
 	}else if(option == menu_ig_save){
-		SaveGame(gd);
+		if(gd->flags & gamef_multiplayer){
+			SaveGame(gd, SAVE_PATHMP);
+		}else{
+			SaveGame(gd, SAVE_PATH0);
+		}
 		return event_quit_game;
 	}else if(option == menu_ig_quit){
 		return event_quit_game;
@@ -704,7 +798,7 @@ static inline SDL_FPoint GetBeingCreationPoint(Game_data* const gd, const float 
     const float shift_y = -CosiSafe(angle);
 	const float help_to_x = shift_x < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
 	const float help_to_y = shift_y < 0.0F ? -1.0F : SEGMENT_SIZE + 1.0F;
-	SDL_FPoint control_point_old = human(gd)->position;
+	SDL_FPoint control_point_old = host(gd)->position;
 	SDL_FPoint control_point = control_point_old;
 	while(1){
 		const float help_x = SDL_fmodf(control_point.x, SEGMENT_SIZE);
@@ -785,7 +879,7 @@ static void HordeAttack(Game_data* const gd, const int ticks_left){
 		const unsigned int point_indx = SDL_rand(HORDE_ATTACK_POINTS);
 		unsigned int point_indx1 = point_indx;
 		do{
-			if(TryCreateHostileBeing(gd, GetRandomBeingId(), (gd->horde_data.creation_points + point_indx1)->x, (gd->horde_data.creation_points + point_indx1)->y, human(gd))){
+			if(TryCreateHostileBeing(gd, GetRandomBeingId(), (gd->horde_data.creation_points + point_indx1)->x, (gd->horde_data.creation_points + point_indx1)->y, host(gd))){
 				break;
 			}
 			point_indx1 = (point_indx1 + 1U) % HORDE_ATTACK_POINTS;
@@ -803,7 +897,10 @@ struct nums{
 	Uint16 known_segs;
 }nums;
 
-void SaveGame(const Game_data* const gd){
+void SaveGame(const Game_data* const gd, const char *const path){
+	if((gd->flags & (gamef_multiplayer | gamef_is_serv_host)) == gamef_multiplayer){
+		return;
+	}
 	struct coordinates known_segs[MAX_NOT_NULL_SEGS];
 	unsigned int known_segs_num = 0U;
 	for(unsigned int bigc = 0U; bigc < BIG_SEGMENTS_X; ++bigc){
@@ -836,14 +933,14 @@ void SaveGame(const Game_data* const gd){
 	ptr += sizeof(Uint64);
 	*(struct nums*)ptr = nums;
 	ptr += sizeof(nums);
-	*(unsigned int*)ptr = gd->flags;
+	*(Uint32*)ptr = gd->flags;
 	ptr += sizeof(unsigned int);
 	for(unsigned int i = 0U; i < nums.champions; ++i){
 		StopPlayerActions(gd->champions.array + i);
 	}
 	SDL_memcpy(ptr, gd->champions.array, sizeof(Player) * nums.champions);
 	ptr += sizeof(Player) * nums.champions;
-	*(Uint8*)ptr = gd->human_indx;
+	*(Uint8*)ptr = gd->host_indx;
 	ptr += sizeof(Uint8);
 	for(unsigned int i = 0U; i < nums.beings; ++i){
 		*(Being*)ptr = *(gd->beings.array + *(gd->beings.indices + i));
@@ -881,14 +978,14 @@ void SaveGame(const Game_data* const gd){
     while(!SDL_StorageReady(user)){
         SDL_Delay(1);
     }
-    if(!SDL_WriteStorageFile(user, "save", save_data, save_len)){
+    if(!SDL_WriteStorageFile(user, path, save_data, save_len)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_WriteStorageFile error: %s", SDL_GetError()); exit(-1);
     }
 	SDL_free(save_data);
     SDL_CloseStorage(user);
 }
 
-void LoadGame(Game_data* const gd){
+void LoadGame(Game_data* const gd, const char *const path){
     SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
     if(!user){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_OpenUserStorage error: %s", SDL_GetError()); exit(-1);
@@ -897,14 +994,14 @@ void LoadGame(Game_data* const gd){
         SDL_Delay(1);
     }
     Uint64 save_len = 0U;
-	if(!SDL_GetStorageFileSize(user, "save", &save_len)){
+	if(!SDL_GetStorageFileSize(user, path, &save_len)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_GetStorageFileSize error: %s", SDL_GetError()); exit(-1);
 	}
     if(save_len == 0U){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid save file size"); exit(-1);
 	}
 	void* const save_data = (void*)SDL_malloc(save_len);
-	if(!SDL_ReadStorageFile(user, "save", save_data, save_len)){
+	if(!SDL_ReadStorageFile(user, path, save_data, save_len)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_ReadStorageFile error: %s", SDL_GetError()); exit(-1);
 	}
     SDL_CloseStorage(user);
@@ -920,19 +1017,19 @@ void LoadGame(Game_data* const gd){
 	gd->boxes.num = nums.boxes;
 	gd->needed_keys = nums.needed_keys;
 	gd->effects_num = nums.effects;
-	gd->flags = *(unsigned int*)ptr;
-	ptr += sizeof(unsigned int);
+	gd->flags = *(Uint32*)ptr;
+	ptr += sizeof(Uint32);
 	SDL_memcpy(gd->champions.array, ptr, sizeof(Player) * nums.champions);
 	ptr += sizeof(Player) * nums.champions;
 	for(unsigned int i = 0U; i < nums.champions; ++i){
 		(gd->champions.array + i)->segment = GetSegmentUnsafe(&gd->world, (gd->champions.array + i)->position.x, (gd->champions.array + i)->position.y);
 		(gd->champions.array + i)->last_seen_in = (gd->champions.array + i)->segment;
 	}
-	gd->human_indx = *(Uint8*)ptr;
+	gd->host_indx = *(Uint8*)ptr;
 	ptr += sizeof(Uint8);
 	for(unsigned int i = 0U; i < nums.beings; ++i){
 		*(gd->beings.array + i) = *(Being*)ptr;
-		(gd->beings.array + i)->target.player = human(gd);
+		(gd->beings.array + i)->target.player = host(gd);
 		(gd->beings.array + i)->main_indx = i;
 		Segment* seg = GetSegmentUnsafe(&gd->world, (gd->beings.array + i)->position.x, (gd->beings.array + i)->position.y);
 		if(seg){
@@ -973,4 +1070,807 @@ void LoadGame(Game_data* const gd){
 	SDL_free(save_data);
 	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 	DrawMap(gd->rend_data_ptr, &gd->world);
+	if(gd->flags & gamef_is_serv_host){
+		gd->announcements.unimportant = (Announcement*)SDL_malloc(sizeof(Announcement) * MAX_ANNOUNCEMENTS);
+		gd->announcements.important = (Announcement*)SDL_malloc(sizeof(Announcement) * MAX_ANNOUNCEMENTS);
+		AddAnnouncement(gd, annncmnt_load, &(gd->champions.array + 1)->position);
+	}
+}
+//=======================================================================================================================================
+struct pckt_nums{
+	Uint16 beings;
+	Uint16 projectiles;
+	Uint8 announcements;
+};
+
+struct Being_pack_data{
+	union{
+		SDL_FPoint shift;
+		int status_ticks_left;
+	};
+	SDL_FPoint position;
+	Uint8 type_id;
+	Sint8 pack_flags;
+	Uint8 HP8;
+};
+
+enum being_pack_flags{
+	being_packf_shift = 1 << 0,
+	being_packf_strike = 1 << 1,
+	being_packf_shoot = 1 << 2,
+	being_packf_burn = 1 << 3,
+	being_packf_bless = 1 << 4,
+	being_packf_curse = 1 << 5,
+	being_packf_strike_being = 1 << 6
+};
+
+struct Projectile_pack_data{
+	SDL_FPoint position;
+	SDL_FPoint shift;
+	Uint8 pack_flags;
+};
+
+enum projectile_pack_flags{
+	projectile_packf_penetrat = 1 << 0,
+	projectile_packf_hostile = 1 << 1,
+	projectile_packf_special = 1 << 2,
+	projectile_packf_warlock = 1 << 3,
+	projectile_packf_fire = 1 << 4
+};
+
+struct Player_pack_data{
+	SDL_FPoint position;
+	position16 blade_position16;
+	Uint32 flags;
+	Uint8 direction8;
+	Uint8 blade_direction8;
+	Uint8 selected_scroll;
+};
+
+struct Client_pack_data{
+	SDL_FPoint position;
+	SDL_FPoint aim_position;
+	Uint32 flags;
+	float direction;
+	Uint8 selected_scroll;
+};
+
+struct Client_return_data{
+	Uint32 flags;
+	float max_velocity;
+	int fatigue_points;
+	float blade_charge;
+	Uint8 HP8;
+	Uint8 armour8;
+	Uint8 armour_magic8;
+};
+
+static void MultiplayerSetGameData(Game_data* const gd, const Uint32 flags){
+	SetGameData(gd);
+	gd->flags |= flags;
+	if(gd->flags & gamef_is_serv_host){
+		gd->announcements.unimportant = (Announcement*)SDL_malloc(sizeof(Announcement) * MAX_ANNOUNCEMENTS);
+		gd->announcements.important = (Announcement*)SDL_malloc(sizeof(Announcement) * MAX_ANNOUNCEMENTS);
+	}
+}
+
+static inline int MultiplayerRarePlayerEventsService(Game_data* const gd, const int check_queue){
+	for(unsigned int i = 0U; i < gd->champions.num; ++i){
+		Player* const pc = gd->champions.array + i;
+		if(check_queue == check_0){
+			if(SDL_fabsf(pc->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (pc->flags & action)){
+				SetPlayerPosition(pc, gd->world.portalB.x, gd->world.portalB.y);
+				UpdatePlayerNewSegment(&gd->world, pc);
+				pc->flags &= ~(action);
+			}else if(SDL_fabsf(pc->position.x - gd->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalB.y) < half(DOOR_SIZE) && (pc->flags & action)){
+				SetPlayerPosition(pc, gd->world.portalA.x, gd->world.portalA.y);
+				UpdatePlayerNewSegment(&gd->world, pc);
+				pc->flags &= ~(action);
+			}
+		}else if(check_queue == check_1 && (pc->flags & action)){
+			const int shop_indx = GetNearbyShopIndx(gd);
+			if(shop_indx != NOT_FOUND){
+
+			}
+		}else if(check_queue == check_2 && (pc->flags & action) && gd->boxes.num > 0U){
+			const int box_indx = GetNearbyBoxIndx(&gd->boxes, &pc->position, PLAYER_SIZE);
+			if(box_indx != NOT_FOUND){
+				LootBox(gd, pc, box_indx);
+				pc->flags &= ~(action);
+			}
+		}else if(check_queue == check_3){
+			if(gd->keys >= gd->needed_keys && SDL_fabsf(pc->position.x - gd->world.door.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.door.y) < half(DOOR_SIZE) && (pc->flags & action)){
+				pc->flags &= ~(action);
+				return update_victory;
+			}
+			pc->attention_rect.x = pc->position.x - half(ATTENTION_RECT_SIZE);
+			pc->attention_rect.y = pc->position.y - half(ATTENTION_RECT_SIZE);
+		}else if(check_queue == check_4){
+			PlayerInUncoveredBigSeg(gd, pc->position.x, pc->position.y);
+		}
+	}
+	return update_ok;
+}
+
+static int MultiplayerRareEventsService(Game_data* const gd){
+	static int check_queue = check_0;
+	check_queue = (check_queue + 1) % checks_num;
+	if(check_queue != check_5){
+		return MultiplayerRarePlayerEventsService(gd, check_queue);
+	}else if(!(gd->flags & gamef_horde_attack)){
+		if(gd->horde_data.ticks_from_attack > MIN_TICKS_FROM_HORDE + SDL_rand(MAX_TICKS_FROM_HORDE)){
+			AddGameEffect(gd, (Lasting_effect){game_effect_horde_attack, HORDE_ATTACK_START_TICKS});
+			gd->flags |= gamef_horde_attack;
+		}else{
+			++gd->horde_data.ticks_from_attack;
+		}
+	}
+	return update_ok;
+}
+
+static int MultiplayerUpdateGame(Game_data* const gd){
+	static unsigned int ticks_to_rare_update = RARE_UPDATE_INTERVAL;
+	MultiplayerUpdatePlayers(gd);
+	UpdateProjectiles(gd);
+	if(ticks_to_rare_update == 0U){
+		UpdateBeings(gd);
+		ticks_to_rare_update = RARE_UPDATE_INTERVAL;
+	}else{
+		const int rare_update_resu = MultiplayerRareEventsService(gd);
+		if(rare_update_resu == update_victory){
+			return update_victory;
+		}
+		if(rare_update_resu == update_shop){
+			return update_shop;
+		}
+		UpdateEffects(gd);
+		--ticks_to_rare_update;
+	}
+	for(unsigned int i = 0U; i < gd->champions.num; ++i){
+		if((gd->champions.array + i)->hit_points < 1){
+			return update_defeated;
+		}
+	}
+	return update_ok;
+}
+
+static bool ConnectionWaitLoop(ENetHost *const host, ENetPeer **client, ENetEvent *const connection_event, SDL_Event* const ev, Render_data *const rend_data, void (*RendFunc)(Render_data *const)){
+	for(unsigned int i = 0U; i < 10U; ++i){
+		RendFunc(rend_data);
+		SDL_Delay(40U);
+	}
+	SDL_PumpEvents();
+	SDL_FlushEvent(SDL_EVENT_KEY_UP);
+	SDL_FlushEvent(SDL_EVENT_MOUSE_BUTTON_UP);
+	while(1){
+		if(EndingEventsService(ev)){
+			return false;
+		}
+		while(enet_host_service(host, connection_event, 0)){
+			switch(connection_event->type){
+			case ENET_EVENT_TYPE_CONNECT:
+				*client = connection_event->peer;
+				connection_event->peer->data = "client";
+				return true;
+				break;
+			case ENET_EVENT_TYPE_RECEIVE:
+				enet_packet_destroy(connection_event->packet);
+				break;
+			case ENET_EVENT_TYPE_DISCONNECT:
+				connection_event->peer->data = NULL;
+			default: break;
+			}
+		}
+		RendFunc(rend_data);
+		SDL_Delay(FRAME_TIME_MS);
+	}
+}
+
+void PacketFreeCallback(struct _ENetPacket *packet) {
+	SDL_free(packet->data);
+}
+
+void HostGameLoop(Game_data *const gd){
+	if(enet_initialize() != 0){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "An error occurred while initializing ENet.");
+		exit(-1);
+	}
+	ENetAddress address;
+	ENetHost *serhost;
+	ENetPeer *client;
+	address.host = ENET_HOST_ANY;
+	address.port = CONNECTION_PORT;
+	serhost = enet_host_create(&address, COOP_PLAYERS_NUM - 1, CONNECTION_CHANNELS, CONNECTION_BANDWIDTH_IN, CONNECTION_BANDWIDTH_OUT);
+	if(serhost == NULL){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "An error occurred while trying to create an ENet server host.");
+		exit(-1);
+	}
+	ENetEvent connection_event;
+	SDL_SetRenderViewport(gd->rend_data_ptr->renderer, NULL);
+	if(!ConnectionWaitLoop(serhost, &client, &connection_event, gd->ev_ptr, gd->rend_data_ptr, RenderConnectingScreen)){
+		enet_host_destroy(serhost);
+		enet_deinitialize();
+		return;
+	}
+	ENetPacket *seed_packet = enet_packet_create(&gd->seed, sizeof(gd->seed), ENET_PACKET_FLAG_RELIABLE);
+	enet_peer_send(client, 0, seed_packet);
+	enet_host_flush(serhost);
+
+	MultiplayerSetGameData(gd, gamef_multiplayer | gamef_is_serv_host);
+	SDL_srand(gd->seed);
+	StartNewLevel(gd);
+	CreatePlayer((gd->champions.array + 1), host(gd)->position.x, host(gd)->position.y);
+	++gd->champions.num;
+	MovePlayer(gd, (gd->champions.array + 1), (float)PLAYER_SIZE * 2.0F, 0.0F);
+	SDL_srand(0ULL);
+	DrawMap(gd->rend_data_ptr, &gd->world);
+	SaveGame(gd, SAVE_PATHMP);
+	Announcement imp_annn = {};
+	bool packet_received = false;
+
+	Uint64 now = 0ULL;
+	Uint64 timer;
+	int state = event_ok;
+	Uint64 time = SDL_GetTicksNS();
+	Uint64 prev_frame_time = time;
+	while(state != event_quit_game){
+		timer = SDL_GetTicksNS();
+		if(state == event_ok){
+			state = EventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+		}else if(state == event_manage_scrolls){
+			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+		}else if(state == event_menu){
+			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &host(gd)->help_data.menu_position, menu_ig_unknown);
+			if(menu_ig_unknown != option){
+				if(menu_ig_escape == option){
+					option = menu_ig_continue;
+				}
+				state = ActivateMenuOption(option, gd);
+			}
+		}else if(event_used_pause == state){
+			ResetTime(&time, &prev_frame_time);
+			state = event_ok;
+		}
+
+		while(enet_host_service(serhost, &connection_event, 0)){
+			switch(connection_event.type){
+			case ENET_EVENT_TYPE_RECEIVE:
+				packet_received = true;
+				struct Client_pack_data *const cpdata = (struct Client_pack_data *const)connection_event.packet->data;
+				(gd->champions.array + 1)->position = cpdata->position;
+				(gd->champions.array + 1)->aim_position = cpdata->aim_position;
+				const Uint32 ignor_flags = dodge_time | stunned | stop_blade;
+				(gd->champions.array + 1)->flags = (cpdata->flags & ~(ignor_flags)) | ((gd->champions.array + 1)->flags & (ignor_flags));
+				(gd->champions.array + 1)->direction = cpdata->direction;
+				(gd->champions.array + 1)->selected_scroll = cpdata->selected_scroll;
+				enet_packet_destroy(connection_event.packet);
+				break;
+			case ENET_EVENT_TYPE_DISCONNECT:
+				connection_event.peer->data = NULL;
+				SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Client disconnected.");
+				enet_host_destroy(serhost);
+				enet_deinitialize();
+				ClearGameData(gd);
+				return;
+			default: break;
+			}
+		}
+
+		const int update_result = MultiplayerUpdateGame(gd);
+
+		if(packet_received){
+			packet_received = false;
+			Uint16 packet_beings_ids[MAX_PACK_BEINGS_NUM];
+			Uint16 packet_projectiles_ids[MAX_PACK_PROJECTILES_NUM];
+			unsigned int packet_beings_num = 0U;
+			unsigned int packet_projectiles_num = 0U;
+			const unsigned int packet_annoucements_num = gd->announcements.unimportant_num;
+			const float sine = SineUnsafe((gd->champions.array + 1)->direction);
+			const float cosi = CosiUnsafe((gd->champions.array + 1)->direction);
+			for(unsigned int i = 0U; i < gd->beings.num; ++i){
+				Being* bg = (gd->beings.array + *(gd->beings.indices + i));
+				if(IsPointOnPCView(gd->rend_data_ptr, bg->position.x, bg->position.y, gd->champions.array + 1, sine, cosi) && packet_beings_num < MAX_PACK_BEINGS_NUM){
+					*(packet_beings_ids + packet_beings_num++) = bg->main_indx;
+				}
+			}
+			for(unsigned int i = 0U; i < gd->projectiles.num; ++i){
+				Projectile* pr = (gd->projectiles.array + i);
+				if(IsPointOnPCView(gd->rend_data_ptr, pr->position.x, pr->position.y, gd->champions.array + 1, sine, cosi) && packet_projectiles_num < MAX_PACK_PROJECTILES_NUM){
+					*(packet_projectiles_ids + packet_projectiles_num++) = i;
+				}
+			}
+			struct pckt_nums pckt_nums = {
+				packet_beings_num,
+				packet_projectiles_num,
+				packet_annoucements_num
+			};
+			const size_t size = PACKET_LEN(pckt_nums);
+			void *const data = SDL_malloc(size);
+			void* ptr = data;
+			*(struct pckt_nums*)ptr = pckt_nums;
+			ptr += sizeof(pckt_nums);
+			*(struct Player_pack_data*)ptr = (struct Player_pack_data){
+				host(gd)->position,
+				{host(gd)->blade.placement.position.x, host(gd)->blade.placement.position.y},
+				host(gd)->flags,
+				(Uint8)(host(gd)->direction / FULL_ANGLE * 255.0F),
+				(Uint8)(host(gd)->blade.placement.direction / FULL_ANGLE * 255.0F),
+				host(gd)->selected_scroll
+			};
+			ptr += sizeof(struct Player_pack_data);
+			*(struct Client_return_data*)ptr = (struct Client_return_data){
+				(gd->champions.array + 1)->flags,
+				(gd->champions.array + 1)->max_velocity,
+				(gd->champions.array + 1)->fatigue_points,
+				(gd->champions.array + 1)->blade.charge,
+				(Uint8)((float)(gd->champions.array + 1)->hit_points / (float)PC_HP * 255.0F),
+				(Uint8)((gd->champions.array + 1)->armour.multipl * 255.0F),
+				(Uint8)((gd->champions.array + 1)->armour.magic_multipl * 255.0F)
+			};
+			ptr += sizeof(struct Client_return_data);
+			(gd->champions.array + 1)->flags &= ~(stop_blade);
+			for(unsigned int i = 0U; i < pckt_nums.beings; ++i){
+				const Being *const bg = gd->beings.array + *(packet_beings_ids + i);
+				*(struct Being_pack_data*)ptr = (struct Being_pack_data){
+					.position = bg->position,
+					.type_id = bg->type_id,
+					.pack_flags =
+						(IS_BEING_SHIFTING(bg) ? being_packf_shift
+						: (IS_BEING_SHOOTING(bg) ? being_packf_shoot
+						: (IS_BEING_STRIKING(bg) ? being_packf_strike
+						: (being_strike_being == bg->status ? being_packf_strike_being : 0))))
+						| (NOT_FOUND != BeingHasEffect(bg, being_effect_burn) ? being_packf_burn : 0)
+						| (NOT_FOUND != BeingHasEffect(bg, being_effect_bonus) ? being_packf_bless : 0)
+						| (NOT_FOUND != BeingHasEffect(bg, being_effect_slow) ? being_packf_curse : 0),
+					.HP8 = (Uint8)((float)bg->hit_points / (float)BeingHP(bg) * 255.0F)
+				};
+				if(((struct Being_pack_data*)ptr)->pack_flags & being_packf_shift){
+					((struct Being_pack_data*)ptr)->shift = bg->special_move_shift;
+				}else{
+					((struct Being_pack_data*)ptr)->status_ticks_left = bg->status_ticks_left;
+				}
+				ptr += sizeof(struct Being_pack_data);
+			}
+			for(unsigned int i = 0U; i < pckt_nums.projectiles; ++i){
+				const Projectile *const pr = (gd->projectiles.array + *(packet_projectiles_ids + i));
+				*(struct Projectile_pack_data*)ptr = (struct Projectile_pack_data){
+					pr->position,
+					pr->shift_per_tick,
+					(1 << pr->type_id) | (projectile_special == pr->type_id ? 1 << (pr->special.effect_id + projectile_types_num) : 0)
+				};
+				ptr += sizeof(struct Projectile_pack_data);
+			}
+			for(unsigned int i = 0U; i < pckt_nums.announcements; ++i){
+				*(Announcement*)ptr = *(gd->announcements.unimportant + i);
+				ptr += sizeof(Announcement);
+			}
+			ENetPacket *packet = enet_packet_create(data, size, ENET_PACKET_FLAG_NO_ALLOCATE);
+			packet->freeCallback = PacketFreeCallback;
+			enet_peer_send(client, 0, packet);
+			if(gd->announcements.important_num > 0U){
+				imp_annn = *(gd->announcements.important + (gd->announcements.important_num - 1U));
+				if(annncmnt_load == imp_annn.id){
+					(gd->champions.array + 1)->position = imp_annn.position;
+					const size_t loadsize = sizeof(Box) * gd->boxes.num + sizeof(Player) + sizeof(gd->world.plan);
+					void *const loaddata = SDL_malloc(loadsize);
+					SDL_memcpy(loaddata, gd->champions.array + 1, sizeof(Player));
+					SDL_memcpy(loaddata + sizeof(Player), gd->boxes.array, sizeof(Box) * gd->boxes.num);
+					SDL_memcpy(loaddata + sizeof(Player) + sizeof(Box) * gd->boxes.num, gd->world.plan, sizeof(gd->world.plan));
+					ENetPacket *data_packet = enet_packet_create(loaddata, loadsize, ENET_PACKET_FLAG_NO_ALLOCATE | ENET_PACKET_FLAG_RELIABLE);
+					data_packet->freeCallback = PacketFreeCallback;
+					enet_peer_send(client, 2, data_packet);
+				}else{
+					ENetPacket *imp_packet = enet_packet_create(&imp_annn, sizeof(Announcement), ENET_PACKET_FLAG_NO_ALLOCATE | ENET_PACKET_FLAG_RELIABLE);
+					enet_peer_send(client, 1, imp_packet);
+				}
+				--gd->announcements.important_num;
+			}
+			enet_host_flush(serhost);
+			(gd->champions.array + 1)->flags &= ~(disrupted);
+			gd->announcements.unimportant_num = 0U;
+		}
+		if(update_result != update_ok){
+			if(update_result == update_shop){
+				ResetTime(&time, &prev_frame_time);
+			}else if(update_defeated == update_result){
+				ClearGameData(gd);
+				LoadGame(gd, SAVE_PATHMP);
+			}else{
+				EndLoop(gd->ev_ptr, gd->rend_data_ptr, update_result);
+				break;
+			}
+		}
+		now = SDL_GetTicksNS();
+		if(now > prev_frame_time + FRAME_TIME){
+			prev_frame_time = now;
+			RenderGame(gd->rend_data_ptr, gd, state);
+			SDL_RenderPresent(gd->rend_data_ptr->renderer);
+		}
+		time += TICK_TIME;
+		now = SDL_GetTicksNS();
+		if(now < time){
+			SDL_DelayNS(time - now);
+		}else if(now - timer < TICK_TIME){
+			SDL_DelayNS((TICK_TIME - (now - timer)) >> 1);
+		}
+	}
+	enet_host_destroy(serhost);
+	enet_deinitialize();
+	ClearGameData(gd);
+}
+
+static void UpdateClientGame(Game_data* const gd){
+	static unsigned int ticks_to_rare_update = RARE_UPDATE_INTERVAL;
+	static unsigned int counter = 0U;
+	++counter;
+	host(gd)->aim_position = GetMouseWorldPosition(gd);
+	ClientUpdatePlayers(gd);
+	for(Projectile* pr = gd->projectiles.array; pr != (gd->projectiles.array + gd->projectiles.num); ++pr){
+		const float new_x = pr->position.x + pr->shift_per_tick.x, new_y = pr->position.y + pr->shift_per_tick.y;
+		if(GetSegmentUnsafe(&gd->world, new_x, new_y)){
+			pr->position.x = new_x;
+			pr->position.y = new_y;
+			if(projectile_special == pr->type_id){
+				if(projectile_fire == pr->special.effect_id){
+					if(!(counter % 16U)){
+						if(!(counter % 4U)){
+							AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+								pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
+								pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE
+							});
+						}else{
+							AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
+								pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
+								pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE
+							});
+						}
+					}
+				}else if(projectile_warlock == pr->special.effect_id && !(counter % 3U)){
+					AddProjectileVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+				}
+			}
+		}
+	}
+	if(ticks_to_rare_update == 0U){
+		ClientUpdateBeings(gd);
+		ticks_to_rare_update = RARE_UPDATE_INTERVAL;
+		static int check_queue = check_0;
+		check_queue = (check_queue + 1) % checks_num;
+		if(check_0 == check_queue){
+			Player *const pc = host(gd);
+			if(SDL_fabsf(pc->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (pc->flags & action)){
+				SetPlayerPosition(pc, gd->world.portalB.x, gd->world.portalB.y);
+				UpdatePlayerNewSegment(&gd->world, pc);
+				pc->flags &= ~(action);
+			}else if(SDL_fabsf(pc->position.x - gd->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalB.y) < half(DOOR_SIZE) && (pc->flags & action)){
+				SetPlayerPosition(pc, gd->world.portalA.x, gd->world.portalA.y);
+				UpdatePlayerNewSegment(&gd->world, pc);
+				pc->flags &= ~(action);
+			}
+		}else if(check_4 == check_queue){
+			for(unsigned int i = 0U; i < gd->champions.num; ++i){
+				const Player *const pc = gd->champions.array + i;
+				PlayerInUncoveredBigSeg(gd, pc->position.x, pc->position.y);
+			}
+		}
+	}else{
+		for(unsigned int i = 0U; i < gd->beings.num; ++i){
+			const Being *const bg = (gd->beings.array + i);
+			for(unsigned int j = 0U; j < bg->effects_num; ++j){
+				switch((bg->effects + j)->id){
+				case being_effect_burn:
+					if(counter % 8U < 2U){
+						AddBeingEffectVisual(gd->rend_data_ptr, bg, AddSmallBurnVisualEffect);
+					}
+					break;
+				case being_effect_bonus:
+					if(counter % 128U < 2U){
+						AddBeingEffectVisual(gd->rend_data_ptr, bg, AddBonusVisualEffect);
+					}
+					break;
+				case being_effect_slow:
+					if(counter % 128U < 2U){
+						AddCurseVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
+					}
+					break;
+				default: break;
+				}
+			}
+		}
+		--ticks_to_rare_update;
+	}
+}
+
+void ClientGameLoop(Game_data* const gd){
+	if(enet_initialize() != 0){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "An error occurred while initializing ENet.");
+		exit(-1);
+	}
+	ENetAddress address;
+	ENetHost *client;
+	ENetPeer *serhost;
+	client = enet_host_create(NULL, COOP_PLAYERS_NUM - 1, CONNECTION_CHANNELS, CONNECTION_BANDWIDTH_IN, CONNECTION_BANDWIDTH_OUT);
+	if(client == NULL){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "An error occurred while trying to create an ENet client host.");
+		exit(-1);
+	}
+	ENetEvent connection_event;
+	char *file_path = NULL;
+	SDL_asprintf(&file_path, "%sserver_name", SDL_GetBasePath());
+	size_t sn_size;
+	char *const server_name = SDL_LoadFile(file_path, &sn_size);
+	SDL_free(file_path);
+	if(!server_name){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't read server name from file: %s", SDL_GetError());
+		exit(-1);
+	}
+	while(sn_size > 0U && ('\n' == *(server_name + sn_size - 1U) || '\r' == *(server_name + sn_size - 1U) || ' ' == *(server_name + sn_size - 1U))) {
+		*(server_name + sn_size-- - 1U) = '\0';
+	}
+	enet_address_set_host(&address, server_name);
+	SDL_free(server_name);
+	address.port = CONNECTION_PORT;
+	serhost = enet_host_connect(client, &address, CONNECTION_CHANNELS, 0);
+	if(serhost == NULL){
+		SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "No available peers for initiating an ENet connection.");
+		enet_host_destroy(client);
+		enet_deinitialize();
+		return;
+	}
+	if(!(enet_host_service(client, &connection_event, 5000) > 0 && connection_event.type == ENET_EVENT_TYPE_CONNECT)){
+		enet_peer_reset(serhost);
+		SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Connection to host failed.");
+		enet_host_destroy(client);
+		enet_deinitialize();
+		return;
+	}
+	bool ok = false;
+	while(enet_host_service(client, &connection_event, 0) || !ok){
+		switch(connection_event.type){
+		case ENET_EVENT_TYPE_RECEIVE:
+			ok = true;
+			gd->seed = *(Uint64*)connection_event.packet->data;
+			enet_packet_destroy(connection_event.packet);
+			break;
+		case ENET_EVENT_TYPE_DISCONNECT:
+			connection_event.peer->data = NULL;
+			SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Client disconnected.");
+			enet_host_destroy(client);
+			enet_deinitialize();
+			return;
+		default: break;
+		}
+	}
+	MultiplayerSetGameData(gd, gamef_multiplayer);
+	SDL_srand(gd->seed);
+	StartNewLevel(gd);
+	CreatePlayer((gd->champions.array + 1), host(gd)->position.x, host(gd)->position.y);
+	++gd->champions.num;
+	MovePlayer(gd, host(gd), (float)PLAYER_SIZE * 2.0F, 0.0F);
+	DrawMap(gd->rend_data_ptr, &gd->world);
+	SDL_srand(0ULL);
+	SaveGame(gd, SAVE_PATHMP);
+	struct Client_pack_data cpdata = {};
+	Uint64 now = 0ULL;
+	Uint64 timer;
+	int state = event_ok;
+	Uint64 time = SDL_GetTicksNS();
+	Uint64 prev_frame_time = time;
+	Uint64 prev_connection_time = time;
+	while(state != event_quit_game){
+		timer = SDL_GetTicksNS();
+		if(state == event_ok){
+			state = EventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+		}else if(state == event_manage_scrolls){
+			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+		}else if(state == event_menu){
+			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &host(gd)->help_data.menu_position, menu_ig_unknown);
+			if(menu_ig_unknown != option){
+				if(menu_ig_escape == option){
+					option = menu_ig_continue;
+				}
+				state = ActivateMenuOption(option, gd);
+			}
+		}else if(event_used_pause == state){
+			ResetTime(&time, &prev_frame_time);
+			state = event_ok;
+		}
+		UpdateClientGame(gd);
+		now = SDL_GetTicksNS();
+		if(now > prev_connection_time + PACKET_INTERVAL){
+			prev_connection_time = now;
+			cpdata = (struct Client_pack_data){
+				host(gd)->position,
+				host(gd)->aim_position,
+				host(gd)->flags,
+				host(gd)->direction,
+				host(gd)->selected_scroll
+			};
+			if(gd->flags & gamef_client_dodge){
+				cpdata.flags |= dodge;
+				gd->flags &= ~(gamef_client_dodge);
+			}
+			if(gd->flags & gamef_client_cast){
+				cpdata.flags |= cast;
+				gd->flags &= ~(gamef_client_cast);
+			}
+			ENetPacket *packet = enet_packet_create(&cpdata, sizeof(struct Client_pack_data), ENET_PACKET_FLAG_NO_ALLOCATE);
+			enet_peer_send(serhost, 0, packet);
+			enet_host_flush(client);
+			host(gd)->flags &= ~(strike);
+		}
+		while(enet_host_service(client, &connection_event, 0)){
+			switch(connection_event.type){
+			case ENET_EVENT_TYPE_RECEIVE:
+				if(0 == connection_event.channelID){
+					void* ptr = connection_event.packet->data;
+					struct pckt_nums pckt_nums = *(struct pckt_nums*)ptr;
+					ptr += sizeof(struct pckt_nums);
+					gd->beings.num = pckt_nums.beings;
+					gd->projectiles.num = pckt_nums.projectiles;
+					(gd->champions.array + 1)->position = ((struct Player_pack_data*)ptr)->position;
+					(gd->champions.array + 1)->blade.placement.position = (SDL_FPoint){((struct Player_pack_data*)ptr)->blade_position16.x, ((struct Player_pack_data*)ptr)->blade_position16.y};
+					(gd->champions.array + 1)->flags = ((struct Player_pack_data*)ptr)->flags;
+					(gd->champions.array + 1)->direction = (float)((struct Player_pack_data*)ptr)->direction8 * FULL_ANGLE / 255.0F;
+					(gd->champions.array + 1)->blade.placement.direction = (float)((struct Player_pack_data*)ptr)->blade_direction8 * FULL_ANGLE / 255.0F;
+					(gd->champions.array + 1)->selected_scroll = ((struct Player_pack_data*)ptr)->selected_scroll;
+					ptr += sizeof(struct Player_pack_data);
+					const Uint32 not_read_flags = forward | back | right | left | range_mode | attack | block | run | dodge | cast | strike;
+					host(gd)->flags = (((struct Client_return_data*)ptr)->flags & ~(not_read_flags)) | (host(gd)->flags & (not_read_flags));
+					host(gd)->max_velocity = ((struct Client_return_data*)ptr)->max_velocity;
+					host(gd)->fatigue_points = ((struct Client_return_data*)ptr)->fatigue_points;
+					host(gd)->blade.charge = ((struct Client_return_data*)ptr)->blade_charge;
+					host(gd)->hit_points = (int)((struct Client_return_data*)ptr)->HP8 * PC_HP / 255;
+					host(gd)->armour.multipl = (float)((struct Client_return_data*)ptr)->armour8 / 255.0F;
+					host(gd)->armour.magic_multipl = (float)((struct Client_return_data*)ptr)->armour_magic8 / 255.0F;
+					ptr += sizeof(struct Client_return_data);
+					for(unsigned int i = 0U; i < pckt_nums.beings; ++i){
+						const struct Being_pack_data *const bpd = (struct Being_pack_data*)ptr;
+						Being *const bg = gd->beings.array + i;
+						bg->position = bpd->position;
+						bg->type_id = bpd->type_id;
+						bg->status =
+							bpd->pack_flags & being_packf_shift ? being_walk
+							: (bpd->pack_flags & being_packf_shoot ? being_shoot
+							: (bpd->pack_flags & being_packf_strike ? being_strike
+							: (bpd->pack_flags & being_packf_strike_being ? being_strike_being : being_stunned)));
+						bg->hit_points = (int)bpd->HP8 * BeingHP(bg) / 255;
+						if(being_walk == bg->status){
+							bg->special_move_shift = bpd->shift;
+						}else{
+							bg->status_ticks_left = bpd->status_ticks_left;
+						}
+						bg->effects_num = 0U;
+						if(bpd->pack_flags & being_packf_burn){
+							AddBeingEffect(bg, (Lasting_effect){being_effect_burn, 0});
+						}
+						if(bpd->pack_flags & being_packf_bless){
+							AddBeingEffect(bg, (Lasting_effect){being_effect_bonus, 0});
+						}
+						if(bpd->pack_flags & being_packf_curse){
+							AddBeingEffect(bg, (Lasting_effect){being_effect_slow, 0});
+						}
+						ptr += sizeof(struct Being_pack_data);
+					}
+					for(unsigned int i = 0U; i < pckt_nums.projectiles; ++i){
+						const struct Projectile_pack_data *const ppd = (struct Projectile_pack_data*)ptr;
+						(gd->projectiles.array + i)->position = ppd->position;
+						(gd->projectiles.array + i)->shift_per_tick = ppd->shift;
+						(gd->projectiles.array + i)->type_id =
+							ppd->pack_flags & projectile_packf_penetrat ? projectile_penetrat
+							: (ppd->pack_flags & projectile_packf_hostile ? projectile_hostile
+							: projectile_special);
+						if(projectile_special == (gd->projectiles.array + i)->type_id){
+							(gd->projectiles.array + i)->special.effect_id = ppd->pack_flags & projectile_packf_warlock ? projectile_warlock : projectile_fire;
+						}
+						ptr += sizeof(struct Projectile_pack_data);
+					}
+					for(unsigned int i = 0U; i < pckt_nums.announcements; ++i){
+						const Announcement *const an = (Announcement*)ptr;
+						switch(an->id){
+						case annncmnt_damage:
+							AddDamageVisualEffect(gd, &an->position);
+							break;
+						case annncmnt_explosion:
+							AddFireExplosionVisualEffect(gd, &an->position);
+							break;
+						case annncmnt_kill:
+							AddDeadVisualEffect(gd, &an->position);
+							break;
+						case annncmnt_portal:
+							AddPortalVisualEffect(gd, &an->position);
+							break;
+						case annncmnt_bolt:
+							AddBoltVisualEffect(gd, &(SDL_FPoint){an->pos16b0.x, an->pos16b0.y}, an->pos16b1);
+							break;
+						case annncmnt_cast:
+							;Uint8 scroll = (Uint8)an->data64b;
+							PlayerCastConsequences(gd, host(gd), ScrollCost(scroll), scroll);
+							break;
+						case annncmnt_spell:
+							AddSpellVisualEffect(gd, &(SDL_FPoint){an->pos16b.x, an->pos16b.y}, SPELL_RED, an->data8b0, an->data8b1);
+							break;
+						default: break;
+						}
+						ptr += sizeof(Announcement);
+					}
+				}else if(1 == connection_event.channelID){
+					const Announcement *const an = (Announcement*)connection_event.packet->data;
+					switch(an->id){
+					case annncmnt_destroy_box:
+						DestroyBoxInArray(&gd->boxes, (unsigned int)an->data64b);
+						break;
+					case annncmnt_update_mp_and_coin:
+						host(gd)->magic_points = an->data32b01;
+						host(gd)->coins = an->data32b11;
+						break;
+					case annncmnt_update_scroll:
+						*(host(gd)->scrolls + an->data32b0) = an->data32b1;
+						break;
+					case annncmnt_update_key:
+						*(gd->keys_status + an->data32b0) = an->data32b1;
+						if(key_owned == an->data32b1){
+							++gd->keys;
+						}
+						break;
+					default: break;
+					}
+				}else{
+					gd->boxes.num = (connection_event.packet->dataLength - (sizeof(Player) + sizeof(gd->world.plan))) / sizeof(Box);
+					SDL_memcpy(host(gd), connection_event.packet->data, sizeof(Player));
+					SDL_memcpy(gd->boxes.array, connection_event.packet->data + sizeof(Player), sizeof(Box) * gd->boxes.num);
+					SDL_memcpy(gd->world.plan, connection_event.packet->data + sizeof(Player) + sizeof(Box) * gd->boxes.num, sizeof(gd->world.plan));
+					DrawMap(gd->rend_data_ptr, &gd->world);
+				}
+				enet_packet_destroy(connection_event.packet);
+				break;
+			case ENET_EVENT_TYPE_DISCONNECT:
+				connection_event.peer->data = NULL;
+				SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Client disconnected.");
+				enet_host_destroy(client);
+				enet_deinitialize();
+				ClearGameData(gd);
+				return;
+			default: break;
+			}
+		}
+		now = SDL_GetTicksNS();
+		if(now > prev_frame_time + FRAME_TIME){
+			prev_frame_time = now;
+			RenderClientGame(gd->rend_data_ptr, gd, state);
+			SDL_RenderPresent(gd->rend_data_ptr->renderer);
+		}
+		time += TICK_TIME;
+		now = SDL_GetTicksNS();
+		if(now < time){
+			SDL_DelayNS(time - now);
+		}else if(now - timer < TICK_TIME){
+			SDL_DelayNS((TICK_TIME - (now - timer)) >> 1);
+		}
+	}
+	enet_host_destroy(client);
+	enet_deinitialize();
+	ClearGameData(gd);
+}
+
+static inline bool IsAnnouncementImportant(const Uint8 id){
+	if(id < annncmnt_damage){
+		return true;
+	}
+	return false;
+}
+
+extern inline void AddAnnouncement(Game_data *const gd, const Uint8 id, const void *const data){
+	if(!(gd->flags & gamef_is_serv_host)){return;}
+	if(IsAnnouncementImportant(id)){
+		if(gd->announcements.important_num < MAX_ANNOUNCEMENTS){
+			(gd->announcements.important + gd->announcements.important_num)->id = id;
+			SDL_memcpy(gd->announcements.important + gd->announcements.important_num, data, sizeof(Uint64));
+			++gd->announcements.important_num;
+		}
+	}else if(gd->announcements.unimportant_num < MAX_ANNOUNCEMENTS){
+		(gd->announcements.unimportant + gd->announcements.unimportant_num)->id = id;
+		SDL_memcpy(gd->announcements.unimportant + gd->announcements.unimportant_num, data, sizeof(Uint64));
+		++gd->announcements.unimportant_num;
+	}
 }

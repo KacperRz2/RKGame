@@ -17,7 +17,10 @@ enum control{
     range_mode = 1 << 10,
     stunned = 1 << 11,
     map_look = 1 << 12,
-    dodge_time = 1 << 13
+    dodge_time = 1 << 13,
+    disrupted = 1 << 14,
+    stop_blade = 1 << 15,
+    strike = 1 << 16
 };
 enum pc_effect{
     pc_effect_slow,
@@ -76,6 +79,7 @@ struct Player{
     Armour armour;
     Armour max_armour;
     int coins;
+    SDL_FPoint aim_position;
     Uint8 selected_scroll;
     Uint8 scrolls[SCROLLS_NUM];
     Uint8 scrolls_quick_access[QUICK_SCROLLS];
@@ -97,7 +101,7 @@ void DamagePlayer(Player* const, const Impact* const);
 void HaltPlayer(Player* const);
 void HitBarrier(Player* const, const Impact* const);
 float GetDirectionToPush(const SDL_FPoint* const, const SDL_FPoint* const);
-void HealPlayer(Player* const p, const int);
+void HealPlayer(Player* const, const int);
 void UpdatePlayers(Game_data* const);
 void UpdatePlayersEffects(Game_data* const);
 void SetQuickScroll(Player* const, int);
@@ -105,5 +109,9 @@ void SetQuickScroll(Player* const, int);
 void AddPlayerEffect(Player* const, const Lasting_effect);
 void AddOrUpdatePlayerEffect(Player* const, const Lasting_effect);
 int PlayerHasEffect(Player* const, const int);
+
+void MultiplayerUpdatePlayers(Game_data* const);
+void ClientUpdatePlayers(Game_data* const);
+void PlayerCastConsequences(Game_data *const, Player *const, const int, const Uint8);
 
 #endif

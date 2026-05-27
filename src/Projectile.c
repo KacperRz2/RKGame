@@ -93,7 +93,7 @@ static bool UpdatePCProjectile(Projectile* const pr, Game_data* const gd){
 		for(unsigned int j = 0U; j < neighbour->beings.num; ++j){
 			Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + j));
 			if(!ProjectileHitsBeing(pr, bg)) continue;
-			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+			AddDamageVisualEffect(gd, &pr->position);
 			if(DamageBeing(bg, &pr->penetrating.impact, gd->beings.array)){
 				if(pr->penetrating.hits < pr->penetrating.penetration--){
 					--j;
@@ -139,7 +139,7 @@ static bool UpdateHostileProjectile(Projectile* const pr, Game_data* const gd){
 		for(unsigned int j = 0U; j < neighbour->ally_beings.num; ++j){
 			Being* bg = (gd->beings.array + *(neighbour->ally_beings.beings_ind + j));
 			if(!ProjectileHitsBeing(pr, bg)) continue;
-			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+			AddDamageVisualEffect(gd, &pr->position);
 			if(!DamageAlly(bg, &pr->basic.impact, gd->beings.array)){
 				if(bg->status != being_fly){
 					const float power = CalculateStunPower(&pr->basic.impact, &bg->armour);
@@ -202,7 +202,7 @@ static bool WarlockProjectile(Projectile* const pr, Game_data* const gd){
 				pc->range_attack.magic *= 0.5F;
 				pc->range_attack.armour_reduction = 0.0F;
 				*pr = *(gd->projectiles.array + gd->projectiles.num-- - 1U);
-    			AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &pc->position, SPELL1_RGB);
+    			AddSpellVisualEffect(gd, &pc->position, SPELL1_RGB);
 				return false;
 			}
 		}
@@ -221,30 +221,7 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 		}else{
 			MoveProjectile(pr);
 		}
-		AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
-		AddBoomVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
-		AddBoomVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
-			pr->position.x + (SDL_randf() - 0.5F) * half(BOOM_SIZE),
-			pr->position.y + (SDL_randf() - 0.5F) * half(BOOM_SIZE)
-		}, SDL_rand(V_EFFECT_MAX_DELAY) + 1U);
-		for(unsigned int i = 0U; i < BOOM_EFFECTS_NUM; ++i){
-			float angle = FULL_ANGLE * SDL_randf();
-			float rand_float = SDL_randf();
-			float distance = half(BOOM_SIZE) * rand_float;
-			float veffect_x = pr->position.x + SineUnsafe(angle) * distance;
-			float veffect_y = pr->position.y - CosiUnsafe(angle) * distance;
-			if(GetSegmentSafe(&gd->world, veffect_x, veffect_y)){
-				AddBigBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){veffect_x, veffect_y}, V_EFFECT_MAX_DELAY * rand_float + 1U);
-			}
-			angle = FULL_ANGLE * SDL_randf();
-			rand_float = SDL_randf();
-			distance = half(BOOM_SIZE) * rand_float;
-			veffect_x = pr->position.x + SineUnsafe(angle) * distance;
-			veffect_y = pr->position.y - CosiUnsafe(angle) * distance;
-			if(GetSegmentSafe(&gd->world, veffect_x, veffect_y)){
-				AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){veffect_x, veffect_y}, V_EFFECT_MAX_DELAY * SDL_randf() + 1U);
-			}
-		}
+		AddFireExplosionVisualEffect(gd, &pr->position);
 		const int range = 2;
 		const unsigned int array_size = pow2(1 + range * 2);
 		Segment* neighbour_segs[array_size];
@@ -257,7 +234,7 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 				const float distance_squared = GetDistanceSquared(&bg->position, &pr->position);
 				const float range_squared = pow2(SEGMENT_SIZE * range);
 				if(distance_squared <= range_squared){
-					AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position);
+					AddDamageVisualEffect(gd, &bg->position);
 					const Impact impact = PC_FIRE_PROJECTILE_IMPACT;
 					const float impact_level = (1.0F - distance_squared / range_squared);
 					if(DamageBeing(bg, &(Impact){
@@ -304,7 +281,7 @@ static inline bool ProjectileHitsPlayer(Projectile* const pr, Game_data* const g
 			HitBarrier(pc, &pr->basic.impact);
 		}else{
 			DamagePlayer(pc, &pr->basic.impact);
-			AddDamageVisualEffect(&gd->rend_data_ptr->visual_effects, &pr->position);
+			AddDamageVisualEffect(gd, &pr->position);
 		}
 		return true;
 	}

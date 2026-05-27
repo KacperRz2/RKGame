@@ -6,7 +6,8 @@ typedef struct Projectile Projectile;
 enum projectile_type{
     projectile_penetrat,
     projectile_hostile,
-    projectile_special
+    projectile_special,
+    projectile_types_num
 };
 enum special_projectile_effect{
     projectile_warlock,

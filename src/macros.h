@@ -6,7 +6,7 @@
 #define FULL_ANGLE			        (SDL_PI_F * 2.0F)
 #define pow2(x)                     ((x) * (x))
 #define half(x)                     ((x) * (0.5F))
-#define human(game_data_ptr)        (game_data_ptr->champions.array + game_data_ptr->human_indx)
+#define host(game_data_ptr)        (game_data_ptr->champions.array + game_data_ptr->host_indx)
 #define BIG_SEGMENTS_X              29U
 #define BIG_SEGMENT_SEGMENTS_X      10U
 #define SEGMENTS_X			        (BIG_SEGMENT_SEGMENTS_X * BIG_SEGMENTS_X)
@@ -35,14 +35,18 @@
 #define ROTATION_SPEED		        0xA.0p-11F//0x8.0p-11F
 #define DIRECTION_SHIFT_ADDITION	0.125F
 #define FRAME_TIME			        0x400000ULL
+#define PACKET_INTERVAL			    0x4000000ULL
 #define FRAME_TIME_MS		        (FRAME_TIME / 1000000ULL)
 #define MAX_PROJECTILES_NUM	        0x1000U
+#define MAX_PACK_PROJECTILES_NUM	(MAX_PROJECTILES_NUM / 8U)
 #define MAX_SEGM_BEINGS		        0x10U
 #define MAX_BEINGS_NUM		        0x3000U
+#define MAX_PACK_BEINGS_NUM		    (MAX_BEINGS_NUM / 8U)
 #define MAX_START_BEINGS_NUM        0x1000U
 #define MAX_VISUAL_EFFECTS_NUM		0x800U
-#define MAX_PLAYERS_NUM		        0x1U
+#define MAX_PLAYERS_NUM		        0x2U
 #define START_PLAYERS_NUM		    0x1U
+#define COOP_PLAYERS_NUM		    MAX_PLAYERS_NUM
 #define ANGLE_PARTS		            512
 #define MIN_ANGLE                   (2.0F * SDL_PI_F / (float)ANGLE_PARTS)
 #define BEING_HIT_CIRCLE_DIAMET     24.0F
@@ -80,6 +84,7 @@
 #define PC_HP                       0x100
 #define PC_FATIGUE                  0x200
 #define PC_MAGIC                    20
+#define START_SCROLLS_NUM           0U
 // #define PC_M_MAGIC                  0x10000000
 #define MOVING_BACK_VELO_MODI       0.93F
 #define PC_DODGE_FATIG              100
@@ -133,6 +138,8 @@
 #define SCROLLS_NUM                 (scroll_empty + 1U)
 #define OPTIONS_NUM                 5U
 #define SETTINGS_NUM                2U
+#define NEW_GAME_OPTIONS_NUM        3U
+#define MULTIPLAYER_OPTIONS_NUM     3U
 #define MAX_BEING_EFFECTS           8
 #define MAX_PC_EFFECTS              8
 #define MAX_GAME_EFFECTS            8
@@ -195,6 +202,21 @@
 #define BEING_CHARGE_VELOCITY_MULT  0x1.8p+0F
 #define BIG_SEG_PLAN_NULL_SEG       (-1)
 #define NOT_FOUND                   (-1)
+#define CONNECTION_PORT             51000
+#define CONNECTION_CHANNELS         3
+#define CONNECTION_BANDWIDTH_IN     0
+#define CONNECTION_BANDWIDTH_OUT    0
+#define MAX_ANNOUNCEMENTS           32U
+#define IS_BEING_SHIFTING(bg)       (being_follow == (bg)->status\
+                                    || being_follow_being == (bg)->status\
+                                    || being_walk == (bg)->status\
+                                    || being_search == (bg)->status\
+                                    || being_fly == (bg)->status)
+
+#define IS_BEING_SHOOTING(bg)       (being_shoot == (bg)->status\
+                                    || being_shoot_being == (bg)->status)
+
+#define IS_BEING_STRIKING(bg)       (being_strike == (bg)->status)
 
 #define KEY_MOVE_FORWARD            SDL_SCANCODE_W
 #define KEY_MOVE_BACK               SDL_SCANCODE_S
@@ -212,8 +234,9 @@
 
 #define UNCOVERED_SEG_RGB           255U, 255U, 255U
 #define POPULATED_SEG_RGB           127U, 127U, 127U
-#define SPELL0_RGB                  127U, 127U, 63U
-#define SPELL1_RGB                  127U, 15U, 127U
+#define SPELL_RED                   127U
+#define SPELL0_RGB                  SPELL_RED, 127U, 63U
+#define SPELL1_RGB                  SPELL_RED, 15U, 127U
 #define SCR_COSTS                   {\
                                         5U,\
                                         5U,\
@@ -475,7 +498,7 @@
 #define SPIRAL_Y_SHIFTS         {0,-1,-1,0,1,1,1,0,-1,-2,-2,-2,-2,-1,0,1,2,2,2,2,2,1,0,-1,-2,-3,-3,-3,-3,-3,-3,-2,-1,0,1,2,3,3,3,3,3,3,3,2,1,0,-1,-2,-3,-4,-4,-4,-4,-4,-4,-4,-4,-3,-2,-1,0,1,2,3,4,4,4,4,4,4,4,4,4,3,2,1,0,-1,-2,-3,-4}
 
 #define SAVE_LEN(nums)          sizeof(struct nums)\
-		                        + sizeof(unsigned int)\
+		                        + sizeof(Uint32)\
 		                        + sizeof(Player) * nums.champions\
 		                        + sizeof(Being) * nums.beings\
 		                        + sizeof(Projectile) * nums.projectiles\
@@ -488,5 +511,14 @@
 		                        + sizeof(Lasting_effect) * nums.effects\
 		                        + sizeof(union horde_data)\
 		                        + sizeof(struct coordinates) * nums.known_segs
+
+#define PACKET_LEN(pckt_nums)   sizeof(struct pckt_nums)\
+                                + sizeof(struct Being_pack_data) * pckt_nums.beings\
+		                        + sizeof(struct Projectile_pack_data) * pckt_nums.projectiles\
+		                        + sizeof(struct Player_pack_data) + sizeof(struct Client_return_data)\
+		                        + sizeof(Announcement) * pckt_nums.announcements
+
+#define SAVE_PATH0              "save"
+#define SAVE_PATHMP             "save_MP"
 
 #endif

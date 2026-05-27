@@ -90,11 +90,10 @@ bool DamageAlly(Being* const, const Impact* const, Being* const);
 void StunBeing(Being* const, const int);
 void CatapultBeing(Being* const, const float, const float, const int);
 
-
 void AddBeingEffect(Being* const, const Lasting_effect);
 void AddOrUpdateBeingEffect(Being* const, const Lasting_effect);
 void EndAllBeingEffects(Game_data* const, Being* const);
-int BeingHasEffect(Being* const, const unsigned int);
+int BeingHasEffect(const Being* const, const unsigned int);
 void SlowBeing(Game_data* const, Being* const, const int);
 void SlowBeingEnd(Game_data* const, Being* const);
 void CommanderAura(Game_data* const, Being* const, const int);
@@ -104,5 +103,7 @@ void OpeningPortal(Game_data* const, Being* const, const int);
 void ThunderboltChain(Game_data* const, Being* const, const int);
 void AllyLifetime(Game_data* const, Being* const, const int);
 void BeingLastingEffectVoidEnd(Game_data* const, Being* const);
+void AddBeingEffectVisual(Render_data *const, const Being *const, void (*AddFunc)(Visual_effects* const, const SDL_FPoint* const));
+void ClientUpdateBeings(Game_data *const);
 
 #endif

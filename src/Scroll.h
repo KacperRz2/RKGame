@@ -14,8 +14,8 @@ enum scroll_type{
     scroll_empty
 };
 
-int ScrollCost(const unsigned int);
-bool UseScroll(Game_data* const);
+int ScrollCost(const Uint8);
+bool UseScroll(Game_data* const, const SDL_FPoint *const, const unsigned int);
 Uint8 GetRandomScroll();
 
 #endif

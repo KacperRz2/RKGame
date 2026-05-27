@@ -626,7 +626,7 @@ static void PlaceBeings(Game_data* const gd, const SDL_FPoint* const start_posit
 		const float x = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
 		const float y = SEGMENT_SIZE + SDL_randf() * (WORLD_SIZE - SEGMENT_SIZE * 2.0F);
 		if(pow2(start_position->x - x) + pow2(start_position->y - y) > pow2(BIG_SEGMENT_SIZE)){
-			TryCreateIdleBeing(gd, GetRandomBeingId(), x, y, human(gd));
+			TryCreateIdleBeing(gd, GetRandomBeingId(), x, y, host(gd));
 		}
 	}
 }

@@ -1,34 +1,33 @@
 #include <common.h>
 #include <function.h>
 
-static bool push(Game_data* const);
-static bool HPRegen(Game_data* const);
-static bool AddAlly(Game_data* const);
-static bool RenewArmour(Game_data* const);
-static bool slow(Game_data* const);
-static bool fire(Game_data* const);
-static bool thunderbolt(Game_data* const);
-static bool convert(Game_data* const);
-static bool FatigueRegen(Game_data* const);
-static bool EffectEmpty(Game_data* const);
+static bool push(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool HPRegen(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool AddAlly(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool RenewArmour(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool slow(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool fire(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool thunderbolt(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool convert(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool FatigueRegen(Game_data* const, const SDL_FPoint *const, const unsigned int);
+static bool EffectEmpty(Game_data* const, const SDL_FPoint *const, const unsigned int);
 
-extern inline int ScrollCost(const unsigned int scroll_id){
+extern inline int ScrollCost(const Uint8 scroll_id){
     const int costs[] = SCR_COSTS;
     return *(costs + scroll_id);
 }
 
-extern inline bool UseScroll(Game_data* const gd){
-    bool (*const effect[])(Game_data* const) = SCR_EFFECTS;
-    return (*(effect + human(gd)->selected_scroll))(gd);
+extern inline bool UseScroll(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    bool (*const effect[])(Game_data* const, const SDL_FPoint *const, const unsigned int) = SCR_EFFECTS;
+    return (*(effect + (gd->champions.array + indx)->selected_scroll))(gd, target_xy, indx);
 }
 
 Uint8 GetRandomScroll(){
     return SDL_rand(scroll_empty);
 }
 
-static bool push(Game_data* const gd){
-    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
-    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+static bool push(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy->x, target_xy->y);
     if(!target_seg){
         return false;
     }
@@ -42,54 +41,55 @@ static bool push(Game_data* const gd){
         if(neighbour == NULL) continue;
         for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
             Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
-            const float distance_squared = GetDistanceSquared(&bg->position, &target_xy);
+            const float distance_squared = GetDistanceSquared(&bg->position, target_xy);
             const float range_squared = pow2(SEGMENT_SIZE * range);
             if(distance_squared <= range_squared){
                 const float power = SCROLL_PUSH_POWER * bg->armour.unstability * (1.0F - distance_squared / range_squared);
-                const float angle = GetDirectionToPush(&target_xy, &bg->position);
+                const float angle = GetDirectionToPush(target_xy, &bg->position);
                 const float vel = BASE_FLY_VELOCITY * power;
                 CatapultBeing(bg, SineSafe(angle) * vel, -CosiSafe(angle) * vel, BASE_FLY_TICKS * power);
                 any = true;
-                AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, SPELL0_RGB);
+                AddSpellVisualEffect(gd, &bg->position, SPELL0_RGB);
             }
         }
     }
     if(!any){
         return false;
     }
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &target_xy, SPELL0_RGB);
+    AddSpellVisualEffect(gd, target_xy, SPELL0_RGB);
     return true;
 }
 
-static bool HPRegen(Game_data* const gd){
-    AddOrUpdatePlayerEffect(human(gd), (Lasting_effect){pc_effect_hpregen, HP_REGEN_TICKS});
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &human(gd)->position, SPELL0_RGB);
+static bool HPRegen(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    Player *const pc = gd->champions.array + indx;
+    AddOrUpdatePlayerEffect(pc, (Lasting_effect){pc_effect_hpregen, HP_REGEN_TICKS});
+    AddSpellVisualEffect(gd, &pc->position, SPELL0_RGB);
     return true;
 }
 
-static bool AddAlly(Game_data* const gd){
-    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
-    Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+static bool AddAlly(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    Player *const pc = gd->champions.array + indx;
+    Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy->x, target_xy->y);
     if(target_seg && gd->beings.num < MAX_BEINGS_NUM && target_seg->ally_beings.num < MAX_SEGM_BEINGS){
-        Being* const bg = AddIdleAllyToArray(&gd->beings, ally_ordinary, target_xy.x, target_xy.y, target_seg, human(gd));
+        Being* const bg = AddIdleAllyToArray(&gd->beings, ally_ordinary, target_xy->x, target_xy->y, target_seg, pc);
         AddBeingEffect(bg, (Lasting_effect){being_effect_ally_lifetime, ALLY_LIFETIME});
-        AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &target_xy, SPELL0_RGB);
+        AddSpellVisualEffect(gd, target_xy, SPELL0_RGB);
         return true;
     }
     return false;
 }
 
-static bool RenewArmour(Game_data* const gd){
-    human(gd)->armour.absorption = human(gd)->max_armour.absorption;
-    human(gd)->armour.multipl = human(gd)->max_armour.multipl;
-    human(gd)->armour.magic_multipl = human(gd)->max_armour.magic_multipl;
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &human(gd)->position, SPELL0_RGB);
+static bool RenewArmour(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    Player *const pc = gd->champions.array + indx;
+    pc->armour.absorption = pc->max_armour.absorption;
+    pc->armour.multipl = pc->max_armour.multipl;
+    pc->armour.magic_multipl = pc->max_armour.magic_multipl;
+    AddSpellVisualEffect(gd, &pc->position, SPELL0_RGB);
     return true;
 }
 
-static bool slow(Game_data* const gd){
-    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
-    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+static bool slow(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy->x, target_xy->y);
     if(!target_seg){
         return false;
     }
@@ -111,31 +111,31 @@ static bool slow(Game_data* const gd){
                 (bg->effects + effect_indx)->ticks_left = SLOW_EFFECT_TICKS;
             }
             any = true;
-            AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, SPELL0_RGB);
+            AddSpellVisualEffect(gd, &bg->position, SPELL0_RGB);
         }
     }
     if(!any){
         return false;
     }
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &target_xy, SPELL0_RGB);
+    AddSpellVisualEffect(gd, target_xy, SPELL0_RGB);
     return true;
 }
 
-static bool fire(Game_data* const gd){
-    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
+static bool fire(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    Player *const pc = gd->champions.array + indx;
     float sh_x, sh_y;
-    GetShift(&human(gd)->position, &target_xy, FIRE_PROJECTILE_VELOCITY, &sh_x, &sh_y);
-    const unsigned int ticks = sh_x != 0.0F ? (target_xy.x - human(gd)->position.x) / sh_x : (target_xy.y - human(gd)->position.y) / sh_y;
-    AddSpecialProjectileToArray(&gd->projectiles, &human(gd)->position, sh_x, sh_y, projectile_fire, ticks);
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &human(gd)->position, SPELL0_RGB);
+    GetShift(&pc->position, target_xy, FIRE_PROJECTILE_VELOCITY, &sh_x, &sh_y);
+    const unsigned int ticks = sh_x != 0.0F ? (target_xy->x - pc->position.x) / sh_x : (target_xy->y - pc->position.y) / sh_y;
+    AddSpecialProjectileToArray(&gd->projectiles, &pc->position, sh_x, sh_y, projectile_fire, ticks);
+    AddSpellVisualEffect(gd, &pc->position, SPELL0_RGB);
     return true;
 }
 
-static bool thunderbolt(Game_data* const gd){
-    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
-    Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+static bool thunderbolt(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    Player *const pc = gd->champions.array + indx;
+    Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy->x, target_xy->y);
     Segment* seg = target_seg;
-    if(!seg || !(seg->flags & segment_in_sight)){
+    if(!seg){
         return false;
     }
     Being* bg = NULL;
@@ -169,15 +169,15 @@ static bool thunderbolt(Game_data* const gd){
     if(!bg){
         return false;
     }
-    AddBoltVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, (position16){(_Float16)human(gd)->position.x, (_Float16)human(gd)->position.y});
+    AddBoltVisualEffect(gd, &bg->position, (position16){(_Float16)pc->position.x, (_Float16)pc->position.y});
     AddBeingEffect(bg, (Lasting_effect){being_effect_thunderbolt, BOLT_CHAIN_TICKS});
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &human(gd)->position, SPELL0_RGB);
+    AddSpellVisualEffect(gd, &pc->position, SPELL0_RGB);
     return true;
 }
 
-static bool convert(Game_data* const gd){
-    const SDL_FPoint target_xy = GetMouseWorldPosition(gd);
-    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy.x, target_xy.y);
+static bool convert(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    Player *const pc = gd->champions.array + indx;
+    const Segment* const target_seg = GetSegmentSafe(&gd->world, target_xy->x, target_xy->y);
     if(!target_seg){
         return false;
     }
@@ -191,7 +191,7 @@ static bool convert(Game_data* const gd){
         if(neighbour == NULL || neighbour->ally_beings.num >= MAX_SEGM_BEINGS) continue;
         for(unsigned int i = 0U; i < neighbour->beings.num; ++i){
             Being* bg = (gd->beings.array + *(neighbour->beings.beings_ind + i));
-            const float distance_squared = GetDistanceSquared(&bg->position, &target_xy);
+            const float distance_squared = GetDistanceSquared(&bg->position, target_xy);
             const float range_squared = pow2(SEGMENT_SIZE * range);
             if(distance_squared <= range_squared){
                 EndAllBeingEffects(gd, bg);
@@ -199,11 +199,11 @@ static bool convert(Game_data* const gd){
                 bg->type_id = ally_ordinary;
                 HaltBeing(bg, 1);
                 AddBeingToSegment(neighbour, bg, &neighbour->ally_beings);
-                bg->target.player = human(gd);
+                bg->target.player = pc;
                 bg->target_last_seen_at = (position16){bg->target.player->position.x, bg->target.player->position.y};
                 AddBeingEffect(bg, (Lasting_effect){being_effect_ally_lifetime, ALLY_LIFETIME + SDL_rand(ALLY_LIFETIME_MAX_SHIFT)});
                 --i;
-                AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &bg->position, SPELL0_RGB);
+                AddSpellVisualEffect(gd, &bg->position, SPELL0_RGB);
                 any = true;
                 if(neighbour->ally_beings.num >= MAX_SEGM_BEINGS){
                     break;
@@ -214,14 +214,15 @@ static bool convert(Game_data* const gd){
     if(!any){
         return false;
     }
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &target_xy, SPELL0_RGB);
+    AddSpellVisualEffect(gd, target_xy, SPELL0_RGB);
     return true;
 }
 
-static bool FatigueRegen(Game_data* const gd){
-    AddOrUpdatePlayerEffect(human(gd), (Lasting_effect){pc_effect_fpregen, FP_REGEN_TICKS});
-    AddSpellVisualEffect(&gd->rend_data_ptr->visual_effects, &human(gd)->position, SPELL0_RGB);
+static bool FatigueRegen(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    Player *const pc = gd->champions.array + indx;
+    AddOrUpdatePlayerEffect(pc, (Lasting_effect){pc_effect_fpregen, FP_REGEN_TICKS});
+    AddSpellVisualEffect(gd, &pc->position, SPELL0_RGB);
     return true;
 }
 
-static bool EffectEmpty(Game_data* const gd){return false;}
+static bool EffectEmpty(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){return false;}
