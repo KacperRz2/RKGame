@@ -636,6 +636,7 @@ static inline void SetTexturesBlendAndScaleModes(Render_data* const rend_data){
 	SDL_SetTextureScaleMode(texture(tx_void), SDL_SCALEMODE_NEAREST);
 	SDL_SetTextureScaleMode(texture(tx_icons), SDL_SCALEMODE_PIXELART);
 	SDL_SetTextureScaleMode(texture(tx_shop_icons), SDL_SCALEMODE_PIXELART);
+	SDL_SetTextureScaleMode(texture(tx_portrait), SDL_SCALEMODE_PIXELART);
 }
 
 void GraphicsInitiation(Render_data* const rend_data){
@@ -1902,6 +1903,7 @@ static inline void RenderHostPlayerScroll(Render_data* const rend_data){
 }
 
 static inline void RenderHostPlayerScrollUnrolled(Render_data* const rend_data, unsigned int scroll_num){
+	SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
 	SDL_FRect src_rect = SRC_UNR_SCROLL_RECT;
 	SDL_RenderTexture(rend_data->renderer, texture(tx_scroll), &src_rect, &(SDL_FRect)PC_SCROLL_RECT);
 	src_rect = GetScrollTextureSrcRect(scroll_num);
@@ -1921,6 +1923,7 @@ static void	RenderPlayersBladesAndScrolls(Render_data* const rend_data, const fl
 		0.0F, 0.0F,
 		SCROLL_ICON_SIZE, SCROLL_ICON_SIZE
 	};
+	SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
 	for(unsigned int i = 0U; i < num; ++i){
 		const float player_direction = (*(plys + i))->direction - host_player_direction;
 		const float sine = SineSafe(player_direction);
@@ -2272,6 +2275,7 @@ static void DrawBackground(Render_data* const rend_data){
 	}
 	SDL_DestroySurface(surface);
 	SDL_free(bmp_path);
+	SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_background));
 	const SDL_FRect nesw_rect = {
 		RIGHT_AREA_X + FRAME_W,
