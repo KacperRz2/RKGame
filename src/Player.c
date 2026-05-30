@@ -859,7 +859,7 @@ static void SlowPlayer(Game_data* const gd, Player* const pc, const int ticks_le
 
 static void PlayerHPRegeneration(Game_data* const gd, Player* const pc, const int ticks_left){
 	if(!(ticks_left % (HP_REGEN_TICKS / HP_REGEN_TIMES))){
-		HealPlayer(pc, PC_HP / HP_REGEN_TIMES);
+		HealPlayer(pc, pc->max_hp / HP_REGEN_TIMES);
 	}
 	if(!(ticks_left % DEFAULT_VIS_EFF_INTERV)){
         AddBonusVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){

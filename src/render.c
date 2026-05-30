@@ -1286,7 +1286,7 @@ static inline void RenderBeing(Render_data* const rend_data, Game_data* const gd
 		const int max_hp = BeingHP(bg);
 		if(bg->hit_points < max_hp){
 			SDL_SetTextureAlphaModFloat(texture(tx_damage_test), 1.0F - bg->hit_points / (float)max_hp);
-			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_damage_test), NULL, &rect, (double)(being_direction), NULL, SDL_FLIP_NONE);
+			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_damage_test), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
 		}
 		if(bg->status == being_stunned){
 			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &rect, (double)(rend_data->counter * TEXTURE_ROTA_SPEED), NULL, SDL_FLIP_NONE);
@@ -1322,7 +1322,7 @@ static inline void ClientRenderBeing(Render_data* const rend_data, Game_data* co
 		const int max_hp = BeingHP(bg);
 		if(bg->hit_points < max_hp){
 			SDL_SetTextureAlphaModFloat(texture(tx_damage_test), 1.0F - bg->hit_points / (float)max_hp);
-			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_damage_test), NULL, &rect, (double)(being_direction), NULL, SDL_FLIP_NONE);
+			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_damage_test), NULL, &rect, (double)RadToDeg(being_direction), NULL, SDL_FLIP_NONE);
 		}
 		if(bg->status == being_stunned){
 			SDL_RenderTextureRotated(rend_data->renderer, texture(tx_stun), NULL, &rect, (double)(rend_data->counter * TEXTURE_ROTA_SPEED), NULL, SDL_FLIP_NONE);

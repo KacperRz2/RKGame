@@ -1403,7 +1403,7 @@ void HostGameLoop(Game_data *const gd){
 				(gd->champions.array + 1)->max_velocity,
 				(gd->champions.array + 1)->fatigue_points,
 				(gd->champions.array + 1)->blade.charge,
-				(Uint8)((float)(gd->champions.array + 1)->hit_points / (float)PC_HP * 255.0F),
+				(Uint8)((float)(gd->champions.array + 1)->hit_points / (float)(gd->champions.array + 1)->max_hp * 255.0F),
 				(Uint8)((gd->champions.array + 1)->armour.multipl * 255.0F),
 				(Uint8)((gd->champions.array + 1)->armour.magic_multipl * 255.0F)
 			};
@@ -1720,7 +1720,7 @@ void ClientGameLoop(Game_data* const gd){
 					host(gd)->max_velocity = ((struct Client_return_data*)ptr)->max_velocity;
 					host(gd)->fatigue_points = ((struct Client_return_data*)ptr)->fatigue_points;
 					host(gd)->blade.charge = ((struct Client_return_data*)ptr)->blade_charge;
-					host(gd)->hit_points = (int)((struct Client_return_data*)ptr)->HP8 * PC_HP / 255;
+					host(gd)->hit_points = (int)((struct Client_return_data*)ptr)->HP8 * host(gd)->max_hp / 255;
 					host(gd)->armour.multipl = (float)((struct Client_return_data*)ptr)->armour8 / 255.0F;
 					host(gd)->armour.magic_multipl = (float)((struct Client_return_data*)ptr)->armour_magic8 / 255.0F;
 					ptr += sizeof(struct Client_return_data);
