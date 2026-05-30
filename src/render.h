@@ -89,9 +89,9 @@ struct Render_data{
     unsigned int counter;
     float mouse_y;
     Visual_effects visual_effects;
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    SDL_Texture* textures[txs_num];
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    SDL_Texture *textures[txs_num];
 
 };
 

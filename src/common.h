@@ -12,6 +12,7 @@ typedef struct Blade Blade;
 typedef struct Beings_array Beings_array;
 typedef struct Projectiles_array Projectiles_array;
 typedef struct Players Players;
+typedef struct Sound_data Sound_data;
 
 #include <SDL3/SDL.h>
 

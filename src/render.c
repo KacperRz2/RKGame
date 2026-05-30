@@ -1,6 +1,7 @@
 #include <common.h>
 #include <function.h>
 #include <event.h>
+#include <sound.h>
 #include <stdlib.h>
 // render macros ==================================================================
 #define texture(num)	            (*(rend_data->textures + num))
@@ -409,6 +410,7 @@
 #define DODGE_TX_FILE_NAME          "img1F"
 #define PLUS_UP_TX_FILE_NAME        "img20"
 #define ICONS_TX_FILE_NAME          "img5"
+#define IMAGE_PATH          		"%sdata/img/%s.bmp"
 
 static void RemoveVisalEffect(Visual_effects* const, const unsigned int);
 static void RenderVisualEffects(Render_data* const, Game_data* const);
@@ -505,7 +507,7 @@ static void SetViewTexture(Render_data* const rend_data){
 static void DrawShopIcons(Render_data* const rend_data){
 	SDL_Surface* base_surface = SDL_CreateSurface(ICON_TX_SIZE_INT * SHOP_ICONS_NUM, ICON_TX_SIZE_INT, SDL_PIXELFORMAT_RGBA8888);
 	char* bmp_path = NULL;
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), ICONS_TX_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), ICONS_TX_FILE_NAME);
 	SDL_Surface* surface = SDL_LoadBMP(bmp_path);
 	SDL_free(bmp_path);
 	SDL_Rect src_rect = {ICON_TX_SIZE_INT * 6, 0, ICON_TX_SIZE_INT, ICON_TX_SIZE_INT};
@@ -525,14 +527,14 @@ static void DrawShopIcons(Render_data* const rend_data){
 	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
 	SDL_DestroySurface(surface);
 	
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), DODGE_TX_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), DODGE_TX_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	SDL_free(bmp_path);
 	dst_rect.x = ICON_TX_SIZE_INT * 6;
 	SDL_BlitSurface(surface, NULL, base_surface, &dst_rect);
 	SDL_DestroySurface(surface);
 	
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), "fnt");
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), "fnt");
 	surface = SDL_LoadBMP(bmp_path);
 	SDL_free(bmp_path);
 	SDL_FPoint char_x_and_w = GetCharacterXPositionAndWidth(n1);
@@ -559,7 +561,7 @@ static void DrawShopIcons(Render_data* const rend_data){
 	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
 	SDL_DestroySurface(surface);
 
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PLUS_UP_TX_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PLUS_UP_TX_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	SDL_free(bmp_path);
 	src_rect = (SDL_Rect){0, 0, 32, 32};
@@ -610,7 +612,7 @@ static inline void CreateTexruresFromFiles(Render_data* const rend_data){
 	char* bmp_path = NULL;
 	const char* const texture_files[] = TEXTURE_FILES_NAMES;
 	for(int i = 0; i < SDL_arraysize(texture_files); ++i){
-		SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), *(texture_files + i));
+		SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), *(texture_files + i));
 		surface = SDL_LoadBMP(bmp_path);
 		if(!surface){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError()); exit(-1);
@@ -999,6 +1001,7 @@ static void RenderVisualEffects(Render_data* const rend_data, Game_data* const g
 extern inline void AddDamageVisualEffect(Game_data* const gd, const SDL_FPoint* const position){
 	AddAnnouncement(gd, annncmnt_damage, position);
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &DAMAGE_VIS_EFFECT(*position));
+	PlaySound(gd->snd_data_ptr, snd_hit);
 }
 
 extern inline void AddBonusVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
@@ -1073,6 +1076,7 @@ extern inline void AddFireExplosionVisualEffect(Game_data *const gd, const SDL_F
 			AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){veffect_x, veffect_y}, V_EFFECT_MAX_DELAY * SDL_randf() + 1U);
 		}
 	}
+	PlaySound(gd->snd_data_ptr, snd_boom);
 }
 
 static inline float GetAngle(const SDL_FPoint* const pa, const SDL_FPoint* const pb){
@@ -1121,14 +1125,14 @@ static void DrawBeings(Render_data* const rend_data){
 	SDL_Surface* surface = NULL;
 	SDL_Surface* surface1 = NULL;
 	char* bmp_path = NULL;
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PC_TX0_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PC_TX0_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 		exit(-1);
 	}
 	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PC_TX1_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PC_TX1_FILE_NAME);
 	surface1 = SDL_LoadBMP(bmp_path);
 	if(!surface1){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -1138,14 +1142,14 @@ static void DrawBeings(Render_data* const rend_data){
 	SDL_DestroySurface(surface);
 	SDL_DestroySurface(surface1);
 	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE0_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BEING_TEXTURE0_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
 		exit(-1);
 	}
 	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BEING_TEXTURE1_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BEING_TEXTURE1_FILE_NAME);
 	surface1 = SDL_LoadBMP(bmp_path);
 	if(!surface1){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -1167,7 +1171,7 @@ static void DrawBeings(Render_data* const rend_data){
 static void DrawColouredThings(Render_data* const rend_data){
 	SDL_Surface* surface = NULL;
 	char* bmp_path = NULL;
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), PROJECTILE_TX_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PROJECTILE_TX_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -2249,7 +2253,7 @@ static void DrawBackground(Render_data* const rend_data){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BACKGROUND_TX0_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BACKGROUND_TX0_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
@@ -2262,7 +2266,7 @@ static void DrawBackground(Render_data* const rend_data){
 	}
 	SDL_DestroySurface(surface);
 	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, "%sdata/%s.bmp", SDL_GetBasePath(), BACKGROUND_TX1_FILE_NAME);
+	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BACKGROUND_TX1_FILE_NAME);
 	surface = SDL_LoadBMP(bmp_path);
 	if(!surface){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());

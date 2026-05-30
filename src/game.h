@@ -157,6 +157,7 @@ struct Game_data{
     }horde_data;
     Render_data* rend_data_ptr;
     SDL_Event* ev_ptr;
+    Sound_data *snd_data_ptr;
     Uint64 seed;
 };
 

@@ -1,7 +1,7 @@
 add_executable(KGame)
 
 target_sources(KGame
-  PRIVATE main.c Being.c event.c function.c game.c Player.c Projectile.c render.c Scroll.c World.c
+  PRIVATE main.c Being.c event.c function.c game.c Player.c Projectile.c render.c Scroll.c sound.c World.c
   PRIVATE FILE_SET HEADERS
 )
 
