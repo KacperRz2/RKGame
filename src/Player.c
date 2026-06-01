@@ -1,5 +1,6 @@
 #include <common.h>
 #include <function.h>
+#include <sound.h>
 
 static void UpdatePlayerMove(Game_data* const, const unsigned int);
 static void UpdatePlayerDirection(Player* const);
@@ -550,7 +551,8 @@ extern inline void HaltPlayer(Player* const p){
 	p->velocity = 0.0F;
 }
 
-extern inline void HitBarrier(Player* const pc, const Impact* const impact){
+extern inline void HitBarrier(Game_data *const gd, Player* const pc, const Impact* const impact){
+	PlaySound(gd->snd_data_ptr, SDL_rand(snd_block4 - snd_block0) + snd_block0);
 	pc->fatigue_points -= (int)(impact->stun * BLOCK_COST);
 	BlockPlayerFatigue(pc, PC_BLOCK_FATIG_BLOCK_TIME);
 	if(pc->fatigue_points < 0){

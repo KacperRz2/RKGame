@@ -4,13 +4,26 @@
 
 #define sound(num)	        (sd->sounds + num)
 #define SOUND_FILES_NAMES   {\
-                                "snd0",\
-                                "snd1",\
+                                "snd0_0",\
+                                "snd1_0",\
+                                "snd2_0",\
+                                "snd2_1",\
+                                "snd2_2",\
+                                "snd2_3",\
+                                "snd2_4",\
+                                "snd3_0",\
+                                "snd3_1",\
+                                "snd3_2",\
+                                "snd3_3"\
                             }
 #define SOUND_PATH          "%sdata/sound/%s.wav"
 
-static inline void NextIndex(Sound_data *const sd){
+static inline void ToNextIndex(Sound_data *const sd){
     sd->indx = (sd->indx + 1U) % MAX_AUDIO_STREAMS;
+}
+
+static inline void ToPrevIndex(Sound_data *const sd){
+    sd->indx = (sd->indx + MAX_AUDIO_STREAMS - 1U) % MAX_AUDIO_STREAMS;
 }
 
 void SoundInitiation(Sound_data *const sd){
@@ -51,21 +64,24 @@ void SoundInitiation(Sound_data *const sd){
 void PlaySound(Sound_data *const sd, const Uint8 sound_num){
     const Uint8 indx = sd->indx;
     do{
-        NextIndex(sd);
+        ToNextIndex(sd);
     }while(SDL_GetAudioStreamQueued(*(sd->streams + sd->indx)) > 0 && sd->indx != indx);
     SDL_SetAudioStreamFormat(*(sd->streams + sd->indx), &sound(sound_num)->spec, NULL);
     SDL_PutAudioStreamDataNoCopy(*(sd->streams + sd->indx), sound(sound_num)->wav_data, (int)sound(sound_num)->len, NULL, NULL);
     SDL_FlushAudioStream(*(sd->streams + sd->indx));
+    if(indx == sd->indx){
+        ToPrevIndex(sd);
+    }
 }
 
 void SoundDataDestruction(Sound_data *const sd){
     SDL_CloseAudioDevice(sd->device);
-    for (unsigned int i = 0U; i < SDL_arraysize(sd->streams); ++i) {
+    for(unsigned int i = 0U; i < SDL_arraysize(sd->streams); ++i){
         if(*(sd->streams + i)){
             SDL_DestroyAudioStream(*(sd->streams + i));
         }
     }
-    for (unsigned int i = 0U; i < snds_num; ++i) {
+    for(unsigned int i = 0U; i < snds_num; ++i){
         SDL_free(sound(i)->wav_data);
     }
     SDL_QuitSubSystem(SDL_INIT_AUDIO);

@@ -639,6 +639,7 @@ static inline void SetTexturesBlendAndScaleModes(Render_data* const rend_data){
 	SDL_SetTextureScaleMode(texture(tx_icons), SDL_SCALEMODE_PIXELART);
 	SDL_SetTextureScaleMode(texture(tx_shop_icons), SDL_SCALEMODE_PIXELART);
 	SDL_SetTextureScaleMode(texture(tx_portrait), SDL_SCALEMODE_PIXELART);
+	SDL_SetTextureScaleMode(texture(tx_menu_ptr), SDL_SCALEMODE_PIXELART);
 }
 
 void GraphicsInitiation(Render_data* const rend_data){
@@ -999,9 +1000,9 @@ static void RenderVisualEffects(Render_data* const rend_data, Game_data* const g
 }
 
 extern inline void AddDamageVisualEffect(Game_data* const gd, const SDL_FPoint* const position){
+	PlaySound(gd->snd_data_ptr, snd_hit);
 	AddAnnouncement(gd, annncmnt_damage, position);
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &DAMAGE_VIS_EFFECT(*position));
-	PlaySound(gd->snd_data_ptr, snd_hit);
 }
 
 extern inline void AddBonusVisualEffect(Visual_effects* const ves, const SDL_FPoint* const position){
@@ -1013,6 +1014,7 @@ extern inline void AddCurseVisualEffect(Visual_effects* const ves, const SDL_FPo
 }
 
 extern inline void AddDeadVisualEffect(Game_data* const gd, const SDL_FPoint* const position){
+	PlaySound(gd->snd_data_ptr, SDL_rand(snd_pain3 - snd_pain0) + snd_pain0);
 	AddAnnouncement(gd, annncmnt_kill, position);
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &DEAD_VIS_EFFECT(*position));
 }
@@ -1051,6 +1053,7 @@ extern inline void AddBoomVisualEffectTimer(Visual_effects* const ves, const SDL
 }
 
 extern inline void AddFireExplosionVisualEffect(Game_data *const gd, const SDL_FPoint* const position){
+	PlaySound(gd->snd_data_ptr, snd_boom);
 	AddAnnouncement(gd, annncmnt_explosion, position);
 	AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, position);
 	AddBoomVisualEffect(&gd->rend_data_ptr->visual_effects, position);
@@ -1076,7 +1079,6 @@ extern inline void AddFireExplosionVisualEffect(Game_data *const gd, const SDL_F
 			AddSmallBurnVisualEffectTimer(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){veffect_x, veffect_y}, V_EFFECT_MAX_DELAY * SDL_randf() + 1U);
 		}
 	}
-	PlaySound(gd->snd_data_ptr, snd_boom);
 }
 
 static inline float GetAngle(const SDL_FPoint* const pa, const SDL_FPoint* const pb){

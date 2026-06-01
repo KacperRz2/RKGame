@@ -278,7 +278,7 @@ static inline bool ProjectileHitsPlayer(Projectile* const pr, Game_data* const g
 	Player* const pc = gd->champions.array + pc_indx;
 	if(!(pc->flags & dodge_time) && pow2(pr->position.x - pc->position.x) + pow2(pr->position.y - pc->position.y) < pow2(half(PLAYER_SIZE))){
 		if(pc->flags & block && (SineUnsafe(pc->direction) * pr->shift_per_tick.x) + (-CosiUnsafe(pc->direction) * pr->shift_per_tick.y) <= 0){
-			HitBarrier(pc, &pr->basic.impact);
+			HitBarrier(gd, pc, &pr->basic.impact);
 		}else{
 			DamagePlayer(pc, &pr->basic.impact);
 			AddDamageVisualEffect(gd, &pr->position);

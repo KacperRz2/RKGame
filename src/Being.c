@@ -443,7 +443,7 @@ static inline void UpdateBeingStrike(Being* const bg, Player* const pc, float co
         const SDL_FPoint dangerous_point = GetHBladeAttackHittingPoint(bg, b_sine, b_cosine);
         if(!(pc->flags & dodge_time) && CircleMeetsPlayer(dangerous_point.x, dangerous_point.y, BEING_HIT_CIRCLE_DIAMET, pc)){
             if(pc->flags & block && (SineUnsafe(pc->direction) * b_sine) + (-CosiUnsafe(pc->direction) * -b_cosine) <= 0){
-                HitBarrier(pc, &bg->impact);
+                HitBarrier(gd, pc, &bg->impact);
             }else{
                 DamagePlayer(pc, &bg->impact);
 			    AddDamageVisualEffect(gd, &dangerous_point);

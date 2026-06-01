@@ -99,7 +99,7 @@ bool PointInPlayer(const float, const float, Player* const);
 bool CircleMeetsPlayer(const float, const float, const float, Player* const);
 void DamagePlayer(Player* const, const Impact* const);
 void HaltPlayer(Player* const);
-void HitBarrier(Player* const, const Impact* const);
+void HitBarrier(Game_data *const gd, Player* const, const Impact* const);
 float GetDirectionToPush(const SDL_FPoint* const, const SDL_FPoint* const);
 void HealPlayer(Player* const, const int);
 void UpdatePlayers(Game_data* const);
