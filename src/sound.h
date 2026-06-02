@@ -73,7 +73,7 @@ struct Sound_data{
 };
 
 void SoundInitiation(Sound_data *const);
-void PlaySound(Sound_data *const, const Uint8);
+void PlayGameSound(Sound_data *const, const Uint8);
 void PlaySoundRand(Sound_data *const, const Uint8, const Uint8);
 void SoundDataDestruction(Sound_data *const);
 

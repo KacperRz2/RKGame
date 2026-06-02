@@ -380,8 +380,8 @@ static inline void SetKeyStatus(Game_data *const gd, const Uint16 indx, const Ui
 }
 
 static inline void LootBox(Game_data* const gd, Player *const pc, const unsigned int box_indx){
-	PlaySound(gd->snd_data_ptr, snd_box_last);
-	Box_element* elem = (gd->boxes.array + box_indx)->elements;
+	PlayGameSound(gd->snd_data_ptr, snd_box_last);
+	Box_element *elem = (gd->boxes.array + box_indx)->elements;
 	int element_type;
 	bool empty = true;
 	bool found_key = false;

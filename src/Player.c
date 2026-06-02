@@ -135,7 +135,7 @@ static const Uint32 mfl = forward | back | right | left;
 static inline void UpdatePlayerDodge(Game_data *const gd, Player* const pc){
 	if((pc->flags & (dodge | forward)) == dodge){
 		if(pc->fatigue_points >= PC_DODGE_FATIG && pc->block_times.dodge < 1){
-			PlaySound(gd->snd_data_ptr, snd_dodge_last);
+			PlayGameSound(gd->snd_data_ptr, snd_dodge_last);
 			pc->fatigue_points -= PC_DODGE_FATIG;
 			BlockPlayerFatigue(pc, PC_DODGE_FATIG_BLOCK_TIME);
 			pc->block_times.dodge = PC_DODGE_RELOAD;
@@ -519,7 +519,7 @@ static void UpdatePlayerPush(Game_data* const gd, const unsigned int indx){
 	if(pc->block_times.push > 0){
 		--pc->block_times.push;
 	}else if((pc->flags & (attack | block)) == (attack | block) && pc->fatigue_points >= PC_PUSH_FATIG){
-		PlaySound(gd->snd_data_ptr, snd_push_last);
+		PlayGameSound(gd->snd_data_ptr, snd_push_last);
 		pc->fatigue_points -= PC_PUSH_FATIG;
 		BlockPlayerFatigue(pc, PC_PUSH_FATIG_BLOCK_TIME);
 		pc->block_times.push = PC_PUSH_RELOAD;

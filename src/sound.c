@@ -106,7 +106,7 @@ void SoundInitiation(Sound_data *const sd){
     }
 }
 
-void PlaySound(Sound_data *const sd, const Uint8 sound_num){
+void PlayGameSound(Sound_data *const sd, const Uint8 sound_num){
     const Uint8 indx = sd->indx;
     do{
         ToNextIndex(sd);
@@ -120,7 +120,7 @@ void PlaySound(Sound_data *const sd, const Uint8 sound_num){
 }
 
 extern inline void PlaySoundRand(Sound_data *const sd, const Uint8 sound_num_from, const Uint8 sound_num_to){
-    PlaySound(sd, SDL_rand(sound_num_to - sound_num_from + 1) + sound_num_from);
+    PlayGameSound(sd, SDL_rand(sound_num_to - sound_num_from + 1) + sound_num_from);
 }
 
 void SoundDataDestruction(Sound_data *const sd){
