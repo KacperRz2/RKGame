@@ -1000,7 +1000,7 @@ static void RenderVisualEffects(Render_data* const rend_data, Game_data* const g
 }
 
 extern inline void AddDamageVisualEffect(Game_data* const gd, const SDL_FPoint* const position){
-	PlaySound(gd->snd_data_ptr, snd_hit);
+	PlaySoundRand(gd->snd_data_ptr, snd_hit0, snd_hit_last);
 	AddAnnouncement(gd, annncmnt_damage, position);
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &DAMAGE_VIS_EFFECT(*position));
 }
@@ -1014,7 +1014,7 @@ extern inline void AddCurseVisualEffect(Visual_effects* const ves, const SDL_FPo
 }
 
 extern inline void AddDeadVisualEffect(Game_data* const gd, const SDL_FPoint* const position){
-	PlaySound(gd->snd_data_ptr, SDL_rand(snd_pain3 - snd_pain0) + snd_pain0);
+	PlaySoundRand(gd->snd_data_ptr, snd_pain0, snd_pain_last);
 	AddAnnouncement(gd, annncmnt_kill, position);
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &DEAD_VIS_EFFECT(*position));
 }
@@ -1053,7 +1053,7 @@ extern inline void AddBoomVisualEffectTimer(Visual_effects* const ves, const SDL
 }
 
 extern inline void AddFireExplosionVisualEffect(Game_data *const gd, const SDL_FPoint* const position){
-	PlaySound(gd->snd_data_ptr, snd_boom);
+	PlaySoundRand(gd->snd_data_ptr, snd_boom_0, snd_boom_last);
 	AddAnnouncement(gd, annncmnt_explosion, position);
 	AddBigBurnVisualEffect(&gd->rend_data_ptr->visual_effects, position);
 	AddBoomVisualEffect(&gd->rend_data_ptr->visual_effects, position);
@@ -1106,6 +1106,7 @@ extern inline void AddBoltVisualEffect(Game_data* const gd, const SDL_FPoint* co
 }
 
 extern inline void AddSpellVisualEffect(Game_data* const gd, const SDL_FPoint* const position, const Uint8 re, const Uint8 gr, const Uint8 bl){
+	PlaySoundRand(gd->snd_data_ptr, snd_spell0, snd_spell_last);
 	struct tmps{
 		position16 pos;
 		Uint8 gr;

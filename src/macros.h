@@ -521,6 +521,6 @@
 #define SAVE_PATH0              "save"
 #define SAVE_PATHMP             "save_MP"
 
-#define MAX_AUDIO_STREAMS       32U
+#define MAX_AUDIO_STREAMS       64U
 
 #endif

@@ -1,5 +1,6 @@
 #include <common.h>
 #include <function.h>
+#include <sound.h>
 
 static bool push(Game_data* const, const SDL_FPoint *const, const unsigned int);
 static bool HPRegen(Game_data* const, const SDL_FPoint *const, const unsigned int);
@@ -56,11 +57,13 @@ static bool push(Game_data* const gd, const SDL_FPoint *const target_xy, const u
     if(!any){
         return false;
     }
+    PlaySound(gd->snd_data_ptr, snd_push_last);
     AddSpellVisualEffect(gd, target_xy, SPELL0_RGB);
     return true;
 }
 
 static bool HPRegen(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    PlaySound(gd->snd_data_ptr, snd_bless_last);
     Player *const pc = gd->champions.array + indx;
     AddOrUpdatePlayerEffect(pc, (Lasting_effect){pc_effect_hpregen, HP_REGEN_TICKS});
     AddSpellVisualEffect(gd, &pc->position, SPELL0_RGB);

@@ -1,7 +1,10 @@
 #include <common.h>
 #include <event.h>
+#include <sound.h>
 
-int EventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend_data){
+int EventsService(Game_data* const gd, Player* const pc){
+	SDL_Event *const ev = gd->ev_ptr;
+	Render_data* const rend_data = gd->rend_data_ptr;
 	while(SDL_PollEvent(ev)){
 		if(ev->type == SDL_EVENT_KEY_DOWN){
 			switch(ev->key.scancode){
@@ -20,9 +23,17 @@ int EventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend
 			case KEY_ACTION:
 				pc->flags |= action; break;
 			case KEY_SWITCH_RANGE:
-				pc->flags ^= range_mode; break;
+				pc->flags ^= range_mode;
+				if(!(pc->flags & range_mode)){
+					PlaySoundRand(gd->snd_data_ptr, snd_draw0, snd_draw_last);
+				}
+				break;
 			case SDL_SCANCODE_1:
-				pc->flags &= ~(range_mode); break;
+				if(pc->flags & range_mode){
+					PlaySoundRand(gd->snd_data_ptr, snd_draw0, snd_draw_last);
+					pc->flags &= ~(range_mode);
+				}
+				break;
 			case SDL_SCANCODE_2:
 			case SDL_SCANCODE_3:
 			case SDL_SCANCODE_4:

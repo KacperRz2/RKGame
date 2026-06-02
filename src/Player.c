@@ -132,9 +132,10 @@ static inline void SetPlayerDataBackwardMove(Player* const pc, const float angle
 
 static const Uint32 mfl = forward | back | right | left;
 
-static inline void UpdatePlayerDodge(Player* const pc){
+static inline void UpdatePlayerDodge(Game_data *const gd, Player* const pc){
 	if((pc->flags & (dodge | forward)) == dodge){
 		if(pc->fatigue_points >= PC_DODGE_FATIG && pc->block_times.dodge < 1){
+			PlaySound(gd->snd_data_ptr, snd_dodge_last);
 			pc->fatigue_points -= PC_DODGE_FATIG;
 			BlockPlayerFatigue(pc, PC_DODGE_FATIG_BLOCK_TIME);
 			pc->block_times.dodge = PC_DODGE_RELOAD;
@@ -178,7 +179,7 @@ static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){
 		if(pc->velocity < MIN_PC_VELOCITY) pc->velocity = 0.0F;
 	}
 	if(!(pc->flags & block)){
-		UpdatePlayerDodge(pc);
+		UpdatePlayerDodge(gd, pc);
 		if(runs){
 			if(pc->fatigue_points <= 1){
 				pc->flags &= ~(run);
@@ -444,6 +445,9 @@ static void UpdatePlayerBlade(Game_data* const gd, const unsigned int indx){
 	}
 	if(bl->step == bl->steps){
 		SetBladePhaseEnd(bl, *(sizes + bl->chain), blade_moves);
+		if(PC_BLD_LAST_HARMLESS_PHASE == bl->key){
+			PlaySoundRand(gd->snd_data_ptr, snd_strike0, snd_strike_last);
+		}
 	}else{
 		ShiftBlade(bl, &bl->step_shift);
 		if(!bl->loose && bl->key > PC_BLD_LAST_HARMLESS_PHASE && (bl->loose = UnleashDestruction(gd, indx))){
@@ -515,6 +519,7 @@ static void UpdatePlayerPush(Game_data* const gd, const unsigned int indx){
 	if(pc->block_times.push > 0){
 		--pc->block_times.push;
 	}else if((pc->flags & (attack | block)) == (attack | block) && pc->fatigue_points >= PC_PUSH_FATIG){
+		PlaySound(gd->snd_data_ptr, snd_push_last);
 		pc->fatigue_points -= PC_PUSH_FATIG;
 		BlockPlayerFatigue(pc, PC_PUSH_FATIG_BLOCK_TIME);
 		pc->block_times.push = PC_PUSH_RELOAD;
@@ -552,7 +557,7 @@ extern inline void HaltPlayer(Player* const p){
 }
 
 extern inline void HitBarrier(Game_data *const gd, Player* const pc, const Impact* const impact){
-	PlaySound(gd->snd_data_ptr, SDL_rand(snd_block4 - snd_block0) + snd_block0);
+	PlaySoundRand(gd->snd_data_ptr, snd_block0, snd_block_last);
 	pc->fatigue_points -= (int)(impact->stun * BLOCK_COST);
 	BlockPlayerFatigue(pc, PC_BLOCK_FATIG_BLOCK_TIME);
 	if(pc->fatigue_points < 0){

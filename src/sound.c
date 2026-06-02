@@ -5,7 +5,14 @@
 #define sound(num)	        (sd->sounds + num)
 #define SOUND_FILES_NAMES   {\
                                 "snd0_0",\
+                                "snd0_1",\
+                                "snd0_2",\
+                                "snd0_3",\
+                                "snd0_4",\
+                                "snd0_5",\
+                                "snd0_6",\
                                 "snd1_0",\
+                                "snd1_1",\
                                 "snd2_0",\
                                 "snd2_1",\
                                 "snd2_2",\
@@ -14,7 +21,41 @@
                                 "snd3_0",\
                                 "snd3_1",\
                                 "snd3_2",\
-                                "snd3_3"\
+                                "snd3_3",\
+                                "snd4_0",\
+                                "snd4_1",\
+                                "snd4_2",\
+                                "snd4_3",\
+                                "snd4_4",\
+                                "snd4_5",\
+                                "snd4_6",\
+                                "snd4_7",\
+                                "snd4_8",\
+                                "snd4_9",\
+                                "snd4_10",\
+                                "snd4_11",\
+                                "snd5_0",\
+                                "snd6_0",\
+                                "snd6_1",\
+                                "snd6_2",\
+                                "snd6_3",\
+                                "snd6_4",\
+                                "snd6_5",\
+                                "snd6_6",\
+                                "snd6_7",\
+                                "snd7_0",\
+                                "snd8_0",\
+                                "snd9_0",\
+                                "snd9_1",\
+                                "snd9_2",\
+                                "snd9_3",\
+                                "snd9_4",\
+                                "snd9_5",\
+                                "snd9_6",\
+                                "snd9_7",\
+                                "snd9_8",\
+                                "snd9_9",\
+                                "sndA_0"\
                             }
 #define SOUND_PATH          "%sdata/sound/%s.wav"
 
@@ -40,6 +81,10 @@ void SoundInitiation(Sound_data *const sd){
     }
     char* wav_path = NULL;
     const char* const sound_files[] = SOUND_FILES_NAMES;
+    if(snds_num != SDL_arraysize(sound_files)){
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Bad number of sound files");
+        exit(-1);
+    }
     for(unsigned int i = 0U; i < SDL_arraysize(sound_files); ++i){
         SDL_asprintf(&wav_path, SOUND_PATH, SDL_GetBasePath(), *(sound_files + i));
         if(!SDL_LoadWAV(wav_path, &sound(i)->spec, &sound(i)->wav_data, &sound(i)->len)){
@@ -72,6 +117,10 @@ void PlaySound(Sound_data *const sd, const Uint8 sound_num){
     if(indx == sd->indx){
         ToPrevIndex(sd);
     }
+}
+
+extern inline void PlaySoundRand(Sound_data *const sd, const Uint8 sound_num_from, const Uint8 sound_num_to){
+    PlaySound(sd, SDL_rand(sound_num_to - sound_num_from + 1) + sound_num_from);
 }
 
 void SoundDataDestruction(Sound_data *const sd){

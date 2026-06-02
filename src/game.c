@@ -3,6 +3,7 @@
 #include <function.h>
 #include <stdlib.h>
 #include <enet/enet.h>
+#include <sound.h>
 
 static void NoticeBigSeg(Game_data* const, const unsigned int, const unsigned int);
 static void PlayerInUncoveredBigSeg(Game_data* const, const float, const float);
@@ -155,7 +156,7 @@ void GameLoop(Game_data* const gd){
     while(state != event_quit_game){
         timer = SDL_GetTicksNS();
 		if(state == event_ok){
-			state = EventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+			state = EventsService(gd, host(gd));
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_menu){
@@ -379,6 +380,7 @@ static inline void SetKeyStatus(Game_data *const gd, const Uint16 indx, const Ui
 }
 
 static inline void LootBox(Game_data* const gd, Player *const pc, const unsigned int box_indx){
+	PlaySound(gd->snd_data_ptr, snd_box_last);
 	Box_element* elem = (gd->boxes.array + box_indx)->elements;
 	int element_type;
 	bool empty = true;
@@ -1316,7 +1318,7 @@ void HostGameLoop(Game_data *const gd){
 	while(state != event_quit_game){
 		timer = SDL_GetTicksNS();
 		if(state == event_ok){
-			state = EventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+			state = EventsService(gd, host(gd));
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_menu){
@@ -1660,7 +1662,7 @@ void ClientGameLoop(Game_data* const gd){
 	while(state != event_quit_game){
 		timer = SDL_GetTicksNS();
 		if(state == event_ok){
-			state = EventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+			state = EventsService(gd, host(gd));
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_menu){

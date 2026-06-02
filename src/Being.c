@@ -1,5 +1,6 @@
 #include <common.h>
 #include <function.h>
+#include <sound.h>
 
 static void UpdateBeing(Being* const, Game_data* const);
 static Being* AddBeingToArray(Beings_array* const, const Uint8, const float, const float, Player* const);
@@ -420,6 +421,8 @@ static inline void UpdateBeingStrikeAlly(Being* const bg, float const distance_s
                 StunBeing(bg->target.being, (int)(BEING_DEFAULT_LEFT_TICKS * CalculateStunPower(&bg->impact, &bg->target.being->armour)));
             }
         }
+    }else if(BEING_ATTACK_STEPS * 2 == bg->status_ticks_left){
+        PlaySoundRand(gd->snd_data_ptr, snd_strike0, snd_strike_last);
     }
     --bg->status_ticks_left;
 }
@@ -449,6 +452,8 @@ static inline void UpdateBeingStrike(Being* const bg, Player* const pc, float co
 			    AddDamageVisualEffect(gd, &dangerous_point);
             }
         }
+    }else if(BEING_ATTACK_STEPS * 2 == bg->status_ticks_left){
+        PlaySoundRand(gd->snd_data_ptr, snd_strike0, snd_strike_last);
     }
     --bg->status_ticks_left;
 }
