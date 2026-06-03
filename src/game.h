@@ -161,7 +161,7 @@ struct Game_data{
     Uint64 seed;
 };
 
-int MainMenuLoop(SDL_Event* const, Render_data* const);
+int MainMenuLoop(Game_data *const);
 void GameLoop(Game_data* const);
 void CreditsLoop(SDL_Event* const, Render_data *const);
 void SetGameData(Game_data* const);

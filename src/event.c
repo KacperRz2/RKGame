@@ -106,12 +106,15 @@ int EventsService(Game_data* const gd, Player* const pc){
 	return event_ok;
 }
 
-unsigned int MenuEventsService(SDL_Event* const ev, Render_data* const rend_data, unsigned int* const menu_position, const unsigned int options_num){
+unsigned int MenuEventsService(Game_data *const gd, unsigned int *const menu_position, const unsigned int options_num){
+	SDL_Event *const ev = gd->ev_ptr;
+	Render_data *const rend_data = gd->rend_data_ptr;
 	while(SDL_PollEvent(ev)){
 		if(ev->type == SDL_EVENT_KEY_DOWN){
 			switch(ev->key.scancode){
 			case KEY_SELECT:
 			case SDL_SCANCODE_RETURN:
+				PlayGameSound(gd->snd_data_ptr, snd_menu_select_last);
 				return *menu_position;
 				break;
 			case KEY_MOVE_BACK:
@@ -119,6 +122,7 @@ unsigned int MenuEventsService(SDL_Event* const ev, Render_data* const rend_data
 			case KEY_MOVE_RIGHT:
 			case SDL_SCANCODE_RIGHT:
 				if(*menu_position < options_num - 1U){
+					PlayGameSound(gd->snd_data_ptr, snd_menu_move_last);
 					++(*menu_position);
 				}
 				break;
@@ -127,20 +131,29 @@ unsigned int MenuEventsService(SDL_Event* const ev, Render_data* const rend_data
 			case KEY_MOVE_LEFT:
 			case SDL_SCANCODE_LEFT:
 				if(*menu_position > 0U){
+					PlayGameSound(gd->snd_data_ptr, snd_menu_move_last);
 					--(*menu_position);
 				}
 				break;
 			case SDL_SCANCODE_ESCAPE:
-				*menu_position = options_num - 1U;
+				if(options_num - 1U != *menu_position){
+					PlayGameSound(gd->snd_data_ptr, snd_menu_move_last);
+					*menu_position = options_num - 1U;
+				}
 				return options_num + 1U;
 				break;
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
+			PlayGameSound(gd->snd_data_ptr, snd_menu_select_last);
 			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
 			return *menu_position;
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION || ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+			const unsigned int old_position = *menu_position;
 			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
+			if(old_position != *menu_position){
+				PlayGameSound(gd->snd_data_ptr, snd_menu_move_last);
+			}
 		}
 	}
 	return options_num;

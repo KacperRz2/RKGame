@@ -32,8 +32,15 @@
                                 "snd4_7",\
                                 "snd4_8",\
                                 "snd4_9",\
+                                "snd4_A",\
+                                "snd4_B",\
+                                "snd4_C",\
+                                "snd4_D",\
+                                "snd4_E",\
+                                "snd4_F",\
                                 "snd4_10",\
                                 "snd4_11",\
+                                "snd4_12",\
                                 "snd5_0",\
                                 "snd6_0",\
                                 "snd6_1",\
@@ -55,7 +62,10 @@
                                 "snd9_7",\
                                 "snd9_8",\
                                 "snd9_9",\
-                                "sndA_0"\
+                                "sndA_0",\
+                                "sndB_0",\
+                                "sndC_0",\
+                                "sndD_0"\
                             }
 #define SOUND_PATH          "%sdata/sound/%s.wav"
 

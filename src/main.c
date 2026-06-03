@@ -16,15 +16,15 @@ int main(int argc, char* argv[]){
 	GraphicsInitiation(&rend_data);
 	Sound_data sound_data;
 	SoundInitiation(&sound_data);
+	Game_data game_data = {
+		.rend_data_ptr = &rend_data,
+		.ev_ptr = &event,
+		.snd_data_ptr = &sound_data
+	};
 	while(1){
-		const int option = MainMenuLoop(&event, &rend_data);
+		const int option = MainMenuLoop(&game_data);
 		if(option == menu_quit) break;
 		if(option == menu_start || menu_multipl_host == option){
-			Game_data game_data = {
-				.rend_data_ptr = &rend_data,
-				.ev_ptr = &event,
-				.snd_data_ptr = &sound_data
-			};
 			do{
 				game_data.seed = (((Uint64)SDL_rand_bits() << 32ULL) + (Uint64)SDL_rand_bits());
 			}while(!game_data.seed);
@@ -40,19 +40,9 @@ int main(int argc, char* argv[]){
 			}
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
 		}else if(menu_multipl == option){
-			Game_data game_data = {
-				.rend_data_ptr = &rend_data,
-				.ev_ptr = &event,
-				.snd_data_ptr = &sound_data
-			};
 			ClientGameLoop(&game_data);
 			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
 		}else if(option == menu_load){
-			Game_data game_data = {
-				.rend_data_ptr = &rend_data,
-				.ev_ptr = &event,
-				.snd_data_ptr = &sound_data
-			};
 			LoadGame(&game_data, SAVE_PATH0);
 			GameLoop(&game_data);
 			ClearGameData(&game_data);

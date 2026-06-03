@@ -32,7 +32,14 @@ enum sound_num{
     snd_strike7,
     snd_strike8,
     snd_strike9,
+    snd_strikeA,
+    snd_strikeB,
+    snd_strikeC,
+    snd_strikeD,
+    snd_strikeE,
+    snd_strikeF,
     snd_strike10,
+    snd_strike11,
     snd_strike_last,
     snd_box_last,
     snd_spell0,
@@ -56,6 +63,9 @@ enum sound_num{
     snd_draw8,
     snd_draw_last,
     snd_dodge_last,
+    snd_start_last,
+    snd_menu_move_last,
+    snd_menu_select_last,
     snds_num
 };
 

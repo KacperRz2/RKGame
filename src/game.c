@@ -75,12 +75,13 @@ static inline void PlayerInUncoveredBigSeg(Game_data* const gd, const float px, 
 	}
 }
 
-static void SettingsMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
+static void SettingsMenuLoop(Game_data *const gd){
+	Render_data *const rend_data = gd->rend_data_ptr;
 	unsigned int option = settings_unknown;
 	unsigned int menu_position = settings_fullscreen;
 	while(1){
 		RenderSettingsMenu(rend_data, menu_position);
-		option = MenuEventsService(ev, rend_data, &menu_position, settings_unknown);
+		option = MenuEventsService(gd, &menu_position, settings_unknown);
 		if(settings_fullscreen == option){
 			ToggleFullscreen(rend_data);
 			option = settings_unknown;
@@ -90,12 +91,12 @@ static void SettingsMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
 	}
 }
 
-static int MultiplayerMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
+static int MultiplayerMenuLoop(Game_data *const gd){
 	unsigned int option = multipl_unknown;
 	unsigned int menu_position = multipl_host;
 	while(1){
-		RenderMultiplayerMenu(rend_data, menu_position);
-		option = MenuEventsService(ev, rend_data, &menu_position, multipl_unknown);
+		RenderMultiplayerMenu(gd->rend_data_ptr, menu_position);
+		option = MenuEventsService(gd, &menu_position, multipl_unknown);
 		if(multipl_host == option){
 			return menu_multipl_host;
 		}else if(multipl_join == option){
@@ -107,16 +108,16 @@ static int MultiplayerMenuLoop(SDL_Event* const ev, Render_data* const rend_data
 	return menu_unknown;
 }
 
-static int NewGameMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
+static int NewGameMenuLoop(Game_data *const gd){
 	unsigned int option = new_game_unknown;
 	unsigned int menu_position = new_game_single;
 	while(1){
-		RenderNewGameMenu(rend_data, menu_position);
-		option = MenuEventsService(ev, rend_data, &menu_position, new_game_unknown);
+		RenderNewGameMenu(gd->rend_data_ptr, menu_position);
+		option = MenuEventsService(gd, &menu_position, new_game_unknown);
 		if(new_game_single == option){
 			return menu_start;
 		}else if(new_game_multipl == option){
-			return MultiplayerMenuLoop(ev, rend_data);
+			return MultiplayerMenuLoop(gd);
 		}
 		if(option != new_game_unknown) break;
 		SDL_Delay(FRAME_TIME_MS);
@@ -124,17 +125,17 @@ static int NewGameMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
 	return menu_unknown;
 }
 
-int MainMenuLoop(SDL_Event* const ev, Render_data* const rend_data){
+int MainMenuLoop(Game_data *const gd){
     unsigned int option = menu_unknown;
 	unsigned int menu_position = menu_start;
     while(1){
-        RenderMainMenu(rend_data, menu_position);
-		option = MenuEventsService(ev, rend_data, &menu_position, OPTIONS_NUM);
+        RenderMainMenu(gd->rend_data_ptr, menu_position);
+		option = MenuEventsService(gd, &menu_position, OPTIONS_NUM);
 		if(menu_settings == option){
-			SettingsMenuLoop(ev, rend_data);
+			SettingsMenuLoop(gd);
 			option = menu_unknown;
 		}else if(menu_start == option){
-			return NewGameMenuLoop(ev, rend_data);
+			return NewGameMenuLoop(gd);
 		}
 		if(option < menu_unknown) break;
 		SDL_Delay(FRAME_TIME_MS);
@@ -147,12 +148,13 @@ static inline void ResetTime(Uint64 *const time, Uint64 *const prev_frame_time){
 	*prev_frame_time = *time;
 }
 
-void GameLoop(Game_data* const gd){
+void GameLoop(Game_data *const gd){
 	Uint64 now = 0ULL;
 	Uint64 timer;
     int state = event_ok;
 	Uint64 time = SDL_GetTicksNS();
 	Uint64 prev_frame_time = time;
+	PlayGameSound(gd->snd_data_ptr, snd_start_last);
     while(state != event_quit_game){
         timer = SDL_GetTicksNS();
 		if(state == event_ok){
@@ -160,7 +162,7 @@ void GameLoop(Game_data* const gd){
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_menu){
-			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &host(gd)->help_data.menu_position, menu_ig_unknown);
+			unsigned int option = MenuEventsService(gd, &host(gd)->help_data.menu_position, menu_ig_unknown);
 			if(menu_ig_unknown != option){
 				if(menu_ig_escape == option){
 					option = menu_ig_continue;
@@ -776,7 +778,7 @@ static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 	}else if(option == menu_ig_quit){
 		return event_quit_game;
 	}else if(option == menu_ig_settings){
-		SettingsMenuLoop(gd->ev_ptr, gd->rend_data_ptr);
+		SettingsMenuLoop(gd);
 		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
 		return event_used_pause;
 	}else{
@@ -1322,7 +1324,7 @@ void HostGameLoop(Game_data *const gd){
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_menu){
-			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &host(gd)->help_data.menu_position, menu_ig_unknown);
+			unsigned int option = MenuEventsService(gd, &host(gd)->help_data.menu_position, menu_ig_unknown);
 			if(menu_ig_unknown != option){
 				if(menu_ig_escape == option){
 					option = menu_ig_continue;
@@ -1666,7 +1668,7 @@ void ClientGameLoop(Game_data* const gd){
 		}else if(state == event_manage_scrolls){
 			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
 		}else if(state == event_menu){
-			unsigned int option = MenuEventsService(gd->ev_ptr, gd->rend_data_ptr, &host(gd)->help_data.menu_position, menu_ig_unknown);
+			unsigned int option = MenuEventsService(gd, &host(gd)->help_data.menu_position, menu_ig_unknown);
 			if(menu_ig_unknown != option){
 				if(menu_ig_escape == option){
 					option = menu_ig_continue;
