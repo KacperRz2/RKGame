@@ -26,6 +26,8 @@ int EventsService(Game_data* const gd, Player* const pc){
 				pc->flags ^= range_mode;
 				if(!(pc->flags & range_mode)){
 					PlaySoundRand(gd->snd_data_ptr, snd_draw0, snd_draw_last);
+				}else{
+					PlaySoundRand(gd->snd_data_ptr, snd_paper0, snd_paper_last);
 				}
 				break;
 			case SDL_SCANCODE_1:
@@ -43,8 +45,14 @@ int EventsService(Game_data* const gd, Player* const pc){
 			case SDL_SCANCODE_8:
 			case SDL_SCANCODE_9:
 			case SDL_SCANCODE_0:
-				pc->flags |= range_mode;
-				pc->selected_scroll = *(pc->scrolls_quick_access + (int)ev->key.scancode - SDL_SCANCODE_2);
+				{const Uint8 new_selection = *(pc->scrolls_quick_access + (int)ev->key.scancode - SDL_SCANCODE_2);
+				if(!(pc->flags & range_mode)){
+					PlaySoundRand(gd->snd_data_ptr, snd_paper0, snd_paper_last);
+					pc->flags |= range_mode;
+				}else if(new_selection != pc->selected_scroll){
+					PlaySoundRand(gd->snd_data_ptr, snd_paper0, snd_paper_last);
+				}
+				pc->selected_scroll = new_selection;}
 				break;
 			case KEY_MANAGE_SCROLLS:
 				SDL_SetWindowRelativeMouseMode(rend_data->window, false);
@@ -145,9 +153,11 @@ unsigned int MenuEventsService(Game_data *const gd, unsigned int *const menu_pos
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
-			PlayGameSound(gd->snd_data_ptr, snd_menu_select_last);
-			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
-			return *menu_position;
+			if(BUTTON_ATTACK == ev->button.button){
+				PlayGameSound(gd->snd_data_ptr, snd_menu_select_last);
+				SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
+				return *menu_position;
+			}
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION || ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
 			const unsigned int old_position = *menu_position;
 			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
