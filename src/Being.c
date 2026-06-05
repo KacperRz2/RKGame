@@ -1305,6 +1305,9 @@ void CommanderIsNearEnd(Game_data* const gd, Being* const bg){
 
 static void Burn(Game_data* const gd, Being* const bg, const int ticks_left){
     if(!(ticks_left % BURN_EFFECT_INTERVAL)){
+        if(!(ticks_left % (BURN_EFFECT_INTERVAL * 16))){
+            PlaySoundRand(gd->snd_data_ptr, snd_burn0, snd_burn_last);
+        }
         if(DamageBeing(bg, &BURN_EFFECT_IMPACT, gd->beings.array)){
             bg->effects_num = 0U;
         }

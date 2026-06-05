@@ -538,6 +538,7 @@ static void UpdatePlayerPush(Game_data* const gd, const unsigned int indx){
 					}
 					const float difference = SDL_fabsf(pc->direction - angle);
 					if(difference <= SDL_PI_F * 0.5F || difference >= SDL_PI_F * 1.5F){
+						PlaySoundRand(gd->snd_data_ptr, snd_hit_b0, snd_hit_b_last);
 						const float power = PC_PUSH_POWER * bg->armour.unstability;
 						if(bg->status == being_stunned){
                 			const float vel = BASE_FLY_VELOCITY * power;

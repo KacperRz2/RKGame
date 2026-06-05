@@ -65,7 +65,31 @@
                                 "sndA_0",\
                                 "sndB_0",\
                                 "sndC_0",\
-                                "sndD_0"\
+                                "sndD_0",\
+                                "sndE_0",\
+                                "sndE_1",\
+                                "sndE_2",\
+                                "sndE_3",\
+                                "sndF_0",\
+                                "sndF_1",\
+                                "sndF_2",\
+                                "sndF_3",\
+                                "snd10_0",\
+                                "snd11_0",\
+                                "snd11_1",\
+                                "snd11_2",\
+                                "snd11_3",\
+                                "snd12_0",\
+                                "snd12_1",\
+                                "snd12_2",\
+                                "snd12_3",\
+                                "snd12_4",\
+                                "snd12_5",\
+                                "snd13_0",\
+                                "snd14_0",\
+                                "snd14_1",\
+                                "snd14_2",\
+                                "snd14_3"\
                             }
 #define SOUND_PATH          "%sdata/sound/%s.wav"
 

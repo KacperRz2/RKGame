@@ -1,5 +1,6 @@
 #include <common.h>
 #include <function.h>
+#include <sound.h>
 
 static bool ProjectileHitsBeing(Projectile* const, Being* const);
 static void DestroyProjectileInArray(Projectiles_array* const, const unsigned int);
@@ -264,6 +265,9 @@ static bool FireProjectile(Projectile* const pr, Game_data* const gd){
 				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,
 				pr->position.y + (SDL_randf() - 0.5F) * BULLET_SIZE
 			});
+			if(!(pr->special.ticks % 64U)){
+				PlaySoundRand(gd->snd_data_ptr, snd_flame0, snd_flame_last);
+			}
 		}else{
 			AddSmallBurnVisualEffect(&gd->rend_data_ptr->visual_effects, &(SDL_FPoint){
 				pr->position.x + (SDL_randf() - 0.5F) * BULLET_SIZE,

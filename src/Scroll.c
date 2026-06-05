@@ -83,6 +83,7 @@ static bool AddAlly(Game_data* const gd, const SDL_FPoint *const target_xy, cons
 }
 
 static bool RenewArmour(Game_data* const gd, const SDL_FPoint *const target_xy, const unsigned int indx){
+    PlayGameSound(gd->snd_data_ptr, snd_blacksmith_last);
     Player *const pc = gd->champions.array + indx;
     pc->armour.absorption = pc->max_armour.absorption;
     pc->armour.multipl = pc->max_armour.multipl;
@@ -172,6 +173,7 @@ static bool thunderbolt(Game_data* const gd, const SDL_FPoint *const target_xy, 
     if(!bg){
         return false;
     }
+    PlayGameSound(gd->snd_data_ptr, snd_thunder_last);
     AddBoltVisualEffect(gd, &bg->position, (position16){(_Float16)pc->position.x, (_Float16)pc->position.y});
     AddBeingEffect(bg, (Lasting_effect){being_effect_thunderbolt, BOLT_CHAIN_TICKS});
     AddSpellVisualEffect(gd, &pc->position, SPELL0_RGB);

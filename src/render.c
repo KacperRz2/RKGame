@@ -1086,6 +1086,7 @@ static inline float GetAngle(const SDL_FPoint* const pa, const SDL_FPoint* const
 }
 
 extern inline void AddBoltVisualEffect(Game_data* const gd, const SDL_FPoint* const position, const position16 start_position){
+	PlaySoundRand(gd->snd_data_ptr, snd_electic0, snd_electic_last);
 	struct tmps{
 		position16 pos0;
 		position16 pos1;
