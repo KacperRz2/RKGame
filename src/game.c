@@ -280,12 +280,10 @@ static inline int RarePlayerEventsService(Game_data* const gd, const int check_q
 	Player* const pc = host(gd);
 	if(check_queue == check_0){
 		if(SDL_fabsf(pc->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (pc->flags & action)){
-			SetPlayerPosition(pc, gd->world.portalB.x, gd->world.portalB.y);
-			UpdatePlayerNewSegment(&gd->world, pc);
+			TeleportPlayer(gd, pc, &gd->world.portalB);
 			pc->flags &= ~(action);
 		}else if(SDL_fabsf(pc->position.x - gd->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalB.y) < half(DOOR_SIZE) && (pc->flags & action)){
-			SetPlayerPosition(pc, gd->world.portalA.x, gd->world.portalA.y);
-			UpdatePlayerNewSegment(&gd->world, pc);
+			TeleportPlayer(gd, pc, &gd->world.portalA);
 			pc->flags &= ~(action);
 		}
 	}else if(check_queue == check_1 && (pc->flags & action)){
@@ -323,6 +321,7 @@ static int RareEventsService(Game_data* const gd){
 		return RarePlayerEventsService(gd, check_queue);
 	}else if(!(gd->flags & gamef_horde_attack)){
 		if(gd->horde_data.ticks_from_attack > MIN_TICKS_FROM_HORDE + SDL_rand(MAX_TICKS_FROM_HORDE)){
+			PlaySoundRand(gd->snd_data_ptr, snd_horde0, snd_horde_last);
 			AddGameEffect(gd, (Lasting_effect){game_effect_horde_attack, HORDE_ATTACK_START_TICKS});
 			gd->flags |= gamef_horde_attack;
 		}else{
@@ -406,14 +405,12 @@ static inline void LootBox(Game_data* const gd, Player *const pc, const unsigned
 		}else if(element_type == box_key){
 			found_key = true;
 			++gd->keys;
-			// *(gd->keys_status + elem->value) = key_owned;
 			SetKeyStatus(gd, elem->value, key_owned);
 			elem->type = box_clear;
 			AddSpellVisualEffect(gd, &(gd->boxes.array + box_indx)->location, SPELL0_RGB);
 		}else if(element_type == box_map){
 			if(*(gd->keys_status + elem->value) == key_location_unknown){
 				SetKeyStatus(gd, elem->value, key_location_known);
-				// *(gd->keys_status + elem->value) = key_location_known;
 			}
 			elem->type = box_clear;
 		}else if(element_type == box_mp){
@@ -428,6 +425,7 @@ static inline void LootBox(Game_data* const gd, Player *const pc, const unsigned
 		AddAnnouncement(gd, annncmnt_destroy_box, &(Uint64){box_indx});
 	}
 	if(found_key){
+		PlayGameSound(gd->snd_data_ptr, snd_finding_last);
 		if(gd->flags & gamef_multiplayer){
 			SaveGame(gd, SAVE_PATHMP);
 		}else{
@@ -532,9 +530,12 @@ static inline bool SelectedPlayerItem(const unsigned int col, const unsigned int
 	return false;
 }
 
-static inline bool SelectedFinalize(const unsigned int row, struct transaction_data* const td, Game_data* const gd){
+static inline bool SelectedFinalize(const unsigned int row, struct transaction_data *const td, Game_data *const gd){
 	if(row == SHOP_ROWS - 1U){
 		if(td->pc->coins >= -(td->profit)){
+			if(0 != td->profit){
+				PlaySoundRand(gd->snd_data_ptr, snd_coin0, snd_coin_last);
+			}
 			td->items_to_sell_num = 0U;
 			for(unsigned int i = 0U; i < td->items_to_get_num; ++i){
 				const unsigned int item_num = *(td->items_to_get + i);
@@ -548,12 +549,10 @@ static inline bool SelectedFinalize(const unsigned int row, struct transaction_d
 					const unsigned int key_indx = SDL_rand(gd->needed_keys);
 					if(*(gd->keys_status + key_indx) == key_location_unknown){
 						SetKeyStatus(gd, key_indx, key_location_known);
-						// *(gd->keys_status + key_indx) = key_location_known;
 					}else{
 						unsigned int key_indx1 = (key_indx + 1U) % gd->needed_keys;
 						do{
 							if(*(gd->keys_status + key_indx1) == key_location_unknown){
-								// *(gd->keys_status + key_indx1) = key_location_known;
 								SetKeyStatus(gd, key_indx1, key_location_known);
 								break;
 							}
@@ -1163,12 +1162,10 @@ static inline int MultiplayerRarePlayerEventsService(Game_data* const gd, const 
 		Player* const pc = gd->champions.array + i;
 		if(check_queue == check_0){
 			if(SDL_fabsf(pc->position.x - gd->world.portalA.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalA.y) < half(DOOR_SIZE) && (pc->flags & action)){
-				SetPlayerPosition(pc, gd->world.portalB.x, gd->world.portalB.y);
-				UpdatePlayerNewSegment(&gd->world, pc);
+				TeleportPlayer(gd, pc, &gd->world.portalB);
 				pc->flags &= ~(action);
 			}else if(SDL_fabsf(pc->position.x - gd->world.portalB.x) < half(DOOR_SIZE) && SDL_fabsf(pc->position.y - gd->world.portalB.y) < half(DOOR_SIZE) && (pc->flags & action)){
-				SetPlayerPosition(pc, gd->world.portalA.x, gd->world.portalA.y);
-				UpdatePlayerNewSegment(&gd->world, pc);
+				TeleportPlayer(gd, pc, &gd->world.portalA);
 				pc->flags &= ~(action);
 			}
 		}else if(check_queue == check_1 && (pc->flags & action)){

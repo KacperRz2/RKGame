@@ -105,6 +105,7 @@ void HealPlayer(Player* const, const int);
 void UpdatePlayers(Game_data* const);
 void UpdatePlayersEffects(Game_data* const);
 void SetQuickScroll(Player* const, int);
+void TeleportPlayer(Game_data *const, Player *const, const SDL_FPoint *const);
 
 void AddPlayerEffect(Player* const, const Lasting_effect);
 void AddOrUpdatePlayerEffect(Player* const, const Lasting_effect);

@@ -89,7 +89,16 @@
                                 "snd14_0",\
                                 "snd14_1",\
                                 "snd14_2",\
-                                "snd14_3"\
+                                "snd14_3",\
+                                "snd15_0",\
+                                "snd15_1",\
+                                "snd16_0",\
+                                "snd17_0",\
+                                "snd18_0",\
+                                "snd19_0",\
+                                "snd19_1",\
+                                "snd19_2",\
+                                "snd1A_0"\
                             }
 #define SOUND_PATH          "%sdata/sound/%s.wav"
 
@@ -142,14 +151,17 @@ void SoundInitiation(Sound_data *const sd){
 
 void PlayGameSound(Sound_data *const sd, const Uint8 sound_num){
     const Uint8 indx = sd->indx;
-    do{
+    while(1){
         ToNextIndex(sd);
-    }while(SDL_GetAudioStreamQueued(*(sd->streams + sd->indx)) > 0 && sd->indx != indx);
-    SDL_SetAudioStreamFormat(*(sd->streams + sd->indx), &sound(sound_num)->spec, NULL);
-    SDL_PutAudioStreamDataNoCopy(*(sd->streams + sd->indx), sound(sound_num)->wav_data, (int)sound(sound_num)->len, NULL, NULL);
-    SDL_FlushAudioStream(*(sd->streams + sd->indx));
-    if(indx == sd->indx){
-        ToPrevIndex(sd);
+        if(0 >= SDL_GetAudioStreamQueued(*(sd->streams + sd->indx))){
+            SDL_SetAudioStreamFormat(*(sd->streams + sd->indx), &sound(sound_num)->spec, NULL);
+            SDL_PutAudioStreamDataNoCopy(*(sd->streams + sd->indx), sound(sound_num)->wav_data, (int)sound(sound_num)->len, NULL, NULL);
+            SDL_FlushAudioStream(*(sd->streams + sd->indx));
+            return;
+        }else if(indx == sd->indx){
+            ToPrevIndex(sd);
+            return;
+        }
     }
 }
 

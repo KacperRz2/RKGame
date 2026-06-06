@@ -1019,7 +1019,8 @@ extern inline void AddDeadVisualEffect(Game_data* const gd, const SDL_FPoint* co
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &DEAD_VIS_EFFECT(*position));
 }
 
-extern inline void AddPortalVisualEffect(Game_data* const gd, const SDL_FPoint* const position){
+extern inline void AddPortalVisualEffect(Game_data *const gd, const SDL_FPoint* const position){
+	PlayGameSound(gd->snd_data_ptr, snd_teleport_last);
 	AddAnnouncement(gd, annncmnt_portal, position);
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &PORTAL_VIS_EFFECT(*position));
 }

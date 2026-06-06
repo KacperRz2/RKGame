@@ -791,6 +791,12 @@ extern inline void SetQuickScroll(Player* const pc, int num){
 	*(pc->scrolls_quick_access + num) = pc->help_data.menu_position;
 }
 
+extern inline void TeleportPlayer(Game_data *const gd, Player *const pc, const SDL_FPoint *const position){
+	PlayGameSound(gd->snd_data_ptr, snd_teleport_pc_last);
+	SetPlayerPosition(pc, position->x, position->y);
+	UpdatePlayerNewSegment(&gd->world, pc);
+}
+
 static inline void DisruptPC(Player *const pc){
 	pc->flags = (pc->flags | disrupted) & ~(dodge | run | block | attack | cast | action);
 	pc->blade.charge = PC_BLADE_CHARGE_BASE;

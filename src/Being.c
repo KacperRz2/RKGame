@@ -750,7 +750,7 @@ static inline void UpdateBeingsDuringHordeAttack(Game_data* const gd){
     }
 }
 
-static inline void UpdateBeingsBroken(Game_data* const gd){
+static inline void UpdateBeingsBroken(Game_data *const gd){
     for(unsigned int i = 0U; i < gd->beings.num; ++i){
         Being* bg = (gd->beings.array + *(gd->beings.indices + i));
         if(IsBeingInAttentionRect(bg, gd)){
@@ -768,6 +768,7 @@ static inline void UpdateBeingsBroken(Game_data* const gd){
         }
     }  
     if(!(gd->flags & gamef_morale_break)){
+        PlayGameSound(gd->snd_data_ptr, snd_flee_last);
         gd->flags |= gamef_morale_break;
         gd->enemy_morale = MIN_MORALE;
     }

@@ -90,6 +90,15 @@ enum sound_num{
     snd_paper1,
     snd_paper2,
     snd_paper_last,
+    snd_coin0,
+    snd_coin_last,
+    snd_finding_last,
+    snd_teleport_last,
+    snd_teleport_pc_last,
+    snd_horde0,
+    snd_horde1,
+    snd_horde_last,
+    snd_flee_last,
     snds_num
 };
 
