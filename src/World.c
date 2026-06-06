@@ -641,7 +641,7 @@ void StartNewLevel(Game_data* const gd){
 	}
 	const SDL_FPoint start_position = GetStartPosition(&gd->world);
 	for(unsigned int i = 0U; i < START_PLAYERS_NUM; ++i){
-		CreatePlayer((gd->champions.array + i), start_position.x, start_position.y);
+		CreatePlayer((gd->champions.array + i), start_position.x, start_position.y, &gd->config);
 		(gd->champions.array + i)->segment = GetSegmentUnsafe(&gd->world, (gd->champions.array + i)->position.x, (gd->champions.array + i)->position.y);
 		(gd->champions.array + i)->last_seen_in = (gd->champions.array + i)->segment;
 		++gd->champions.num;

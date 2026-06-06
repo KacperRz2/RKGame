@@ -131,6 +131,9 @@ struct Announcement{
     };
     Uint8 id;
 };
+struct Config{
+    int pc_hp;
+};
 struct Game_data{
     Uint32 flags;
     Players champions;
@@ -159,6 +162,7 @@ struct Game_data{
     SDL_Event* ev_ptr;
     Sound_data *snd_data_ptr;
     Uint64 seed;
+    Config config;
 };
 
 int MainMenuLoop(Game_data *const);

@@ -50,7 +50,7 @@ static void InitScrolls(Player* const pc){
 	}
 }
 
-void CreatePlayer(Player* const pc, const float x, const float y){
+void CreatePlayer(Player *const pc, const float x, const float y, const Config *const config){
 	pc->blade.placement = (Placement)PC_BLADE_BASE_PLCMNT;
 	pc->blade.impact = (Impact){};
 	pc->blade.penetration = BLADE_PENETRATION;
@@ -74,11 +74,11 @@ void CreatePlayer(Player* const pc, const float x, const float y){
 	pc->velocity = 0.0F;
 	pc->max_velocity = PLAYER_VELOCITY;
 	pc->dodge_velocity_multipl = DODGE_VELOCITY_MULTIP;
-	pc->hit_points = PC_HP;
+	pc->max_hp = config->pc_hp;
+	pc->hit_points = pc->max_hp;
 	pc->fatigue_points = PC_FATIGUE;
 	pc->magic_points = PC_MAGIC;
 	pc->max_fatigue = PC_FATIGUE;
-	pc->max_hp = PC_HP;
 	pc->block_times = (Block_times){0, 0, 0, 0, 0, 0};
 	pc->armour = (Armour)PC_ARMOUR;
 	pc->max_armour = (Armour)PC_MAX_ARMOUR;

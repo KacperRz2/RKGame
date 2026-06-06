@@ -228,7 +228,35 @@ void CreditsLoop(SDL_Event* const ev, Render_data *const rend_data){
 	MessageScreenLoop(ev, rend_data, RenderCreditsScreen);
 }
 
+static void ReadConfig(Config *const config){
+	SDL_Storage *title = SDL_OpenTitleStorage(NULL, 0);
+	if(!title){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_OpenTitleStorage error: %s", SDL_GetError()); exit(-1);
+	}
+	while(!SDL_StorageReady(title)){
+		SDL_Delay(1);
+	}
+	void *dst;
+	Uint64 dst_len = 0U;
+	if(SDL_GetStorageFileSize(title, "config", &dst_len) && dst_len > 0){
+		dst = SDL_malloc(dst_len);
+		if(SDL_ReadStorageFile(title, "config", dst, dst_len)){
+			SDL_sscanf((char*)dst, "PC_HP: %X", &config->pc_hp);
+			if(0 >= config->pc_hp){
+				config->pc_hp = PC_HP;
+			}
+		}else{
+			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_ReadStorageFile error: %s", SDL_GetError()); exit(-1);
+		}
+		SDL_free(dst);
+	}else{
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_GetStorageFileSize error: %s", SDL_GetError()); exit(-1);
+	}
+	SDL_CloseStorage(title);
+}
+
 void SetGameData(Game_data* const gd){
+	ReadConfig(&gd->config);
 	gd->flags = 0x0U;
 	gd->champions.array = (Player*)SDL_malloc(sizeof(Player) * MAX_PLAYERS_NUM);
 	gd->boxes.array = (Box*)SDL_malloc(sizeof(Box) * BOXES_NUM);
@@ -974,7 +1002,7 @@ void SaveGame(const Game_data* const gd, const char *const path){
 	}
 	ptr += sizeof(union horde_data);
 	SDL_memcpy(ptr, known_segs, sizeof(struct coordinates) * nums.known_segs);
-    SDL_Storage* user = SDL_OpenUserStorage("RzK", "KGame", 0);
+    SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
     if(!user){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_OpenUserStorage error: %s", SDL_GetError()); exit(-1);
     }
@@ -1300,7 +1328,7 @@ void HostGameLoop(Game_data *const gd){
 	MultiplayerSetGameData(gd, gamef_multiplayer | gamef_is_serv_host);
 	SDL_srand(gd->seed);
 	StartNewLevel(gd);
-	CreatePlayer((gd->champions.array + 1), host(gd)->position.x, host(gd)->position.y);
+	CreatePlayer((gd->champions.array + 1), host(gd)->position.x, host(gd)->position.y, &gd->config);
 	++gd->champions.num;
 	MovePlayer(gd, (gd->champions.array + 1), (float)PLAYER_SIZE * 2.0F, 0.0F);
 	SDL_srand(0ULL);
@@ -1645,7 +1673,7 @@ void ClientGameLoop(Game_data* const gd){
 	MultiplayerSetGameData(gd, gamef_multiplayer);
 	SDL_srand(gd->seed);
 	StartNewLevel(gd);
-	CreatePlayer((gd->champions.array + 1), host(gd)->position.x, host(gd)->position.y);
+	CreatePlayer((gd->champions.array + 1), host(gd)->position.x, host(gd)->position.y, &gd->config);
 	++gd->champions.num;
 	MovePlayer(gd, host(gd), (float)PLAYER_SIZE * 2.0F, 0.0F);
 	DrawMap(gd->rend_data_ptr, &gd->world);

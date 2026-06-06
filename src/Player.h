@@ -62,8 +62,8 @@ struct Player{
     Blade blade;
     Impact blade_attack;
     Impact range_attack;
-    Segment* segment;
-    Segment* last_seen_in;
+    Segment *segment;
+    Segment *last_seen_in;
     SDL_FRect attention_rect;
     float direction;
     float move_direction;
@@ -90,29 +90,29 @@ struct Player{
     }help_data;
 };
 
-void StopPlayerActions(Player* const);
-void CreatePlayer(Player* const, const float, const float);
-void SetPlayerPosition(Player* const, const float, const float);
-void MovePlayer(Game_data* const, Player* const, const float, const float);
-void UpdatePlayerNewSegment(World* const, Player* const);
-bool PointInPlayer(const float, const float, Player* const);
-bool CircleMeetsPlayer(const float, const float, const float, Player* const);
-void DamagePlayer(Player* const, const Impact* const);
-void HaltPlayer(Player* const);
-void HitBarrier(Game_data *const gd, Player* const, const Impact* const);
-float GetDirectionToPush(const SDL_FPoint* const, const SDL_FPoint* const);
-void HealPlayer(Player* const, const int);
-void UpdatePlayers(Game_data* const);
-void UpdatePlayersEffects(Game_data* const);
-void SetQuickScroll(Player* const, int);
+void StopPlayerActions(Player *const);
+void CreatePlayer(Player *const, const float, const float, const Config *const);
+void SetPlayerPosition(Player *const, const float, const float);
+void MovePlayer(Game_data *const, Player *const, const float, const float);
+void UpdatePlayerNewSegment(World *const, Player *const);
+bool PointInPlayer(const float, const float, Player *const);
+bool CircleMeetsPlayer(const float, const float, const float, Player *const);
+void DamagePlayer(Player *const, const Impact *const);
+void HaltPlayer(Player *const);
+void HitBarrier(Game_data *const gd, Player *const, const Impact *const);
+float GetDirectionToPush(const SDL_FPoint *const, const SDL_FPoint *const);
+void HealPlayer(Player *const, const int);
+void UpdatePlayers(Game_data *const);
+void UpdatePlayersEffects(Game_data *const);
+void SetQuickScroll(Player *const, int);
 void TeleportPlayer(Game_data *const, Player *const, const SDL_FPoint *const);
 
-void AddPlayerEffect(Player* const, const Lasting_effect);
-void AddOrUpdatePlayerEffect(Player* const, const Lasting_effect);
-int PlayerHasEffect(Player* const, const int);
+void AddPlayerEffect(Player *const, const Lasting_effect);
+void AddOrUpdatePlayerEffect(Player *const, const Lasting_effect);
+int PlayerHasEffect(Player *const, const int);
 
-void MultiplayerUpdatePlayers(Game_data* const);
-void ClientUpdatePlayers(Game_data* const);
+void MultiplayerUpdatePlayers(Game_data *const);
+void ClientUpdatePlayers(Game_data *const);
 void PlayerCastConsequences(Game_data *const, Player *const, const int, const Uint8);
 
 #endif

@@ -6,6 +6,7 @@ typedef struct Armour Armour;
 typedef struct Lasting_effect Lasting_effect;
 typedef struct Being Being;
 typedef struct Player Player;
+typedef struct Config Config;
 typedef struct Game_data Game_data;
 typedef struct Render_data Render_data;
 typedef struct Blade Blade;
