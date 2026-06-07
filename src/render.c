@@ -370,52 +370,50 @@
 #define CREDITS_TEXT_LEN            27U
 #define CONNECTING_TEXT             {O,c,z,e,k,i,w,a,n,i,e,sp,n,a,sp,p,o,ł,ą,c,z,e,n,i,e,dot,dot,dot}
 #define CONNECTING_TEXT_LEN         28U
-
-#define TEXTURE_FILES_NAMES         {\
-                                        "img3",\
-                                        "img4",\
-                                        "img5",\
-                                        "img6",\
-                                        "img7",\
-                                        "img9",\
-                                        "imgA",\
-                                        "imgB",\
-                                        "imgC",\
-                                        "imgD",\
-                                        "imgE",\
-                                        "imgF",\
-                                        "img10",\
-                                        "img11",\
-                                        "img13",\
-                                        "img15",\
-                                        "img18",\
-                                        "fnt",\
-                                        "img19",\
-                                        "img1A",\
-                                        "img1B",\
-                                        "img1C",\
-                                        "img1D",\
-                                        "img1E",\
-                                        "img21",\
-                                        "img22"\
+#define TEXTURE_FILES_NUM			0x24U
+#define TEXTURE_FILE_INDICES        {\
+                                        0x3U,\
+                                        0x4U,\
+                                        0x5U,\
+                                        0x6U,\
+                                        0x7U,\
+                                        0x9U,\
+                                        0xAU,\
+                                        0xBU,\
+                                        0xCU,\
+                                        0xDU,\
+                                        0xEU,\
+                                        0xFU,\
+                                        0x10U,\
+                                        0x11U,\
+                                        0x13U,\
+                                        0x15U,\
+                                        0x18U,\
+                                        0x23U,\
+                                        0x19U,\
+                                        0x1AU,\
+                                        0x1BU,\
+                                        0x1CU,\
+                                        0x1DU,\
+                                        0x1EU,\
+                                        0x21U,\
+                                        0x22U\
                                     }
-
-#define BEING_TEXTURE0_FILE_NAME    "img8"
-#define BEING_TEXTURE1_FILE_NAME    "img12"
-#define BACKGROUND_TX0_FILE_NAME    "img16"
-#define BACKGROUND_TX1_FILE_NAME    "img17"
-#define PROJECTILE_TX_FILE_NAME     "img2"
-#define PC_TX0_FILE_NAME            "img0"
-#define PC_TX1_FILE_NAME            "img14"
-#define DODGE_TX_FILE_NAME          "img1F"
-#define PLUS_UP_TX_FILE_NAME        "img20"
-#define ICONS_TX_FILE_NAME          "img5"
-#define IMAGE_PATH          		"%sdata/img/%s.bmp"
+#define BEING_TEXTURE0_FILE_INDEX   0x8U
+#define BEING_TEXTURE1_FILE_INDEX   0x12U
+#define BACKGROUND_TX0_FILE_INDEX   0x16U
+#define BACKGROUND_TX1_FILE_INDEX   0x17U
+#define PROJECTILE_TX_FILE_INDEX    0x2U
+#define PC_TX0_FILE_INDEX           0x0U
+#define PC_TX1_FILE_INDEX           0x14U
+#define DODGE_TX_FILE_INDEX         0x1FU
+#define PLUS_UP_TX_FILE_INDEX       0x20U
+#define ICONS_TX_FILE_INDEX         0x5U
+#define FONT_FILE_INDEX				0x23U
+#define IMAGES_PATH          		"%simg"
 
 static void RemoveVisalEffect(Visual_effects* const, const unsigned int);
 static void RenderVisualEffects(Render_data* const, Game_data* const);
-static void DrawBeings(Render_data* const);
-static void DrawColouredThings(Render_data* const);
 static void DrawBeing(Render_data* const, SDL_Texture**, SDL_Surface* const, SDL_Surface* const, const Uint8* const, const Uint8* const);
 static void DrawColouredThing(Render_data* const, SDL_Texture**, SDL_Surface* const, const Uint8* const);
 static void RenderHostPlayerBlade(Render_data* const, Blade* const);
@@ -493,6 +491,11 @@ enum character{
 	char_end
 };
 
+struct image_files_data{
+	Uint64 positions[TEXTURE_FILES_NUM];
+	SDL_IOStream *stream;
+};
+
 static void SetViewTexture(Render_data* const rend_data){
 	texture(tx_view) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, rend_data->viewfinder / VIEW_TX_FACTOR, rend_data->viewfinder / VIEW_TX_FACTOR);
 	if(!texture(tx_view)){
@@ -504,12 +507,18 @@ static void SetViewTexture(Render_data* const rend_data){
 	SDL_SetTextureScaleMode(texture(tx_view), SDL_SCALEMODE_PIXELART);
 }
 
-static void DrawShopIcons(Render_data* const rend_data){
+static SDL_Surface* SurfaceFromFile(struct image_files_data *const ifd, const Uint8 indx){
+	SDL_SeekIO(ifd->stream, *(ifd->positions + indx), SDL_IO_SEEK_SET);
+	SDL_Surface *surface = SDL_LoadPNG_IO(ifd->stream, false);
+	if(!surface){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError()); exit(-1);
+	}
+	return surface;
+}
+
+static void DrawShopIcons(Render_data* const rend_data, struct image_files_data *const ifd){
 	SDL_Surface* base_surface = SDL_CreateSurface(ICON_TX_SIZE_INT * SHOP_ICONS_NUM, ICON_TX_SIZE_INT, SDL_PIXELFORMAT_RGBA8888);
-	char* bmp_path = NULL;
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), ICONS_TX_FILE_NAME);
-	SDL_Surface* surface = SDL_LoadBMP(bmp_path);
-	SDL_free(bmp_path);
+	SDL_Surface *surface = SurfaceFromFile(ifd, ICONS_TX_FILE_INDEX);
 	SDL_Rect src_rect = {ICON_TX_SIZE_INT * 6, 0, ICON_TX_SIZE_INT, ICON_TX_SIZE_INT};
 	SDL_Rect dst_rect = {0, 0, ICON_TX_SIZE_INT, ICON_TX_SIZE_INT};
 	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
@@ -527,16 +536,12 @@ static void DrawShopIcons(Render_data* const rend_data){
 	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
 	SDL_DestroySurface(surface);
 	
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), DODGE_TX_FILE_NAME);
-	surface = SDL_LoadBMP(bmp_path);
-	SDL_free(bmp_path);
+	surface = SurfaceFromFile(ifd, DODGE_TX_FILE_INDEX);
 	dst_rect.x = ICON_TX_SIZE_INT * 6;
 	SDL_BlitSurface(surface, NULL, base_surface, &dst_rect);
 	SDL_DestroySurface(surface);
 	
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), "fnt");
-	surface = SDL_LoadBMP(bmp_path);
-	SDL_free(bmp_path);
+	surface = SurfaceFromFile(ifd, FONT_FILE_INDEX);
 	SDL_FPoint char_x_and_w = GetCharacterXPositionAndWidth(n1);
 	src_rect = (SDL_Rect){char_x_and_w.x, GetCharacterRow(n1) * CHARS_ROW_HEIGHT, char_x_and_w.y, CHARS_ROW_HEIGHT};
 	dst_rect = (SDL_Rect){ICON_TX_SIZE_INT * 1, dst_rect.y, char_x_and_w.y / 2, CHARS_ROW_HEIGHT / 2};
@@ -561,9 +566,7 @@ static void DrawShopIcons(Render_data* const rend_data){
 	SDL_BlitSurface(surface, &src_rect, base_surface, &dst_rect);
 	SDL_DestroySurface(surface);
 
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PLUS_UP_TX_FILE_NAME);
-	surface = SDL_LoadBMP(bmp_path);
-	SDL_free(bmp_path);
+	surface = SurfaceFromFile(ifd, PLUS_UP_TX_FILE_INDEX);
 	src_rect = (SDL_Rect){0, 0, 32, 32};
 	dst_rect.x = ICON_TX_SIZE_INT / 2;
 	dst_rect.y = ICON_TX_SIZE_INT / 2;
@@ -594,10 +597,49 @@ static void DrawShopIcons(Render_data* const rend_data){
 	SDL_DestroySurface(base_surface);
 }
 
-static void DrawTextures(Render_data* const rend_data){
-	DrawBeings(rend_data);
-	DrawColouredThings(rend_data);
-	DrawShopIcons(rend_data);
+static void DrawBeings(Render_data *const rend_data, struct image_files_data *const ifd){
+	SDL_Surface *surface = NULL;
+	SDL_Surface *surface1 = NULL;
+	surface = SurfaceFromFile(ifd, PC_TX0_FILE_INDEX);
+	surface1 = SurfaceFromFile(ifd, PC_TX1_FILE_INDEX);
+	DrawBeing(rend_data, &texture(tx_pc), surface, surface1, PC_RGB_0, PC_RGB_1);
+	SDL_DestroySurface(surface);
+	SDL_DestroySurface(surface1);
+	surface = SurfaceFromFile(ifd, BEING_TEXTURE0_FILE_INDEX);
+	surface1 = SurfaceFromFile(ifd, BEING_TEXTURE1_FILE_INDEX);
+	DrawBeing(rend_data, &texture(tx_being_weak), surface, surface1, BEING0_RGB_0, BEING0_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_ordinary), surface, surface1, BEING1_RGB_0, BEING1_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_ranger), surface, surface1, BEING2_RGB_0, BEING2_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_elite), surface, surface1, BEING3_RGB_0, BEING3_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_elite_ranger), surface, surface1, BEING4_RGB_0, BEING4_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_commander), surface, surface1, BEING5_RGB_0, BEING5_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_warlock), surface, surface1, BEING6_RGB_0, BEING6_RGB_1);
+	DrawBeing(rend_data, &texture(tx_being_ally_ordinary), surface, surface1, ALLY0_RGB_0, ALLY0_RGB_1);
+	SDL_DestroySurface(surface);
+	SDL_DestroySurface(surface1);
+}
+
+static void DrawColouredThings(Render_data *const rend_data, struct image_files_data *const ifd){
+	SDL_Surface* surface = NULL;
+	surface = SurfaceFromFile(ifd, PROJECTILE_TX_FILE_INDEX);
+	DrawColouredThing(rend_data, &texture(tx_projectile), surface, PROJECTILE0_RGBA);
+	DrawColouredThing(rend_data, &texture(tx_h_projectile), surface, PROJECTILE1_RGBA);
+	SDL_DestroySurface(surface);
+	surface = SDL_CreateSurface(3, 3, SDL_PIXELFORMAT_RGBA8888);
+	SDL_WriteSurfacePixel(surface, 1, 1, 255U, 255U, 255U, 255U);
+	texture(tx_pixel) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	texture(tx_pixel_blend) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
+	if(!(texture(tx_pixel) && texture(tx_pixel_blend))){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
+		exit(-1);
+	}
+	SDL_DestroySurface(surface);
+}
+
+static void DrawTextures(Render_data* const rend_data, struct image_files_data *const ifd){
+	DrawBeings(rend_data, ifd);
+	DrawColouredThings(rend_data, ifd);
+	DrawShopIcons(rend_data, ifd);
 	SDL_Surface* surface = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA8888);
 	SDL_WriteSurfacePixel(surface, 0, 0, 0U, 0U, 0U, 0U);
 	texture(tx_void) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
@@ -607,22 +649,16 @@ static void DrawTextures(Render_data* const rend_data){
 	SDL_DestroySurface(surface);
 }
 
-static inline void CreateTexruresFromFiles(Render_data* const rend_data){
-	SDL_Surface* surface = NULL;
-	char* bmp_path = NULL;
-	const char* const texture_files[] = TEXTURE_FILES_NAMES;
-	for(int i = 0; i < SDL_arraysize(texture_files); ++i){
-		SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), *(texture_files + i));
-		surface = SDL_LoadBMP(bmp_path);
-		if(!surface){
-			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError()); exit(-1);
-		}
+static void CreateTexruresFromFiles(Render_data *const rend_data, struct image_files_data *const ifd){
+	SDL_Surface *surface = NULL;
+	const Uint8 texture_indices[] = TEXTURE_FILE_INDICES;
+	for(unsigned int i = 0U; i < SDL_arraysize(texture_indices); ++i){
+		surface = SurfaceFromFile(ifd, *(texture_indices + i));
 		texture(i) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
 		if(!texture(i)){
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError()); exit(-1);
 		}
 		SDL_DestroySurface(surface);
-		SDL_free(bmp_path);
 	}
 }
 
@@ -642,6 +678,22 @@ static inline void SetTexturesBlendAndScaleModes(Render_data* const rend_data){
 	SDL_SetTextureScaleMode(texture(tx_menu_ptr), SDL_SCALEMODE_PIXELART);
 }
 
+static void SetImageFilesData(struct image_files_data *const ifd){
+	char *img_path = NULL;
+	SDL_asprintf(&img_path, IMAGES_PATH, SDL_GetBasePath());
+	ifd->stream = SDL_IOFromFile(img_path, "rb");
+	SDL_free(img_path);
+	if(!ifd->stream){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create stream from file: %s", SDL_GetError()); exit(-1);
+	}
+	Uint64 image_files_num = 0U;
+	SDL_ReadIO(ifd->stream, &image_files_num, sizeof(image_files_num));
+	if(TEXTURE_FILES_NUM != image_files_num){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Bad number of image files"); exit(-1);
+	}
+	SDL_ReadIO(ifd->stream, ifd->positions, sizeof(ifd->positions));
+}
+
 void GraphicsInitiation(Render_data* const rend_data){
 	SDL_zeroa(rend_data->textures);
 	if(!SDL_Init(SDL_INIT_VIDEO)){
@@ -650,13 +702,17 @@ void GraphicsInitiation(Render_data* const rend_data){
 	if(!SDL_CreateWindowAndRenderer("KacWindow", WINDOW_START_W, WINDOW_START_H, SDL_WINDOW_BORDERLESS, &rend_data->window, &rend_data->renderer)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError()); exit(-1);
 	}
-	CreateTexruresFromFiles(rend_data);
+	struct image_files_data ifd = {};
+	SetImageFilesData(&ifd);
+	CreateTexruresFromFiles(rend_data, &ifd);
 	texture(tx_map) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, BIG_SEGMENTS_X, BIG_SEGMENTS_X);
 	texture(tx_lighting) = SDL_CreateTexture(rend_data->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, LIGHTING_TX_SIZE, LIGHTING_TX_SIZE);
 	if(!(texture(tx_lighting) && texture(tx_map))){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError()); exit(-1);
 	}
-	DrawTextures(rend_data);
+	DrawTextures(rend_data, &ifd);
+	SDL_FlushIO(ifd.stream);
+	SDL_CloseIO(ifd.stream);
 	SetMouseBarrier(rend_data);
 	SetTexturesBlendAndScaleModes(rend_data);
 	SDL_SetRenderDrawBlendMode(rend_data->renderer, SDL_BLENDMODE_BLEND);
@@ -1124,77 +1180,6 @@ extern inline void AddSpellVisualEffect(Game_data* const gd, const SDL_FPoint* c
 	ve.data2.b = bl;
 	ve.type = visual_effect_t3;
 	AddVisalEffect(&gd->rend_data_ptr->visual_effects, &ve);
-}
-
-static void DrawBeings(Render_data* const rend_data){
-	SDL_Surface* surface = NULL;
-	SDL_Surface* surface1 = NULL;
-	char* bmp_path = NULL;
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PC_TX0_FILE_NAME);
-	surface = SDL_LoadBMP(bmp_path);
-	if(!surface){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-		exit(-1);
-	}
-	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PC_TX1_FILE_NAME);
-	surface1 = SDL_LoadBMP(bmp_path);
-	if(!surface1){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-		exit(-1);
-	}
-	DrawBeing(rend_data, &texture(tx_pc), surface, surface1, PC_RGB_0, PC_RGB_1);
-	SDL_DestroySurface(surface);
-	SDL_DestroySurface(surface1);
-	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BEING_TEXTURE0_FILE_NAME);
-	surface = SDL_LoadBMP(bmp_path);
-	if(!surface){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-		exit(-1);
-	}
-	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BEING_TEXTURE1_FILE_NAME);
-	surface1 = SDL_LoadBMP(bmp_path);
-	if(!surface1){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-		exit(-1);
-	}
-	DrawBeing(rend_data, &texture(tx_being_weak), surface, surface1, BEING0_RGB_0, BEING0_RGB_1);
-	DrawBeing(rend_data, &texture(tx_being_ordinary), surface, surface1, BEING1_RGB_0, BEING1_RGB_1);
-	DrawBeing(rend_data, &texture(tx_being_ranger), surface, surface1, BEING2_RGB_0, BEING2_RGB_1);
-	DrawBeing(rend_data, &texture(tx_being_elite), surface, surface1, BEING3_RGB_0, BEING3_RGB_1);
-	DrawBeing(rend_data, &texture(tx_being_elite_ranger), surface, surface1, BEING4_RGB_0, BEING4_RGB_1);
-	DrawBeing(rend_data, &texture(tx_being_commander), surface, surface1, BEING5_RGB_0, BEING5_RGB_1);
-	DrawBeing(rend_data, &texture(tx_being_warlock), surface, surface1, BEING6_RGB_0, BEING6_RGB_1);
-	DrawBeing(rend_data, &texture(tx_being_ally_ordinary), surface, surface1, ALLY0_RGB_0, ALLY0_RGB_1);
-	SDL_DestroySurface(surface);
-	SDL_DestroySurface(surface1);
-	SDL_free(bmp_path);
-}
-
-static void DrawColouredThings(Render_data* const rend_data){
-	SDL_Surface* surface = NULL;
-	char* bmp_path = NULL;
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), PROJECTILE_TX_FILE_NAME);
-	surface = SDL_LoadBMP(bmp_path);
-	if(!surface){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-		exit(-1);
-	}
-	DrawColouredThing(rend_data, &texture(tx_projectile), surface, PROJECTILE0_RGBA);
-	DrawColouredThing(rend_data, &texture(tx_h_projectile), surface, PROJECTILE1_RGBA);
-	SDL_DestroySurface(surface);
-	SDL_free(bmp_path);
-	surface = SDL_CreateSurface(3, 3, SDL_PIXELFORMAT_RGBA8888);
-	SDL_WriteSurfacePixel(surface, 1, 1, 255U, 255U, 255U, 255U);
-	texture(tx_pixel) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	texture(tx_pixel_blend) = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
-	if(!(texture(tx_pixel) && texture(tx_pixel_blend))){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-		exit(-1);
-	}
-	SDL_DestroySurface(surface);
 }
 
 static void DrawBeing(Render_data* const rend_data, SDL_Texture** being_tx, SDL_Surface* const sf_0, SDL_Surface* const sf_1, const Uint8* const RGB_0, const Uint8* const RGB_1){
@@ -2247,9 +2232,10 @@ static void RenderMenu(Render_data* const rend_data, const Player* const pc){
 	RenderMenuPage(rend_data, pc->help_data.menu_position, OPTIONS_NUM, texts, texts_chars_num);
 }
 
-static void DrawBackground(Render_data* const rend_data){
+static void DrawBackground(Render_data *const rend_data){
+	struct image_files_data ifd = {};
+	SetImageFilesData(&ifd);
 	SDL_Surface* surface = NULL;
-	char* bmp_path = NULL;
 	if(texture(tx_background) != NULL){
 		SDL_DestroyTexture(texture(tx_background));
 	}
@@ -2258,32 +2244,22 @@ static void DrawBackground(Render_data* const rend_data){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture: %s", SDL_GetError());
 		exit(-1);
 	}
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BACKGROUND_TX0_FILE_NAME);
-	surface = SDL_LoadBMP(bmp_path);
-	if(!surface){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-		exit(-1);
-	}
+	surface = SurfaceFromFile(&ifd, BACKGROUND_TX0_FILE_INDEX);
 	SDL_Texture* tx_backgr0 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
 	if(!tx_backgr0){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 		exit(-1);
 	}
 	SDL_DestroySurface(surface);
-	SDL_free(bmp_path);
-	SDL_asprintf(&bmp_path, IMAGE_PATH, SDL_GetBasePath(), BACKGROUND_TX1_FILE_NAME);
-	surface = SDL_LoadBMP(bmp_path);
-	if(!surface){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-		exit(-1);
-	}
+	surface = SurfaceFromFile(&ifd, BACKGROUND_TX1_FILE_INDEX);
+	SDL_FlushIO(ifd.stream);
+	SDL_CloseIO(ifd.stream);
 	SDL_Texture* tx_backgr1 = SDL_CreateTextureFromSurface(rend_data->renderer, surface);
 	if(!tx_backgr1){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
 		exit(-1);
 	}
 	SDL_DestroySurface(surface);
-	SDL_free(bmp_path);
 	SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
 	SDL_SetRenderTarget(rend_data->renderer, texture(tx_background));
 	const SDL_FRect nesw_rect = {
@@ -3032,7 +3008,6 @@ extern inline bool IsPointOnPCView(const Render_data* const rend_data, const flo
 	if(SDL_fabsf(dx) > rend_data->viewfinder) return false;
 	const float dy = true_point_y - pc->position.y;
 	if(SDL_fabsf(dy) > rend_data->viewfinder) return false;
-	// if(!(GetSegmentUnsafe(wld, true_point_x, true_point_y)->flags & segment_in_sight)) return false;
 	const SDL_FPoint rend_point = {
 		VIEWFINDER_CENTER + (dx * cos_player_direction + dy * sin_player_direction),
 		PLAYER_REND_Y - (dx * sin_player_direction - dy * cos_player_direction)
