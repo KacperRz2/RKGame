@@ -41,7 +41,7 @@ void SoundInitiation(Sound_data *const sd){
     SDL_ReadIO(stream, positions, sizeof(positions));
     for(unsigned int i = 0U; i < snds_num; ++i){
         if(*(positions + i) != SDL_TellIO(stream)){
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Bad position (i = %u)", i); exit(-1);
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Sounds file bad position"); exit(-1);
         }
         SDL_ReadIO(stream, &sound(i)->spec, sizeof(sound(i)->spec));
         SDL_ReadIO(stream, &sound(i)->len, sizeof(sound(i)->len));

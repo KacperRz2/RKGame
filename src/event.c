@@ -2,7 +2,7 @@
 #include <event.h>
 #include <sound.h>
 
-int EventsService(Game_data* const gd, Player* const pc){
+int EventsService(Game_data *const gd, Player *const pc){
 	SDL_Event *const ev = gd->ev_ptr;
 	Render_data* const rend_data = gd->rend_data_ptr;
 	while(SDL_PollEvent(ev)){
@@ -55,12 +55,12 @@ int EventsService(Game_data* const gd, Player* const pc){
 				pc->selected_scroll = new_selection;}
 				break;
 			case KEY_MANAGE_SCROLLS:
-				SDL_SetWindowRelativeMouseMode(rend_data->window, false);
+				ToMenuMouseMode(rend_data);
 				return event_manage_scrolls;
 			case KEY_SHOW_MAP:
 				pc->flags ^= map_look; break;
 			case SDL_SCANCODE_ESCAPE:
-				SDL_SetWindowRelativeMouseMode(rend_data->window, false);
+				ToMenuMouseMode(rend_data);
 				return event_menu;
 			default: break;
 			}
@@ -105,8 +105,7 @@ int EventsService(Game_data* const gd, Player* const pc){
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
-			pc->direction += ev->motion.xrel * ((ev->motion.y / (float)rend_data->window_h + DIRECTION_SHIFT_ADDITION) * ROTATION_SPEED);
-			rend_data->mouse_y = ev->motion.y;
+			UpdateMouse(gd, ev->motion.xrel, ev->motion.yrel);
 		}else if(ev->type == SDL_EVENT_QUIT){
 			return event_quit_game;
 		}
@@ -159,6 +158,7 @@ unsigned int MenuEventsService(Game_data *const gd, unsigned int *const menu_pos
 				return *menu_position;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION || ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
+			UpdateMouse(gd, ev->motion.xrel, ev->motion.yrel);
 			const unsigned int old_position = *menu_position;
 			SetPointedOptionMouseSelection(rend_data, menu_position, options_num);
 			if(old_position != *menu_position){
@@ -169,7 +169,10 @@ unsigned int MenuEventsService(Game_data *const gd, unsigned int *const menu_pos
 	return options_num;
 }
 
-int ManageScrollsEventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend_data){
+int ManageScrollsEventsService(Game_data *const gd){
+	SDL_Event *const ev = gd->ev_ptr;
+	Render_data *const rend_data = gd->rend_data_ptr;
+	Player *const pc = host(gd);
 	while(SDL_PollEvent(ev)){
 		if(ev->type == SDL_EVENT_KEY_DOWN){
 			switch(ev->key.scancode){
@@ -199,22 +202,21 @@ int ManageScrollsEventsService(SDL_Event* const ev, Player* const pc, Render_dat
 			case SDL_SCANCODE_0:
 				SetQuickScroll(pc, (int)ev->key.scancode - SDL_SCANCODE_2); break;
 			case KEY_MANAGE_SCROLLS:
-				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
-				SDL_GetMouseState(NULL, &rend_data->mouse_y);
+				ToGameMouseMode(rend_data);
 				return event_ok;
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_KEY_UP){
 			switch (ev->key.scancode){
 			case SDL_SCANCODE_ESCAPE:
-				SDL_SetWindowRelativeMouseMode(rend_data->window, true);
-				SDL_GetMouseState(NULL, &rend_data->mouse_y);
+				ToGameMouseMode(rend_data);
 				return event_ok;
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			SetSelectetScrollMouseSelection(rend_data, pc);
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
+			UpdateMouse(gd, ev->motion.xrel, ev->motion.yrel);
 			SetPointedScrollMouseSelection(rend_data, pc);
 		}
 	}
@@ -232,7 +234,10 @@ int EndingEventsService(SDL_Event* const ev){
 	return 0;
 }
 
-int ShopEventsService(SDL_Event* const ev, Player* const pc, Render_data* const rend_data){
+int ShopEventsService(Game_data *const gd){
+	SDL_Event *const ev = gd->ev_ptr;
+	Render_data *const rend_data = gd->rend_data_ptr;
+	Player *const pc = host(gd);
 	while(SDL_PollEvent(ev)){
 		if(ev->type == SDL_EVENT_KEY_DOWN){
 			switch(ev->key.scancode){
@@ -250,6 +255,7 @@ int ShopEventsService(SDL_Event* const ev, Player* const pc, Render_data* const 
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_UP){
 			return opt_select;
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
+			UpdateMouse(gd, ev->motion.xrel, ev->motion.yrel);
 			pc->help_data.menu_position = GetMouseShopSelection(rend_data);
 		}
 	}

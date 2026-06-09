@@ -38,15 +38,15 @@ int main(int argc, char* argv[]){
 			}else{
 				HostGameLoop(&game_data);
 			}
-			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
+			ToMenuMouseMode(&rend_data);
 		}else if(menu_multipl == option){
 			ClientGameLoop(&game_data);
-			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
+			ToMenuMouseMode(&rend_data);
 		}else if(option == menu_load){
 			LoadGame(&game_data, SAVE_PATH0);
 			GameLoop(&game_data);
 			ClearGameData(&game_data);
-			SDL_SetWindowRelativeMouseMode(rend_data.window, false);
+			ToMenuMouseMode(&rend_data);
 		}else if(option == menu_credits){
 			CreditsLoop(&event, &rend_data);
 		}

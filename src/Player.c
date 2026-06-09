@@ -195,9 +195,13 @@ static void UpdatePlayerMove(Game_data* const gd, const unsigned int indx){
 
 static void UpdatePlayerDirection(Player* const pc){
 	if(pc->direction > FULL_ANGLE){
-		pc->direction -= FULL_ANGLE;
+		do{
+			pc->direction -= FULL_ANGLE;
+		}while(pc->direction > FULL_ANGLE);
 	}else if(pc->direction < 0.0F){
-		pc->direction += FULL_ANGLE;
+		do{
+			pc->direction += FULL_ANGLE;
+		}while(pc->direction < 0.0F);
 	}
 }
 

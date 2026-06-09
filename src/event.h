@@ -11,8 +11,8 @@ enum event{
 
 int EventsService(Game_data *const, Player *const);
 unsigned int MenuEventsService(Game_data *const, unsigned int *const, const unsigned int);
-int ManageScrollsEventsService(SDL_Event *const, Player *const, Render_data *const);
+int ManageScrollsEventsService(Game_data *const);
 int EndingEventsService(SDL_Event *const);
-int ShopEventsService(SDL_Event *const, Player *const, Render_data *const);
+int ShopEventsService(Game_data *const);
 
 #endif

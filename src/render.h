@@ -52,6 +52,10 @@ enum texture_num{
     tx_view,
     txs_num
 };
+enum mouse_mode{
+    mouse_game,
+    mouse_menu
+};
 
 struct Visual_effect{
     SDL_FPoint position;
@@ -82,17 +86,21 @@ struct Render_data{
     float viewfinder;
     SDL_FRect visible_rect;
     SDL_Rect viewfinder_rect;
+    Uint16 game_screen_w;
+    Uint16 game_screen_h;
     Uint16 window_w;
     Uint16 window_h;
     float sin_player_direction;
     float cos_player_direction;
     unsigned int counter;
-    float mouse_y;
+    SDL_FPoint mouse;
+    float mouse_speed;
+    float rotation_speed;
+    Uint8 mouse_mode;
     Visual_effects visual_effects;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *textures[txs_num];
-
 };
 
 void GraphicsInitiation(Render_data *const);
@@ -114,7 +122,6 @@ void AddBoltVisualEffect(Game_data *const, const SDL_FPoint *const, const positi
 void AddSpellVisualEffect(Game_data *const, const SDL_FPoint *const, const Uint8, const Uint8, const Uint8);
 void AddFireExplosionVisualEffect(Game_data *const, const SDL_FPoint *const);
 
-void ResetRenderData(Render_data *const);
 void RenderMainMenu(Render_data *const, const unsigned int);
 void RenderSettingsMenu(Render_data *const, const unsigned int);
 void RenderNewGameMenu(Render_data *const, const unsigned int);
@@ -133,11 +140,13 @@ void RenderDefeatedScreen(Render_data *const);
 void RenderVictoryScreen(Render_data *const);
 void RenderCreditsScreen(Render_data *const);
 void RenderConnectingScreen(Render_data *const);
-void SetMouseBarrier(Render_data *const);
 void RenderShop(Render_data *const, const Player *const, const Shop *const, const Uint8 *const, const unsigned int, const Uint8 *const, const unsigned int, const int);
 void ToggleFullscreen(Render_data *const);
 SDL_FPoint GetMouseWorldPosition(const Game_data *const);
 void RenderClientGame(Render_data *const, Game_data *const, const int);
 bool IsPointOnPCView(const Render_data *const, const float, const float, const Player *const, const float, const float);
+void UpdateMouse(Game_data *const, const float, const float);
+void ToGameMouseMode(Render_data *const);
+void ToMenuMouseMode(Render_data *const);
 
 #endif

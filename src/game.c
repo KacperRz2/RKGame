@@ -149,6 +149,7 @@ static inline void ResetTime(Uint64 *const time, Uint64 *const prev_frame_time){
 }
 
 void GameLoop(Game_data *const gd){
+	ToGameMouseMode(gd->rend_data_ptr);
 	Uint64 now = 0ULL;
 	Uint64 timer;
     int state = event_ok;
@@ -160,7 +161,7 @@ void GameLoop(Game_data *const gd){
 		if(state == event_ok){
 			state = EventsService(gd, host(gd));
 		}else if(state == event_manage_scrolls){
-			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+			state = ManageScrollsEventsService(gd);
 		}else if(state == event_menu){
 			unsigned int option = MenuEventsService(gd, &host(gd)->help_data.menu_position, menu_ig_unknown);
 			if(menu_ig_unknown != option){
@@ -284,8 +285,7 @@ void SetGameData(Game_data* const gd){
 	gd->announcements.important = NULL;
 	gd->announcements.unimportant_num = 0U;
 	gd->announcements.important_num = 0U;
-	SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
-	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
+	ToGameMouseMode(gd->rend_data_ptr);
 }
 
 void ClearGameData(Game_data* const gd){
@@ -693,17 +693,12 @@ static inline void ExitShop(struct transaction_data* const td, Game_data* const 
 			AddScrollToShop(td->shop, item_num);
 		}
 	}
-	Render_data* const rd = gd->rend_data_ptr;
-	SDL_WarpMouseInWindow(rd->window, half(rd->window_w), half(rd->window_h));
-	SDL_SetWindowRelativeMouseMode(rd->window, true);
-	SetMouseBarrier(rd);
-	rd->mouse_y = half(rd->window_h);
+	ToGameMouseMode(gd->rend_data_ptr);
 }
 
 static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int shop_indx){
 	Render_data* const rend_data = gd->rend_data_ptr;
-	SDL_SetWindowRelativeMouseMode(rend_data->window, false);
-	SDL_SetWindowMouseRect(rend_data->window, NULL);
+	ToMenuMouseMode(rend_data);
     int option = opt_void;
 	struct transaction_data td = {
 		.items_to_sell_num = 0U,
@@ -716,7 +711,7 @@ static void EnterShop(Game_data* const gd, Player* const pc, const unsigned int 
 	SDL_SetTextureAlphaMod(*(rend_data->textures + tx_icons), 255);
     while(option != opt_exit){
         RenderShop(rend_data, pc, td.shop, td.items_to_sell, td.items_to_sell_num, td.items_to_get, td.items_to_get_num, td.profit);
-        if((option = ShopEventsService(gd->ev_ptr, pc, rend_data)) > opt_void && pc->help_data.menu_position < SHOP_POSITIONS){
+        if((option = ShopEventsService(gd)) > opt_void && pc->help_data.menu_position < SHOP_POSITIONS){
 			const unsigned int col = pc->help_data.menu_position % SHOP_COLS;
 			const unsigned int row = pc->help_data.menu_position / SHOP_COLS;
 			if(SelectedPlayerItem(col, row, &td)){
@@ -754,7 +749,7 @@ extern inline float CalculateStunPower(const Impact* const impact, const Armour*
 	return impact->stun * armour->unstability;
 }
 
-static int UpdateGame(Game_data* const gd){
+static int UpdateGame(Game_data *const gd){
 	static unsigned int ticks_to_rare_update = RARE_UPDATE_INTERVAL;
 	UpdatePlayers(gd);
 	UpdateProjectiles(gd);
@@ -780,7 +775,7 @@ static int UpdateGame(Game_data* const gd){
 
 static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 	if(option == menu_ig_continue){
-		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
+		ToGameMouseMode(gd->rend_data_ptr);
 		return event_ok;
 	}else if(option == menu_ig_load){
 		if(gd->flags & gamef_multiplayer){
@@ -788,7 +783,7 @@ static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 				ClearGameData(gd);
 				LoadGame(gd, SAVE_PATHMP);
 			}else{
-				SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
+				ToGameMouseMode(gd->rend_data_ptr);
 			}
 		}else{
 			ClearGameData(gd);
@@ -806,7 +801,7 @@ static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 		return event_quit_game;
 	}else if(option == menu_ig_settings){
 		SettingsMenuLoop(gd);
-		SDL_SetWindowRelativeMouseMode(gd->rend_data_ptr->window, true);
+		ToGameMouseMode(gd->rend_data_ptr);
 		return event_used_pause;
 	}else{
 		return event_menu;
@@ -1099,7 +1094,6 @@ void LoadGame(Game_data* const gd, const char *const path){
 		ptr += sizeof(struct coordinates);
 	}
 	SDL_free(save_data);
-	SDL_GetMouseState(NULL, &gd->rend_data_ptr->mouse_y);
 	DrawMap(gd->rend_data_ptr, &gd->world);
 	if(gd->flags & gamef_is_serv_host){
 		gd->announcements.unimportant = (Announcement*)SDL_malloc(sizeof(Announcement) * MAX_ANNOUNCEMENTS);
@@ -1347,7 +1341,7 @@ void HostGameLoop(Game_data *const gd){
 		if(state == event_ok){
 			state = EventsService(gd, host(gd));
 		}else if(state == event_manage_scrolls){
-			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+			state = ManageScrollsEventsService(gd);
 		}else if(state == event_menu){
 			unsigned int option = MenuEventsService(gd, &host(gd)->help_data.menu_position, menu_ig_unknown);
 			if(menu_ig_unknown != option){
@@ -1691,7 +1685,7 @@ void ClientGameLoop(Game_data* const gd){
 		if(state == event_ok){
 			state = EventsService(gd, host(gd));
 		}else if(state == event_manage_scrolls){
-			state = ManageScrollsEventsService(gd->ev_ptr, host(gd), gd->rend_data_ptr);
+			state = ManageScrollsEventsService(gd);
 		}else if(state == event_menu){
 			unsigned int option = MenuEventsService(gd, &host(gd)->help_data.menu_position, menu_ig_unknown);
 			if(menu_ig_unknown != option){
