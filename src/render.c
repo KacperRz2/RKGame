@@ -375,7 +375,7 @@
 #define CREDITS_TEXT_LEN            27U
 #define CONNECTING_TEXT             {O,c,z,e,k,i,w,a,n,i,e,sp,n,a,sp,p,o,ł,ą,c,z,e,n,i,e,dot,dot,dot}
 #define CONNECTING_TEXT_LEN         28U
-#define TEXTURE_FILES_NUM			0x24U
+#define TEXTURE_FILES_NUM			0x32U
 #define TEXTURE_FILE_INDICES        {\
                                         0x3U,\
                                         0x4U,\
@@ -383,6 +383,20 @@
                                         0x6U,\
                                         0x7U,\
                                         0x9U,\
+                                        0x24U,\
+                                        0x25U,\
+                                        0x26U,\
+                                        0x27U,\
+                                        0x28U,\
+                                        0x29U,\
+                                        0x2AU,\
+                                        0x2BU,\
+                                        0x2CU,\
+                                        0x2DU,\
+                                        0x2EU,\
+                                        0x2FU,\
+                                        0x30U,\
+                                        0x31U,\
                                         0xAU,\
                                         0xBU,\
                                         0xCU,\
@@ -1734,6 +1748,12 @@ static inline bool NeighbourSegKnown(World* const wld, Segment* const seg){
 	return false;
 }
 
+static inline void SetTerrainTexturesColourMod(Render_data *const rend_data, const Uint8 red, const Uint8 green, const Uint8 blue){
+	for(unsigned int i = tx_terrain; i < tx_wall_lru + 1U; ++i){
+		SDL_SetTextureColorMod(texture(i), red, green, blue);
+	}
+}
+
 static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Segment** const beings_segs, unsigned int* const beings_segs_num){
 	const SDL_FPoint corner_first = {host(gd)->position.x - (rend_data->viewfinder + SEGMENT_SIZE), host(gd)->position.y - (rend_data->viewfinder + SEGMENT_SIZE)};
 	const SDL_FPoint corner_last = {host(gd)->position.x + (rend_data->viewfinder + SEGMENT_SIZE), host(gd)->position.y + (rend_data->viewfinder + SEGMENT_SIZE)};
@@ -1742,6 +1762,7 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 	point.x -= SDL_fmodf(point.x, SEGMENT_SIZE) + half(SEGMENT_SIZE);
 	point.y -= shift_y;
 	SDL_FPoint unseen_seg_points[MAX_UNSEEN_SEG];
+	Uint8 unseen_seg_textures[MAX_UNSEEN_SEG];
 	unsigned int unseen_seg_num = 0U;
 	unsigned int never_seen_seg_num = 0U;
 	while(point.x < corner_last.x){
@@ -1751,12 +1772,60 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 				if(point.x > 0.0F && point.y > 0.0F && point.x < WORLD_SIZE && point.y < WORLD_SIZE){
 					Segment* seg = GetSegmentUnsafe(&gd->world, point.x, point.y);
 					if(seg){
+						Uint8 texture_num;
+						switch(seg->flags & (segment_wall_up | segment_wall_down | segment_wall_left | segment_wall_right)){
+							case 0U:
+								texture_num = tx_terrain;
+								break;
+							case segment_wall_up:
+								texture_num = tx_wall_u;
+								break;
+							case segment_wall_down:
+								texture_num = tx_wall_d;
+								break;
+							case segment_wall_left:
+								texture_num = tx_wall_l;
+								break;
+							case segment_wall_right:
+								texture_num = tx_wall_r;
+								break;
+							case (segment_wall_up | segment_wall_down):
+								texture_num = tx_wall_ud;
+								break;
+							case (segment_wall_up | segment_wall_left):
+								texture_num = tx_wall_lu;
+								break;
+							case (segment_wall_up | segment_wall_right):
+								texture_num = tx_wall_ru;
+								break;
+							case (segment_wall_left | segment_wall_down):
+								texture_num = tx_wall_ld;
+								break;
+							case (segment_wall_left | segment_wall_right):
+								texture_num = tx_wall_lr;
+								break;
+							case (segment_wall_down | segment_wall_right):
+								texture_num = tx_wall_rd;
+								break;
+							case (segment_wall_up | segment_wall_down | segment_wall_left):
+								texture_num = tx_wall_lud;
+								break;
+							case (segment_wall_up | segment_wall_down | segment_wall_right):
+								texture_num = tx_wall_rud;
+								break;
+							case (segment_wall_up | segment_wall_left | segment_wall_right):
+								texture_num = tx_wall_lru;
+								break;
+							case (segment_wall_down | segment_wall_left | segment_wall_right):
+								texture_num = tx_wall_lrd;
+								break;
+						}
 						if(SegmentInSight(&host(gd)->position, &point, seg, &gd->world)){
 							seg->flags |= segment_in_sight | segment_known;
 							if(seg->beings.num > 0U || seg->ally_beings.num > 0U){
 								*(beings_segs + (*beings_segs_num)++) = seg;
 							}
-							SDL_RenderTextureRotated(rend_data->renderer, texture(tx_terrain), NULL, &(SDL_FRect){
+							SDL_RenderTextureRotated(rend_data->renderer, texture(texture_num), NULL, &(SDL_FRect){
 								rend_point.x - half(SEGMENT_TX_SIZE),
 								rend_point.y - half(SEGMENT_TX_SIZE),
 								SEGMENT_TX_SIZE,
@@ -1764,7 +1833,8 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 							}, -RadToDeg(host(gd)->direction), NULL, SDL_FLIP_NONE);
 						}else{
 							if(seg->flags & segment_known){
-								*(unseen_seg_points + unseen_seg_num++) = (SDL_FPoint){rend_point.x - half(SEGMENT_TX_SIZE), rend_point.y - half(SEGMENT_TX_SIZE)};
+								*(unseen_seg_points + unseen_seg_num) = (SDL_FPoint){rend_point.x - half(SEGMENT_TX_SIZE), rend_point.y - half(SEGMENT_TX_SIZE)};
+								*(unseen_seg_textures + unseen_seg_num++) = texture_num;
 							}else if(NeighbourSegKnown(&gd->world, seg)){
 								*(unseen_seg_points + MAX_UNSEEN_SEG - 1U - never_seen_seg_num++) = (SDL_FPoint){rend_point.x - half(SEGMENT_TX_SIZE), rend_point.y - half(SEGMENT_TX_SIZE)};
 							}
@@ -1778,9 +1848,9 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 		point.x += SEGMENT_SIZE;
 		point.y = corner_first.y - shift_y;
 	}
-	SDL_SetTextureColorMod(texture(tx_terrain), 127, 111, 111);
+	SetTerrainTexturesColourMod(rend_data, 127, 111, 111);
 	for(unsigned int i = 0U; i < unseen_seg_num; ++i){
-		SDL_RenderTextureRotated(rend_data->renderer, texture(tx_terrain), NULL, &(SDL_FRect){
+		SDL_RenderTextureRotated(rend_data->renderer, texture(*(unseen_seg_textures + i)), NULL, &(SDL_FRect){
 			(unseen_seg_points + i)->x,
 			(unseen_seg_points + i)->y,
 			SEGMENT_TX_SIZE,
@@ -1796,7 +1866,7 @@ static void RenderTerrain(Render_data* const rend_data, Game_data* const gd, Seg
 			SEGMENT_TX_SIZE
 		}, -RadToDeg(host(gd)->direction), NULL, SDL_FLIP_NONE);
 	}
-	SDL_SetTextureColorMod(texture(tx_terrain), 255, 255, 255);
+	SetTerrainTexturesColourMod(rend_data, 255, 255, 255);
 }
 
 static inline bool GetExtendedRenderPointFromTrue(Render_data* const rend_data, const float true_point_x, const float true_point_y, const float extension, const Player* const pc, SDL_FPoint* const rend_point){

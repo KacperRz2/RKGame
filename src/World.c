@@ -489,6 +489,7 @@ void CreateWorld(Game_data* const gd){
 	CreateWorldSegments(world, world_plan_base);
 	PlaceShops(&gd->world);
 	SDL_srand(0ULL);
+	SetSegmentsWalls(&gd->world);
 }
 
 int SDLCALL compareBoxes(const void* a, const void* b){
@@ -912,4 +913,27 @@ extern inline Segment* GetDistantSegmentBySpiral(const World* const wld, const S
 	const Sint8 spiral_shift_x[] = SPIRAL_X_SHIFTS;
 	const Sint8 spiral_shift_y[] = SPIRAL_Y_SHIFTS;
 	return GetSegmentByIndxSafe(wld, seg->indx.x + *(spiral_shift_x + step), seg->indx.y + *(spiral_shift_y + step));
+}
+
+void SetSegmentsWalls(World *const wld){
+	for(unsigned int c = 1U; c < SEGMENTS_X - 1U; ++c){
+		for(unsigned int r = 1U; r < SEGMENTS_X - 1U; ++r){
+			Segment *const seg = GetSegmentByIndxUnsafe(wld, c, r);
+			if(!seg){
+				continue;
+			}
+			if(!(GetSegmentByIndxUnsafe(wld, c, r - 1U))){
+				seg->flags |= segment_wall_up;
+			}
+			if(!(GetSegmentByIndxUnsafe(wld, c, r + 1U))){
+				seg->flags |= segment_wall_down;
+			}
+			if(!(GetSegmentByIndxUnsafe(wld, c - 1U, r))){
+				seg->flags |= segment_wall_left;
+			}
+			if(!(GetSegmentByIndxUnsafe(wld, c + 1U, r))){
+				seg->flags |= segment_wall_right;
+			}
+		}
+	}
 }

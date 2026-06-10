@@ -11,7 +11,11 @@ typedef struct World World;
 
 enum segment_flags{
     segment_in_sight = 1 << 0,
-    segment_known = 1 << 1
+    segment_known = 1 << 1,
+    segment_wall_left = 1 << 2,
+    segment_wall_right = 1 << 3,
+    segment_wall_up = 1 << 4,
+    segment_wall_down = 1 << 5
 };
 enum key_info{
     key_location_unknown,
@@ -83,5 +87,6 @@ void Get4NearestSegments(Segment** const, const World* const, const Segment* con
 void Get2NearestSegments(Segment** const, const World* const, Segment* const, const float, const float);
 void GetSurroundingSegmentsFar(Segment** const, const World* const, const Segment* const, const int);
 Segment* GetDistantSegmentBySpiral(const World* const, const Segment* const, const int);
+void SetSegmentsWalls(World *const);
 
 #endif
