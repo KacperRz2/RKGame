@@ -8,7 +8,7 @@
 #define VIEWFINDER_CENTER	        (rend_data->viewfinder * 0.5F)
 #define WINDOW_CENTER_Y		        (rend_data->game_screen_h / 2)
 #define VIEWFINDER_BEFORE_PC_PART   0.9375F
-#define PLAYER_REND_Y               (rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART)
+#define PLAYER_REND_Y               (rend_data->viewfinder * rend_data->view_front_part)
 #define PLAYER_REND_X               (half(rend_data->viewfinder))
 #define PLAYER_REND_Y_SHIFT	        (PLAYER_REND_Y - half(rend_data->viewfinder))
 #define SIGHT_SQUARED   	        (VIEWFINDER_CENTER * VIEWFINDER_CENTER + (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT) * (VIEWFINDER_CENTER + PLAYER_REND_Y_SHIFT))
@@ -197,7 +197,7 @@
                                         rend_data->viewfinder_rect.x,\
                                         rend_data->viewfinder_rect.y,\
                                         rend_data->viewfinder_rect.w,\
-                                        (int)(rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART - GUN_SIGHT_MIN_DISTANCE)\
+                                        (int)(rend_data->viewfinder * rend_data->view_front_part - GUN_SIGHT_MIN_DISTANCE)\
                                     }
 #define MANAGE_SCROLLS_RECT         {\
                                         rend_data->viewfinder_rect.x + half(FRAME_W),\
@@ -430,6 +430,7 @@
 #define ICONS_TX_FILE_INDEX         0x5U
 #define FONT_FILE_INDEX				0x23U
 #define IMAGES_PATH          		"%simg"
+#define GRAPHICS_CFG_TEXT 			"width: %hu\nheight: %hu\nfullscreen: %d\nview front part: %f\nmouse speed: %f\nrotation speed: %f\nvarying rotation speed: %d"
 
 static void RemoveVisalEffect(Visual_effects* const, const unsigned int);
 static void RenderVisualEffects(Render_data* const, Game_data* const);
@@ -510,6 +511,9 @@ enum character{
 	char_end
 };
 
+enum render_data_flags{
+	rdf_varying_rotation_speed = 1 << 0
+};
 struct image_files_data{
 	Uint64 positions[TEXTURE_FILES_NUM];
 	SDL_IOStream *stream;
@@ -747,7 +751,17 @@ static void ReadGraphicsConfig(Render_data *const rd, int *const fullscreen){
 	if(SDL_GetStorageFileSize(title, "graphics_cfg", &dst_len) && 0U < dst_len){
 		dst = SDL_malloc(dst_len);
 		if(SDL_ReadStorageFile(title, "graphics_cfg", dst, dst_len)){
-			SDL_sscanf((char*)dst, "width: %hu\nheight: %hu\nfullscreen: %d\nmouse speed: %f\nrotation speed: %f", &rd->window_w, &rd->window_h, fullscreen, &rd->mouse_speed, &rd->rotation_speed);
+			int varying_rotation_speed;
+			SDL_sscanf((char*)dst, GRAPHICS_CFG_TEXT, &rd->window_w, &rd->window_h, fullscreen, &rd->view_front_part, &rd->mouse_speed, &rd->rotation_speed, &varying_rotation_speed);
+			if(varying_rotation_speed){
+				rd->flags |= rdf_varying_rotation_speed;
+			}
+			if(VIEWFINDER_BEFORE_PC_PART < rd->view_front_part){
+				rd->view_front_part = VIEWFINDER_BEFORE_PC_PART;
+			}
+			if(0.5F > rd->view_front_part){
+				rd->view_front_part = 0.5F;
+			}
 		}else{
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_ReadStorageFile error: %s", SDL_GetError()); exit(-1);
 		}
@@ -770,6 +784,7 @@ void GraphicsInitiation(Render_data *const rend_data){
 	}
 	rend_data->mouse_mode = mouse_menu;
 	rend_data->rotation_speed *= ROTATION_SPEED;
+	// rend_data->view_front_part = VIEWFINDER_BEFORE_PC_PART;
 	SDL_SetWindowMinimumSize(rend_data->window, WINDOW_MIN_W, WINDOW_MIN_H);
 	int wid, hei;
 	SDL_GetWindowSizeInPixels(rend_data->window, &wid, &hei);
@@ -3271,8 +3286,8 @@ void RenderClientGame(Render_data* const rend_data, Game_data* const gd, const i
 }
 
 static inline void LimitMouseY(Render_data *const rend_data){
-	if(rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART - GUN_SIGHT_MIN_DISTANCE < rend_data->mouse.y){
-		rend_data->mouse.y = rend_data->viewfinder * VIEWFINDER_BEFORE_PC_PART - GUN_SIGHT_MIN_DISTANCE;
+	if(rend_data->viewfinder * rend_data->view_front_part - GUN_SIGHT_MIN_DISTANCE < rend_data->mouse.y){
+		rend_data->mouse.y = rend_data->viewfinder * rend_data->view_front_part - GUN_SIGHT_MIN_DISTANCE;
 	}else if(rend_data->viewfinder_rect.y > rend_data->mouse.y){
 		rend_data->mouse.y = rend_data->viewfinder_rect.y;
 	}
@@ -3282,7 +3297,11 @@ void UpdateMouse(Game_data *const gd, const float mx, const float my){
 	Render_data *const rend_data = gd->rend_data_ptr;
 	rend_data->mouse.y += my * rend_data->mouse_speed;
 	if(mouse_game == rend_data->mouse_mode){
-		host(gd)->direction += mx * ((rend_data->mouse.y / (float)rend_data->game_screen_h + DIRECTION_SHIFT_ADDITION) * rend_data->rotation_speed);
+		if(gd->rend_data_ptr->flags & rdf_varying_rotation_speed){
+			host(gd)->direction += mx * ((rend_data->mouse.y / (float)rend_data->game_screen_h + DIRECTION_SHIFT_ADDITION) * rend_data->rotation_speed);
+		}else{
+			host(gd)->direction += mx * ((0.5F + DIRECTION_SHIFT_ADDITION) * rend_data->rotation_speed);
+		}
 		LimitMouseY(rend_data);
 	}else{
 		SDL_Rect viewport;

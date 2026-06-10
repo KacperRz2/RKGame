@@ -106,11 +106,13 @@ struct Render_data{
     Uint16 window_h;
     float sin_player_direction;
     float cos_player_direction;
+    float view_front_part;
     unsigned int counter;
     SDL_FPoint mouse;
     float mouse_speed;
     float rotation_speed;
     Uint8 mouse_mode;
+    Uint8 flags;
     Visual_effects visual_effects;
     SDL_Window *window;
     SDL_Renderer *renderer;

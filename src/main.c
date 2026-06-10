@@ -7,11 +7,7 @@
 int main(int argc, char* argv[]){
 	SDL_SetAppMetadata("KacApp", "1.0", NULL);
 	SDL_Event event;
-	Render_data rend_data = {
-		.counter = 0U,
-		.window = NULL,
-		.renderer = NULL
-	};
+	Render_data rend_data = {};
 	SetSineCosineArrays();
 	GraphicsInitiation(&rend_data);
 	Sound_data sound_data;
