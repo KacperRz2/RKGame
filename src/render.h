@@ -70,6 +70,10 @@ enum mouse_mode{
     mouse_game,
     mouse_menu
 };
+enum render_data_flags{
+    rdf_varying_rotation_speed = 1 << 0,
+    rdf_view_alter_key_down = 1 << 1
+};
 
 struct Visual_effect{
     SDL_FPoint position;
@@ -111,6 +115,7 @@ struct Render_data{
     SDL_FPoint mouse;
     float mouse_speed;
     float rotation_speed;
+    float zoom_speed;
     Uint8 mouse_mode;
     Uint8 flags;
     Visual_effects visual_effects;
@@ -164,5 +169,6 @@ bool IsPointOnPCView(const Render_data *const, const float, const float, const P
 void UpdateMouse(Game_data *const, const float, const float);
 void ToGameMouseMode(Render_data *const);
 void ToMenuMouseMode(Render_data *const);
+void MoveView(Render_data *const, const float);
 
 #endif

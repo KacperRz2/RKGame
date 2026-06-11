@@ -193,12 +193,6 @@
                                         rend_data->viewfinder,\
                                         rend_data->viewfinder\
                                     }
-#define MOUSE_RECT                  {\
-                                        rend_data->viewfinder_rect.x,\
-                                        rend_data->viewfinder_rect.y,\
-                                        rend_data->viewfinder_rect.w,\
-                                        (int)(rend_data->viewfinder * rend_data->view_front_part - GUN_SIGHT_MIN_DISTANCE)\
-                                    }
 #define MANAGE_SCROLLS_RECT         {\
                                         rend_data->viewfinder_rect.x + half(FRAME_W),\
                                         rend_data->viewfinder_rect.y + icon_size + FRAME_W * 2.5F,\
@@ -430,7 +424,7 @@
 #define ICONS_TX_FILE_INDEX         0x5U
 #define FONT_FILE_INDEX				0x23U
 #define IMAGES_PATH          		"%simg"
-#define GRAPHICS_CFG_TEXT 			"width: %hu\nheight: %hu\nfullscreen: %d\nview front part: %f\nmouse speed: %f\nrotation speed: %f\nvarying rotation speed: %d"
+#define GRAPHICS_CFG_TEXT 			"width: %hu\nheight: %hu\nfullscreen: %d\nview front part: %f\nmouse speed: %f\nrotation speed: %f\nzoom speed: %f\nvarying rotation speed: %d"
 
 static void RemoveVisalEffect(Visual_effects* const, const unsigned int);
 static void RenderVisualEffects(Render_data* const, Game_data* const);
@@ -511,9 +505,6 @@ enum character{
 	char_end
 };
 
-enum render_data_flags{
-	rdf_varying_rotation_speed = 1 << 0
-};
 struct image_files_data{
 	Uint64 positions[TEXTURE_FILES_NUM];
 	SDL_IOStream *stream;
@@ -752,7 +743,7 @@ static void ReadGraphicsConfig(Render_data *const rd, int *const fullscreen){
 		dst = SDL_malloc(dst_len);
 		if(SDL_ReadStorageFile(title, "graphics_cfg", dst, dst_len)){
 			int varying_rotation_speed;
-			SDL_sscanf((char*)dst, GRAPHICS_CFG_TEXT, &rd->window_w, &rd->window_h, fullscreen, &rd->view_front_part, &rd->mouse_speed, &rd->rotation_speed, &varying_rotation_speed);
+			SDL_sscanf((char*)dst, GRAPHICS_CFG_TEXT, &rd->window_w, &rd->window_h, fullscreen, &rd->view_front_part, &rd->mouse_speed, &rd->rotation_speed, &rd->zoom_speed, &varying_rotation_speed);
 			if(varying_rotation_speed){
 				rd->flags |= rdf_varying_rotation_speed;
 			}
@@ -784,7 +775,6 @@ void GraphicsInitiation(Render_data *const rend_data){
 	}
 	rend_data->mouse_mode = mouse_menu;
 	rend_data->rotation_speed *= ROTATION_SPEED;
-	// rend_data->view_front_part = VIEWFINDER_BEFORE_PC_PART;
 	SDL_SetWindowMinimumSize(rend_data->window, WINDOW_MIN_W, WINDOW_MIN_H);
 	int wid, hei;
 	SDL_GetWindowSizeInPixels(rend_data->window, &wid, &hei);
@@ -1703,11 +1693,17 @@ void RenderGame(Render_data* const rend_data, Game_data* const gd, const int eve
 	RenderVisualEffects(rend_data, gd);
 
 	SDL_RenderTexture(rend_data->renderer, texture(tx_lighting), NULL, NULL);
-	SDL_RenderTexture(rend_data->renderer, texture(tx_viewfinder), NULL, NULL);
+
+	SDL_RenderTexture(rend_data->renderer, texture(tx_viewfinder), NULL, &rend_data->visible_rect);
 	
 	SDL_SetRenderTarget(rend_data->renderer, NULL);
 	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
-	SDL_RenderTexture(rend_data->renderer, texture(tx_view), NULL, NULL);
+	SDL_RenderTexture(rend_data->renderer, texture(tx_view),&(SDL_FRect){
+		rend_data->visible_rect.x * (1.0F / (float)VIEW_TX_FACTOR),
+		rend_data->visible_rect.y * (1.0F / (float)VIEW_TX_FACTOR),
+		rend_data->visible_rect.w * (1.0F / (float)VIEW_TX_FACTOR),
+		rend_data->visible_rect.h * (1.0F / (float)VIEW_TX_FACTOR)
+	}, NULL);
 
 	if(event_code == event_menu){
 		RenderMenu(rend_data, pc);
@@ -3140,7 +3136,7 @@ void ToggleFullscreen(Render_data* const rend_data){
 
 extern inline SDL_FPoint GetMouseWorldPosition(const Game_data *const gd){
 	const Render_data* const rend_data = gd->rend_data_ptr;
-	const float distance = PLAYER_REND_Y - rend_data->mouse.y;
+	const float distance = rend_data->visible_rect.h * (rend_data->view_front_part - (rend_data->mouse.y / rend_data->viewfinder));
 	return (SDL_FPoint){
 		host(gd)->position.x + rend_data->sin_player_direction * distance,
 		host(gd)->position.y - rend_data->cos_player_direction * distance
@@ -3331,4 +3327,36 @@ void ToMenuMouseMode(Render_data *const rend_data){
 	rend_data->mouse_mode = mouse_menu;
 	rend_data->mouse.x += rend_data->viewfinder_rect.x;
 	rend_data->mouse.y += rend_data->viewfinder_rect.y;
+}
+
+static inline void UpdateViewPosition(Render_data *const rend_data){
+	rend_data->visible_rect.x = half(VIEWFINDER_SIZE - rend_data->visible_rect.w);
+	rend_data->visible_rect.y = rend_data->view_front_part * (rend_data->viewfinder - rend_data->visible_rect.h);
+}
+
+static inline void ZoomView(Render_data *const rend_data, const float amount){
+	rend_data->visible_rect.w += VIEWFINDER_SIZE * amount;
+	if(VIEWFINDER_SIZE < rend_data->visible_rect.w){
+		rend_data->visible_rect.w = VIEWFINDER_SIZE;
+	}else if(VIEWFINDER_SIZE * 0.125F > rend_data->visible_rect.w){
+		rend_data->visible_rect.w = VIEWFINDER_SIZE * 0.125F;
+	}
+	rend_data->visible_rect.h = rend_data->visible_rect.w;
+	UpdateViewPosition(rend_data);
+}
+
+extern inline void MoveView(Render_data *const rend_data, const float amount){
+	if(rend_data->flags & rdf_view_alter_key_down){
+		ZoomView(rend_data, -amount);
+	}else{
+		rend_data->view_front_part += amount;
+		if(VIEWFINDER_BEFORE_PC_PART < rend_data->view_front_part){
+			rend_data->view_front_part = VIEWFINDER_BEFORE_PC_PART;
+		}
+		if(0.5F > rend_data->view_front_part){
+			rend_data->view_front_part = 0.5F;
+		}
+		UpdateViewPosition(rend_data);
+		LimitMouseY(rend_data);
+	}
 }

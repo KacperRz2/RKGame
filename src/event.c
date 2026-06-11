@@ -59,6 +59,9 @@ int EventsService(Game_data *const gd, Player *const pc){
 				return event_manage_scrolls;
 			case KEY_SHOW_MAP:
 				pc->flags ^= map_look; break;
+			case SDL_SCANCODE_LCTRL:
+				rend_data->flags |= rdf_view_alter_key_down;
+				break;
 			case SDL_SCANCODE_ESCAPE:
 				ToMenuMouseMode(rend_data);
 				return event_menu;
@@ -80,6 +83,9 @@ int EventsService(Game_data *const gd, Player *const pc){
 				pc->flags &= ~(run); break;
 			case KEY_ACTION:
 				pc->flags &= ~(action); break;
+			case SDL_SCANCODE_LCTRL:
+				rend_data->flags &= ~(rdf_view_alter_key_down);
+				break;
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){
@@ -106,6 +112,10 @@ int EventsService(Game_data *const gd, Player *const pc){
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
 			UpdateMouse(gd, ev->motion.xrel, ev->motion.yrel);
+		}else if(ev->type == SDL_EVENT_MOUSE_WHEEL){
+			if(ev->wheel.y){
+				MoveView(rend_data, ev->wheel.y * rend_data->zoom_speed);
+			};
 		}else if(ev->type == SDL_EVENT_QUIT){
 			return event_quit_game;
 		}

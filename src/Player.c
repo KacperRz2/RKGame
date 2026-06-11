@@ -69,7 +69,7 @@ void CreatePlayer(Player *const pc, const float x, const float y, const Config *
 	pc->range_attack = (Impact)PC_RANGE_IMPACT;
 	SetPlayerPosition(pc, x, y);
 	pc->flags = 0x00000000U;
-	pc->direction = 0.0F;
+	pc->direction = (SDL_randf() + 0x1.0p-4F) * FULL_ANGLE - 0x1.0p-4F * FULL_ANGLE;
 	pc->move_direction = 0.0F;
 	pc->velocity = 0.0F;
 	pc->max_velocity = PLAYER_VELOCITY;
