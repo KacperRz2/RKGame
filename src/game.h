@@ -36,7 +36,8 @@ enum game_flags{
     gamef_multiplayer = 1 << 2,
     gamef_client_dodge = 1 << 3,
     gamef_client_cast = 1 << 4,
-    gamef_is_serv_host = 1 << 5
+    gamef_is_serv_host = 1 << 5,
+    gamef_pause = 1 << 6
 };
 enum game_update{
     update_ok,

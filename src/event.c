@@ -86,6 +86,9 @@ int EventsService(Game_data *const gd, Player *const pc){
 			case SDL_SCANCODE_LCTRL:
 				rend_data->flags &= ~(rdf_view_alter_key_down);
 				break;
+			case KEY_PAUSE:
+				gd->flags ^= gamef_pause;
+				break;
 			default: break;
 			}
 		}else if(ev->type == SDL_EVENT_MOUSE_BUTTON_DOWN){

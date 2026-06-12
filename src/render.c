@@ -3293,10 +3293,12 @@ void UpdateMouse(Game_data *const gd, const float mx, const float my){
 	Render_data *const rend_data = gd->rend_data_ptr;
 	rend_data->mouse.y += my * rend_data->mouse_speed;
 	if(mouse_game == rend_data->mouse_mode){
-		if(gd->rend_data_ptr->flags & rdf_varying_rotation_speed){
-			host(gd)->direction += mx * ((rend_data->mouse.y / (float)rend_data->game_screen_h + DIRECTION_SHIFT_ADDITION) * rend_data->rotation_speed);
-		}else{
-			host(gd)->direction += mx * ((0.5F + DIRECTION_SHIFT_ADDITION) * rend_data->rotation_speed);
+		if(!(gd->flags & gamef_pause)){
+			if(gd->rend_data_ptr->flags & rdf_varying_rotation_speed){
+				host(gd)->direction += mx * ((rend_data->mouse.y / (float)rend_data->game_screen_h + DIRECTION_SHIFT_ADDITION) * rend_data->rotation_speed);
+			}else{
+				host(gd)->direction += mx * ((0.5F + DIRECTION_SHIFT_ADDITION) * rend_data->rotation_speed);
+			}
 		}
 		LimitMouseY(rend_data);
 	}else{

@@ -229,6 +229,7 @@
 #define KEY_MANAGE_SCROLLS          SDL_SCANCODE_I
 #define KEY_SHOW_MAP                SDL_SCANCODE_M
 #define KEY_SELECT                  SDL_SCANCODE_E
+#define KEY_PAUSE                   SDL_SCANCODE_P
 #define BUTTON_ATTACK               SDL_BUTTON_LEFT
 #define BUTTON_BLOCK                SDL_BUTTON_RIGHT
 

@@ -174,13 +174,15 @@ void GameLoop(Game_data *const gd){
 			ResetTime(&time, &prev_frame_time);
 			state = event_ok;
 		}
-		const int update_result = UpdateGame(gd);
-		if(update_result != update_ok){
-			if(update_result == update_shop){
-				ResetTime(&time, &prev_frame_time);
-			}else{
-				EndLoop(gd->ev_ptr, gd->rend_data_ptr, update_result);
-				break;
+		if(!(gd->flags & gamef_pause)){
+			const int update_result = UpdateGame(gd);
+			if(update_result != update_ok){
+				if(update_result == update_shop){
+					ResetTime(&time, &prev_frame_time);
+				}else{
+					EndLoop(gd->ev_ptr, gd->rend_data_ptr, update_result);
+					break;
+				}
 			}
 		}
 		now = SDL_GetTicksNS();
