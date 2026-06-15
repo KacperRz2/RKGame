@@ -147,6 +147,7 @@ void RenderMainMenu(Render_data *const, const unsigned int);
 void RenderSettingsMenu(Render_data *const, const unsigned int);
 void RenderNewGameMenu(Render_data *const, const unsigned int);
 void RenderMultiplayerMenu(Render_data *const, const unsigned int);
+void RenderConfirmActionMenu(Render_data *const, const unsigned int);
 void RenderGame(Render_data *const, Game_data *const, const int);
 void ClearRenderData(Render_data *const);
 void DrawMap(Render_data *const, const World *const);
@@ -170,5 +171,8 @@ void UpdateMouse(Game_data *const, const float, const float);
 void ToGameMouseMode(Render_data *const);
 void ToMenuMouseMode(Render_data *const);
 void MoveView(Render_data *const, const float);
+Uint8 GetNameInput(Game_data *const, char *const, const Uint8);
+void RenderMenuAny(Render_data *const, const unsigned int, const unsigned int, const Uint8 **const, const unsigned int *const);
+void CharArrayToGameText(char *const, const unsigned int);
 
 #endif

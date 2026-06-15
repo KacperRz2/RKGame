@@ -187,5 +187,6 @@ void LoadGame(Game_data* const, const char *const);
 void HostGameLoop(Game_data* const);
 void ClientGameLoop(Game_data* const);
 void AddAnnouncement(Game_data *const, const Uint8, const void *const);
+bool ActivateMainMenuLoadOption(Game_data *const);
 
 #endif

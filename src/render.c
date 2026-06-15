@@ -359,6 +359,14 @@
                                         13U,\
                                         RETURN_TEXT_LEN,\
 									}
+#define CONFIRM_ACTION_TEXTS        {\
+                                        (Uint8[]){P,o,t,w,i,e,r,d,ź},\
+                                        (Uint8[])RETURN_TEXT,\
+                                    }
+#define CONFIRM_ACTION_TEXTS_SIZES  {\
+                                        9U,\
+                                        RETURN_TEXT_LEN,\
+									}
 #define RETURN_TEXT                 {P,o,w,r,ó,t}
 #define RETURN_TEXT_LEN             6U
 #define DEFEAT_TEXT                 {P,o,r,a,ż,k,a}
@@ -1576,9 +1584,9 @@ static void RenderPlayerStatus(Render_data* const rend_data, Player* const pc, c
 	}
 }
 
-static void RenderMenuPage(Render_data* const rend_data, const unsigned int menu_position, const int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
+static void RenderMenuPage(Render_data* const rend_data, const unsigned int menu_position, const unsigned int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
 	SDL_RenderFillRect(rend_data->renderer, NULL);
-	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
+	const float icon_size = OPTIONS_NUM >= options_num ? SCROLLS_MANAG_ICON_SIZE : ((rend_data->viewfinder - FRAME_W) / ((float)options_num + 1.0F) - FRAME_W);
 	const float text_height = icon_size * 0.5F;
 	SDL_FPoint dst_point_text = {
 		icon_size,
@@ -1598,7 +1606,7 @@ static void RenderMenuPage(Render_data* const rend_data, const unsigned int menu
 	SDL_RenderTexture(rend_data->renderer, texture(tx_menu_ptr), NULL, &menu_ptr_rect);
 }
 
-static void RenderMainMenuPage(Render_data *const rend_data, const unsigned int menu_position, const int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
+static void RenderMainMenuPage(Render_data *const rend_data, const unsigned int menu_position, const unsigned int options_num, const Uint8 **const texts, const unsigned int *const texts_chars_num){
 	SDL_SetRenderViewport(rend_data->renderer, NULL);
 	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
 	SDL_RenderClear(rend_data->renderer);
@@ -1630,6 +1638,12 @@ void RenderMultiplayerMenu(Render_data* const rend_data, const unsigned int menu
 	const Uint8* texts[] = MULTIPLAYER_TEXTS;
 	const unsigned int texts_chars_num[] = MULTIPLAYER_TEXTS_SIZES;
 	RenderMainMenuPage(rend_data, menu_position, MULTIPLAYER_OPTIONS_NUM, texts, texts_chars_num);
+}
+
+void RenderConfirmActionMenu(Render_data* const rend_data, const unsigned int menu_position){
+	const Uint8 *texts[] = CONFIRM_ACTION_TEXTS;
+	const unsigned int texts_chars_num[] = CONFIRM_ACTION_TEXTS_SIZES;
+	RenderMainMenuPage(rend_data, menu_position, 2U, texts, texts_chars_num);
 }
 
 static inline void RenderViewfinderBackground(Render_data* const rend_data){
@@ -2967,7 +2981,7 @@ int GetMouseScrollManagPositionNum(const Render_data* const rend_data){
 }
 
 static int GetMouseMenuPositionNum(const Render_data *const rend_data, const unsigned int options_num){
-	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
+	const float icon_size = OPTIONS_NUM >= options_num ? SCROLLS_MANAG_ICON_SIZE : ((rend_data->viewfinder - FRAME_W) / ((float)options_num + 1.0F) - FRAME_W);
 	const float shift = icon_size + FRAME_W;
 	const SDL_FRect menu_rect = MENU_RECT(options_num);
 	if(SDL_PointInRectFloat(&rend_data->mouse, &menu_rect)){
@@ -3361,4 +3375,124 @@ extern inline void MoveView(Render_data *const rend_data, const float amount){
 		UpdateViewPosition(rend_data);
 		LimitMouseY(rend_data);
 	}
+}
+
+static inline void CharToGameCharacter(char *const ch){
+	switch(*ch){
+		case '-': *ch = s_minus; break;
+		case '0': *ch = n0; break;
+		case '1': *ch = n1; break;
+		case '2': *ch = n2; break;
+		case '3': *ch = n3; break;
+		case '4': *ch = n4; break;
+		case '5': *ch = n5; break;
+		case '6': *ch = n6; break;
+		case '7': *ch = n7; break;
+		case '8': *ch = n8; break;
+		case '9': *ch = n9; break;
+		case 'A': *ch = A; break;
+		case 'B': *ch = B; break;
+		case 'C': *ch = C; break;
+		case 'D': *ch = D; break;
+		case 'E': *ch = E; break;
+		case 'F': *ch = F; break;
+		case 'G': *ch = G; break;
+		case 'H': *ch = H; break;
+		case 'I': *ch = I; break;
+		case 'J': *ch = J; break;
+		case 'K': *ch = K; break;
+		case 'L': *ch = L; break;
+		case 'M': *ch = M; break;
+		case 'N': *ch = N; break;
+		case 'O': *ch = O; break;
+		case 'P': *ch = P; break;
+		case 'Q': *ch = Q; break;
+		case 'R': *ch = R; break;
+		case 'S': *ch = S; break;
+		case 'T': *ch = T; break;
+		case 'U': *ch = U; break;
+		case 'V': *ch = V; break;
+		case 'W': *ch = W; break;
+		case 'X': *ch = X; break;
+		case 'Y': *ch = Y; break;
+		case 'Z': *ch = Z; break;
+		default: *ch = s27; break;
+	}
+}
+
+static void CheckNameInputChar(char *const ch){
+	if('a' <= *ch && *ch <= 'z'){
+		*ch -= 'a' - 'A';
+	}else if(('A' > *ch && ('0' > *ch || *ch > '9') && '-' != *ch) || *ch > 'Z'){
+		*ch = '_';
+	}
+}
+void CharArrayToGameText(char *const array, const unsigned int len){
+	for(unsigned int ind = 0U; ind < len; ++ind){
+		CharToGameCharacter(array + ind);
+	}
+}
+
+static void RenderInputScreen(Render_data* const rend_data, const Uint8 *const text0, const Uint8 text_len0, const Uint8 *const text1, const Uint8 text_len1){
+	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
+	SDL_RenderClear(rend_data->renderer);
+	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
+	const float text_height = rend_data->game_screen_h * 0.0625F;
+	RenderTextCentered(rend_data, 0.0F, half(VIEWFINDER_CENTER) - half(text_height), text_height, text0, text_len0, rend_data->viewfinder);
+	RenderTextCentered(rend_data, 0.0F, VIEWFINDER_CENTER - half(text_height), text_height, text1, text_len1, rend_data->viewfinder);
+	SDL_RenderPresent(rend_data->renderer);
+}
+
+Uint8 GetNameInput(Game_data *const gd, char *const input, const Uint8 max_input_len){
+	Render_data *const rend_data = gd->rend_data_ptr;
+	SDL_Event *const ev = gd->ev_ptr;
+	const Uint8 info_text[] = {N,a,z,w,a,s28};
+	Uint8 name_text[max_input_len + 1U];
+	*name_text = s0;
+	SDL_StartTextInput(rend_data->window);
+	Uint8 indx = 0U;
+	while(1){
+		while(SDL_PollEvent(ev)){
+			if(SDL_EVENT_TEXT_INPUT == ev->type){
+				if(max_input_len > indx){
+					char ch = *ev->text.text;
+					CheckNameInputChar(&ch);
+					*(input + indx) = ch;
+					CharToGameCharacter(&ch);
+					*(name_text + indx++) = ch;
+					*(name_text + indx) = s0;
+				}
+			}else if(SDL_EVENT_KEY_DOWN == ev->type){
+				switch(ev->key.scancode){
+				case SDL_SCANCODE_BACKSPACE:
+					if(0U < indx){
+						--indx;
+						*(name_text + indx) = s0;
+					}
+					break;
+				case SDL_SCANCODE_RETURN:
+					goto input_end;
+				case SDL_SCANCODE_ESCAPE:
+					indx = max_input_len + 1U;
+					goto input_end;
+				default: break;
+				}
+			}
+		}
+		RenderInputScreen(rend_data, info_text, SDL_arraysize(info_text), name_text, indx + 1U);
+		SDL_Delay(FRAME_TIME_MS);
+	}
+	input_end:
+	SDL_StopTextInput(rend_data->window);
+	return indx;
+}
+
+void RenderMenuAny(Render_data *const rend_data, const unsigned int menu_position, const unsigned int options_num, const Uint8 **const names, const unsigned int *const names_sizes){
+	SDL_SetRenderViewport(rend_data->renderer, NULL);
+	SDL_SetRenderDrawColor(rend_data->renderer, 0U, 0U, 0U, 255U);
+	SDL_RenderClear(rend_data->renderer);
+	SDL_SetRenderViewport(rend_data->renderer, &rend_data->viewfinder_rect);
+	RenderMenuPage(rend_data, menu_position, options_num, names, names_sizes);
+	RenderMouse(rend_data);
+	SDL_RenderPresent(rend_data->renderer);
 }

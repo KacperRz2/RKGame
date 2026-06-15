@@ -39,7 +39,10 @@ int main(int argc, char* argv[]){
 			ClientGameLoop(&game_data);
 			ToMenuMouseMode(&rend_data);
 		}else if(option == menu_load){
-			LoadGame(&game_data, SAVE_PATH0);
+			// LoadGame(&game_data, SAVE_PATH0);
+			if(!ActivateMainMenuLoadOption(&game_data)){
+				continue;
+			}
 			GameLoop(&game_data);
 			ClearGameData(&game_data);
 			ToMenuMouseMode(&rend_data);

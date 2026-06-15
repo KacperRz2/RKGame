@@ -207,6 +207,7 @@
 #define CONNECTION_BANDWIDTH_IN     0
 #define CONNECTION_BANDWIDTH_OUT    0
 #define MAX_ANNOUNCEMENTS           32U
+#define MAX_SAVE_NAME_LEN           16U
 #define IS_BEING_SHIFTING(bg)       (being_follow == (bg)->status\
                                     || being_follow_being == (bg)->status\
                                     || being_walk == (bg)->status\
@@ -519,8 +520,8 @@
 		                        + sizeof(struct Player_pack_data) + sizeof(struct Client_return_data)\
 		                        + sizeof(Announcement) * pckt_nums.announcements
 
-#define SAVE_PATH0              "save"
-#define SAVE_PATHMP             "save_MP"
+#define SAVE_PATH0              "AUTOSAVE"
+#define SAVE_PATHMP             "SAVE_MP"
 
 #define MAX_AUDIO_STREAMS       64U
 

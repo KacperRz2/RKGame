@@ -775,6 +775,104 @@ static int UpdateGame(Game_data *const gd){
 	return update_ok;
 }
 
+static SDL_Storage* OpenUserStorage(){
+	SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
+	if(!user){
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_OpenUserStorage error: %s", SDL_GetError()); exit(-1);
+	}
+	while(!SDL_StorageReady(user)){
+		SDL_Delay(1);
+	}
+	return user;
+}
+
+static char** GetSavesFilesNames(unsigned int *const count){
+	SDL_Storage *user = OpenUserStorage();
+	int names_count;
+	char **const names = SDL_GlobStorageDirectory(user, NULL, NULL, 0, &names_count);
+	*count = (unsigned int)names_count;
+	SDL_CloseStorage(user);
+	return names;
+}
+
+static int SavesMenuLoop(Game_data *const gd, const char **const names, const unsigned int names_num){
+	unsigned int option = names_num;
+	unsigned int menu_position = 0U;
+	unsigned int names_sizes[names_num];
+	Uint8 in_game_names[names_num][MAX_SAVE_NAME_LEN];
+	Uint8 *func_arg[names_num];
+	for(unsigned int i = 0U; i < names_num; ++i){
+		*(func_arg + i) = *(in_game_names + i);
+		*(names_sizes + i) = SDL_strlen(*(names + i));
+		SDL_memcpy(*(in_game_names + i), *(names + i), *(names_sizes + i));
+		CharArrayToGameText((char*)(*(in_game_names + i)), *(names_sizes + i));
+	}
+	while(1){
+		RenderMenuAny(gd->rend_data_ptr, menu_position, names_num, (const Uint8 **const)func_arg, names_sizes);
+		option = MenuEventsService(gd, &menu_position, names_num);
+		if(names_num > option){
+			return (int)option;
+		}else if(names_num != option){
+			return NOT_FOUND;
+		}
+		SDL_Delay(FRAME_TIME_MS);
+	}
+}
+
+static bool ConfirmActionMenuLoop(Game_data *const gd){
+	unsigned int option = 2U;
+	unsigned int menu_position = 1U;
+	while(1){
+		RenderConfirmActionMenu(gd->rend_data_ptr, menu_position);
+		option = MenuEventsService(gd, &menu_position, 2U);
+		if(0U == option){
+			return true;
+		}else if(1U == option){
+			return false;
+		}
+		SDL_Delay(FRAME_TIME_MS);
+	}
+	return false;
+}
+
+static bool SaveFileNameExistCheck(Game_data *const gd, const char *const name){
+	SDL_Storage *user = OpenUserStorage();
+	if(SDL_GetStoragePathInfo(user, name, NULL)){
+		return ConfirmActionMenuLoop(gd);
+	}
+	return true;
+}
+
+static bool ActivateSaveMenuOption(Game_data *const gd){
+	unsigned int names_count;
+	char **const names = GetSavesFilesNames(&names_count);
+	char last_option[] = "-NOWY-";
+	*(names + names_count++) = last_option;
+	bool result = false;
+	const int selection = SavesMenuLoop(gd, (const char **const)names, names_count);
+	if(selection == names_count - 1U){
+		char save_name[MAX_SAVE_NAME_LEN];
+		const Uint8 name_len = GetNameInput(gd, save_name, MAX_SAVE_NAME_LEN - 1U);
+		if(1U > name_len){
+			SaveGame(gd, "UNNAMED");
+			result = true;
+		}else if(MAX_SAVE_NAME_LEN > name_len){
+			*(save_name + name_len) = '\0';
+			if(SaveFileNameExistCheck(gd, save_name)){
+				SaveGame(gd, save_name);
+				result = true;
+			}
+		}
+	}else if(NOT_FOUND != selection){
+		if(ConfirmActionMenuLoop(gd)){
+			SaveGame(gd, *(names + selection));
+			result = true;
+		}
+	}
+	SDL_free(names);
+	return result;
+}
+
 static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 	if(option == menu_ig_continue){
 		ToGameMouseMode(gd->rend_data_ptr);
@@ -795,8 +893,9 @@ static int ActivateMenuOption(const unsigned int option, Game_data* const gd){
 	}else if(option == menu_ig_save){
 		if(gd->flags & gamef_multiplayer){
 			SaveGame(gd, SAVE_PATHMP);
-		}else{
-			SaveGame(gd, SAVE_PATH0);
+		}else if(!(ActivateSaveMenuOption(gd))){
+			ToGameMouseMode(gd->rend_data_ptr);
+			return event_used_pause;
 		}
 		return event_quit_game;
 	}else if(option == menu_ig_quit){
@@ -999,13 +1098,7 @@ void SaveGame(const Game_data* const gd, const char *const path){
 	}
 	ptr += sizeof(union horde_data);
 	SDL_memcpy(ptr, known_segs, sizeof(struct coordinates) * nums.known_segs);
-    SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
-    if(!user){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_OpenUserStorage error: %s", SDL_GetError()); exit(-1);
-    }
-    while(!SDL_StorageReady(user)){
-        SDL_Delay(1);
-    }
+    SDL_Storage *user = OpenUserStorage();
     if(!SDL_WriteStorageFile(user, path, save_data, save_len)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_WriteStorageFile error: %s", SDL_GetError()); exit(-1);
     }
@@ -1014,13 +1107,7 @@ void SaveGame(const Game_data* const gd, const char *const path){
 }
 
 void LoadGame(Game_data* const gd, const char *const path){
-    SDL_Storage *user = SDL_OpenUserStorage("RzK", "KGame", 0);
-    if(!user){
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_OpenUserStorage error: %s", SDL_GetError()); exit(-1);
-    }
-    while(!SDL_StorageReady(user)){
-        SDL_Delay(1);
-    }
+    SDL_Storage *user = OpenUserStorage();
     Uint64 save_len = 0U;
 	if(!SDL_GetStorageFileSize(user, path, &save_len)){
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_GetStorageFileSize error: %s", SDL_GetError()); exit(-1);
@@ -1102,6 +1189,19 @@ void LoadGame(Game_data* const gd, const char *const path){
 		gd->announcements.important = (Announcement*)SDL_malloc(sizeof(Announcement) * MAX_ANNOUNCEMENTS);
 		AddAnnouncement(gd, annncmnt_load, &(gd->champions.array + 1)->position);
 	}
+}
+
+bool ActivateMainMenuLoadOption(Game_data *const gd){
+	unsigned int names_count;
+	char **const names = GetSavesFilesNames(&names_count);
+	const int selection = SavesMenuLoop(gd, (const char **const)names, names_count);
+	if(NOT_FOUND == selection){
+		SDL_free(names);
+		return false;
+	}
+	LoadGame(gd, *(names + selection));
+	SDL_free(names);
+	return true;
 }
 //=======================================================================================================================================
 struct pckt_nums{
