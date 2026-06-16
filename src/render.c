@@ -3346,16 +3346,16 @@ void ToMenuMouseMode(Render_data *const rend_data){
 }
 
 static inline void UpdateViewPosition(Render_data *const rend_data){
-	rend_data->visible_rect.x = half(VIEWFINDER_SIZE - rend_data->visible_rect.w);
+	rend_data->visible_rect.x = half(rend_data->viewfinder - rend_data->visible_rect.w);
 	rend_data->visible_rect.y = rend_data->view_front_part * (rend_data->viewfinder - rend_data->visible_rect.h);
 }
 
 static inline void ZoomView(Render_data *const rend_data, const float amount){
-	rend_data->visible_rect.w += VIEWFINDER_SIZE * amount;
-	if(VIEWFINDER_SIZE < rend_data->visible_rect.w){
-		rend_data->visible_rect.w = VIEWFINDER_SIZE;
-	}else if(VIEWFINDER_SIZE * 0.125F > rend_data->visible_rect.w){
-		rend_data->visible_rect.w = VIEWFINDER_SIZE * 0.125F;
+	rend_data->visible_rect.w += rend_data->viewfinder * amount;
+	if(rend_data->viewfinder < rend_data->visible_rect.w){
+		rend_data->visible_rect.w = rend_data->viewfinder;
+	}else if(rend_data->viewfinder * 0.125F > rend_data->visible_rect.w){
+		rend_data->visible_rect.w = rend_data->viewfinder * 0.125F;
 	}
 	rend_data->visible_rect.h = rend_data->visible_rect.w;
 	UpdateViewPosition(rend_data);

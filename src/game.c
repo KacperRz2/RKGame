@@ -1428,6 +1428,9 @@ void HostGameLoop(Game_data *const gd){
 	++gd->champions.num;
 	MovePlayer(gd, (gd->champions.array + 1), (float)PLAYER_SIZE * 2.0F, 0.0F);
 	SDL_srand(0ULL);
+	gd->rend_data_ptr->view_front_part = 0.75F;
+	gd->rend_data_ptr->visible_rect.x = half(gd->rend_data_ptr->viewfinder - gd->rend_data_ptr->visible_rect.w);
+	gd->rend_data_ptr->visible_rect.y = gd->rend_data_ptr->view_front_part * (gd->rend_data_ptr->viewfinder - gd->rend_data_ptr->visible_rect.h);
 	DrawMap(gd->rend_data_ptr, &gd->world);
 	SaveGame(gd, SAVE_PATHMP);
 	Announcement imp_annn = {};
@@ -1774,6 +1777,9 @@ void ClientGameLoop(Game_data* const gd){
 	MovePlayer(gd, host(gd), (float)PLAYER_SIZE * 2.0F, 0.0F);
 	DrawMap(gd->rend_data_ptr, &gd->world);
 	SDL_srand(0ULL);
+	gd->rend_data_ptr->view_front_part = 0.75F;
+	gd->rend_data_ptr->visible_rect.x = half(gd->rend_data_ptr->viewfinder - gd->rend_data_ptr->visible_rect.w);
+	gd->rend_data_ptr->visible_rect.y = gd->rend_data_ptr->view_front_part * (gd->rend_data_ptr->viewfinder - gd->rend_data_ptr->visible_rect.h);
 	SaveGame(gd, SAVE_PATHMP);
 	struct Client_pack_data cpdata = {};
 	Uint64 now = 0ULL;

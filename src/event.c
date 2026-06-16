@@ -116,9 +116,9 @@ int EventsService(Game_data *const gd, Player *const pc){
 		}else if(ev->type == SDL_EVENT_MOUSE_MOTION){
 			UpdateMouse(gd, ev->motion.xrel, ev->motion.yrel);
 		}else if(ev->type == SDL_EVENT_MOUSE_WHEEL){
-			if(ev->wheel.y){
+			if(!(gd->flags & gamef_multiplayer) && ev->wheel.y){
 				MoveView(rend_data, ev->wheel.y * rend_data->zoom_speed);
-			};
+			}
 		}else if(ev->type == SDL_EVENT_QUIT){
 			return event_quit_game;
 		}
