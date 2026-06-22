@@ -116,6 +116,7 @@ struct Render_data{
     float mouse_speed;
     float rotation_speed;
     float zoom_speed;
+    float text_scale;
     Uint8 mouse_mode;
     Uint8 flags;
     Visual_effects visual_effects;

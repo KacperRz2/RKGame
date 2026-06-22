@@ -302,7 +302,7 @@
 #define HORDE_ALERT                 {H,o,r,d,a,exclam_m,char_end}
 #define HORDE_ALERT_X               1.0F
 #define HORDE_ALERT_Y               1.0F
-#define HORDE_ALERT_SIZE            16.0F
+#define HORDE_ALERT_SIZE            (16.0F * rend_data->text_scale)
 #define MENU_TEXTS                  {\
                                         (Uint8[]){U,s,t,a,w,i,e,n,i,a},\
                                         (Uint8[]){C,o,f,n,i,j,sp,d,o,sp,p,u,n,k,t,u,sp,k,o,n,t,r,o,l,n,e,g,o},\
@@ -432,7 +432,7 @@
 #define ICONS_TX_FILE_INDEX         0x5U
 #define FONT_FILE_INDEX				0x23U
 #define IMAGES_PATH          		"%simg"
-#define GRAPHICS_CFG_TEXT 			"width: %hu\nheight: %hu\nfullscreen: %d\nview front part: %f\nmouse speed: %f\nrotation speed: %f\nzoom speed: %f\nvarying rotation speed: %d"
+#define GRAPHICS_CFG_TEXT 			"width: %hu\nheight: %hu\nfullscreen: %d\nview front part: %f\nmouse speed: %f\nrotation speed: %f\nzoom speed: %f\nvarying rotation speed: %d\ntext scale: %f"
 
 static void RemoveVisalEffect(Visual_effects* const, const unsigned int);
 static void RenderVisualEffects(Render_data* const, Game_data* const);
@@ -751,7 +751,7 @@ static void ReadGraphicsConfig(Render_data *const rd, int *const fullscreen){
 		dst = SDL_malloc(dst_len);
 		if(SDL_ReadStorageFile(title, "graphics_cfg", dst, dst_len)){
 			int varying_rotation_speed;
-			SDL_sscanf((char*)dst, GRAPHICS_CFG_TEXT, &rd->window_w, &rd->window_h, fullscreen, &rd->view_front_part, &rd->mouse_speed, &rd->rotation_speed, &rd->zoom_speed, &varying_rotation_speed);
+			SDL_sscanf((char*)dst, GRAPHICS_CFG_TEXT, &rd->window_w, &rd->window_h, fullscreen, &rd->view_front_part, &rd->mouse_speed, &rd->rotation_speed, &rd->zoom_speed, &varying_rotation_speed, &rd->text_scale);
 			if(varying_rotation_speed){
 				rd->flags |= rdf_varying_rotation_speed;
 			}
@@ -760,6 +760,11 @@ static void ReadGraphicsConfig(Render_data *const rd, int *const fullscreen){
 			}
 			if(0.5F > rd->view_front_part){
 				rd->view_front_part = 0.5F;
+			}
+			if(rd->text_scale < 0.5F){
+				rd->text_scale = 0.5F;
+			}else if(rd->text_scale > 5.0F){
+				rd->text_scale = 5.0F;
 			}
 		}else{
 			SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_ReadStorageFile error: %s", SDL_GetError()); exit(-1);
@@ -2276,10 +2281,12 @@ static void RenderDirectionArrow(Render_data* const rend_data, const double rota
 	}, rotation, NULL, SDL_FLIP_NONE);
 }
 
-static void RenderQuickScrolls(Render_data* const rend_data, const Player* const p){
+static void RenderQuickScrolls(Render_data *const rend_data, const Player *const pc){
 	const float BAR_H = BAR_H_CALC;
 	const float Q_SCROLL_SIZE = Q_SCROLL_SIZE_CALC;
 	const float shift_scroll = Q_SCROLL_SIZE + FRAME_W * 2.5F;
+	const float text_size = Q_SCROLL_SIZE * 0.125F;
+	const float text_size1 = text_size * rend_data->text_scale;
 	SDL_FRect scroll_rect = {
 		RIGHT_AREA_X + FRAME_W * 1.5F,
 		AREA_Q_SCROLLS_Y,
@@ -2290,8 +2297,8 @@ static void RenderQuickScrolls(Render_data* const rend_data, const Player* const
 	for(unsigned int i = 0U; i < 3U; ++i){
 		scroll_rect.x = RIGHT_AREA_X + FRAME_W * 1.5F;
 		for(unsigned int j = 0U; j < 3U; ++j){
-			const unsigned int scroll_id = *(p->scrolls_quick_access + i * 3 + j);
-			const int scrolls_num = *(p->scrolls + scroll_id);
+			const unsigned int scroll_id = *(pc->scrolls_quick_access + i * 3 + j);
+			const int scrolls_num = *(pc->scrolls + scroll_id);
 			const SDL_FRect src_rect = GetScrollTextureSrcRect(scroll_id);
 			if(scrolls_num < 1){
 				SDL_SetTextureAlphaMod(texture(tx_icons), 31U);
@@ -2300,17 +2307,17 @@ static void RenderQuickScrolls(Render_data* const rend_data, const Player* const
 				SDL_SetTextureAlphaMod(texture(tx_icons), 255U);
 				SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &scroll_rect);
 				SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
-				RenderIntFromRight(rend_data, scroll_rect.x + Q_SCROLL_SIZE - 1.0F, scroll_rect.y + Q_SCROLL_SIZE - 15.0F, 16.0F, scrolls_num);
+				RenderIntFromRight(rend_data, scroll_rect.x + Q_SCROLL_SIZE - 1.0F, scroll_rect.y + Q_SCROLL_SIZE - text_size1 + 1.0F, text_size1, scrolls_num);
 				SDL_SetTextureColorMod(texture(tx_chars), 255U, 0U, 0U);
 			}
-			RenderInt(rend_data, scroll_rect.x + 1.0F, scroll_rect.y - 1.0F, 16.0F, (i * 3 + j + 2) % 10);
+			RenderInt(rend_data, scroll_rect.x + 1.0F, scroll_rect.y - 1.0F, text_size, (i * 3 + j + 2) % 10);
 			scroll_rect.x += shift_scroll;
 		}
 		scroll_rect.y += shift_scroll;
 	}
 	SDL_SetTextureColorMod(texture(tx_chars), WHITE_RGB);
 	for(unsigned int i = 0U; i < 9U; ++i){
-		if(p->selected_scroll == *(p->scrolls_quick_access + i)){
+		if(pc->selected_scroll == *(pc->scrolls_quick_access + i)){
 			SDL_SetRenderDrawColor(rend_data->renderer, 255, 0, 0, 255);
 			SDL_RenderRect(rend_data->renderer, &(SDL_FRect){
 				RIGHT_AREA_X + FRAME_W * 1.5F + shift_scroll * (i % 3),
@@ -2327,7 +2334,7 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 	SDL_SetRenderDrawColor(rend_data->renderer, 0, 0, 0, 127);
 	SDL_RenderFillRect(rend_data->renderer, NULL);
 	const float icon_size = SCROLLS_MANAG_ICON_SIZE;
-	const float scrolls_num_text_height = icon_size * 0.25F;
+	const float scrolls_num_text_height = icon_size * 0.125F * rend_data->text_scale;
 	SDL_FRect dst_rect = {
 		FRAME_W,
 		icon_size + FRAME_W * 3.0F,
@@ -2368,7 +2375,7 @@ static void RenderScrollsManagement(Render_data* const rend_data, const Player* 
 			SDL_RenderTexture(rend_data->renderer, texture(tx_icons), &src_rect, &dst_rect);
 			const SDL_FPoint dst_point_scrolls_num = {
 				4.0F + icon_size + shift * col,
-				icon_size * 1.75F + FRAME_W * 3.0F + shift * row 
+				icon_size * 2.0F - scrolls_num_text_height + FRAME_W * 3.0F + shift * row
 			};
 			RenderIntFromRight(rend_data, dst_point_scrolls_num.x, dst_point_scrolls_num.y, scrolls_num_text_height, scrolls_num);
 		}
