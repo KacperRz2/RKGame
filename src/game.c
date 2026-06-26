@@ -196,7 +196,7 @@ void GameLoop(Game_data *const gd){
 		if(now < time){
 			SDL_DelayNS(time - now);
 		}else if(now - timer < TICK_TIME){
-			SDL_DelayNS((TICK_TIME - (now - timer)) >> 1);
+			SDL_DelayNS((TICK_TIME - (now - timer)) / 4ULL * 3ULL);
 		}
     }
 }
@@ -1216,6 +1216,7 @@ struct Being_pack_data{
 		int status_ticks_left;
 	};
 	SDL_FPoint position;
+	Uint8 direction8;
 	Uint8 type_id;
 	Sint8 pack_flags;
 	Uint8 HP8;
@@ -1541,6 +1542,7 @@ void HostGameLoop(Game_data *const gd){
 				const Being *const bg = gd->beings.array + *(packet_beings_ids + i);
 				*(struct Being_pack_data*)ptr = (struct Being_pack_data){
 					.position = bg->position,
+					.direction8 = (Uint8)(bg->direction / FULL_ANGLE * 255.0F),
 					.type_id = bg->type_id,
 					.pack_flags =
 						(IS_BEING_SHIFTING(bg) ? being_packf_shift
@@ -1859,6 +1861,7 @@ void ClientGameLoop(Game_data* const gd){
 						const struct Being_pack_data *const bpd = (struct Being_pack_data*)ptr;
 						Being *const bg = gd->beings.array + i;
 						bg->position = bpd->position;
+						bg->direction = (float)bpd->direction8 * FULL_ANGLE / 255.0F;
 						bg->type_id = bpd->type_id;
 						bg->status =
 							bpd->pack_flags & being_packf_shift ? being_walk

@@ -1396,7 +1396,7 @@ static inline void ClientRenderBeing(Render_data* const rend_data, Game_data* co
 			BeingSize(bg),
 			BeingSize(bg)
 		};
-		if(being_strike_being != bg->status && being_stunned != bg->status){
+		if(being_strike == bg->status || being_shoot == bg->status || being_walk == bg->status){
 			bg->target.player = GetDistanceSquared(&bg->position, &host(gd)->position) < GetDistanceSquared(&bg->position, &(gd->champions.array + 1)->position) ? host(gd) : gd->champions.array + 1;
 			bg->direction = arctan2(bg->position.y - bg->target.player->position.y, bg->position.x - bg->target.player->position.x) - SDL_PI_F * 0.5F;
 		}
